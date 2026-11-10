@@ -1,0 +1,65 @@
+/* ---------- Shared bits ---------- */
+.formula-wrap { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; }
+.formula-label { font-weight: 500; }
+.ledger.steps .lbl > div:first-child { font-weight: 500; }
+.ledger.steps .val { font-size: 15px; }
+
+/* ---------- The 12-case grid ---------- */
+.twelve { display: block; max-width: 100%; overflow-x: auto; }
+.twelve-row { min-width: max-content; }
+.twelve-row { display: grid; grid-template-columns: 150px repeat(4, minmax(208px, 1fr)); }
+.twelve .formula { white-space: nowrap; }
+.twelve-head > div { font-size: 12px; color: var(--muted); padding: 0 10px 10px; }
+.twelve-head .twelve-corner { padding-left: 0; }
+.twelve-null { display: flex; flex-direction: column; gap: 2px; padding: 14px 10px 14px 0; border-top: 1px solid var(--rule); }
+.twelve-h0 { font-weight: 600; font-size: 15px; }
+.twelve-cell {
+  position: relative;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 14px 10px;
+  border-top: 1px solid var(--rule); text-decoration: none; border-radius: 0;
+  transition: background-color 120ms var(--ease);
+}
+.twelve-cell:hover { background: var(--ground); }
+.twelve-cell .formula { font-size: 12px; background: var(--raised); }
+.twelve-score { font-size: 12px; color: var(--muted); margin-top: auto; }
+.twelve-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.twelve.compact .twelve-row { grid-template-columns: 112px repeat(4, minmax(128px, 1fr)); }
+.twelve.compact .formula { font-size: 12.5px; }
+
+/* ---------- Learn ---------- */
+.learn { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 40px; align-items: start; }
+.learn-nav { position: sticky; top: 32px; }
+.learn-nav-title { font-size: 13px; color: var(--muted); font-weight: 500; margin-bottom: 8px; }
+.learn-nav ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.learn-nav a { display: flex; flex-direction: column; gap: 1px; padding: 8px 10px; border-radius: 6px; text-decoration: none; font-size: 14px; line-height: 1.35; transition: background-color 120ms var(--ease); }
+.learn-nav a:hover { background: var(--raised); }
+.learn-nav a[aria-current="page"] { background: var(--active); font-weight: 500; }
+.topic { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
+.topic-head { display: flex; flex-direction: column; gap: 8px; }
+.topic-head h1 { font-size: 28px; font-weight: 600; letter-spacing: -0.02em; }
+.topic-summary { font-size: 16px; max-width: 64ch; }
+.topic-actions { margin-top: 8px; }
+.topic-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+.topic-notes { display: flex; flex-direction: column; gap: 24px; }
+.note { display: flex; flex-direction: column; gap: 8px; }
+.note h2 { font-size: 16px; }
+.note .md { max-width: 68ch; }
+.pitfalls { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; font-size: 15px; line-height: 1.5; }
+.topic-side { display: flex; flex-direction: column; gap: var(--gap); position: sticky; top: 32px; }
+.topic-figure { margin: 0; display: flex; flex-direction: column; gap: 10px; }
+.topic-example { display: flex; flex-direction: column; gap: 12px; }
+.example-setup { font-size: 15px; max-width: 72ch; }
+.example-data { font-size: 14px; }
+.example-conclusion { font-size: 15px; font-weight: 500; max-width: 72ch; }
+@media (max-width: 1100px) {
+  .topic-grid { grid-template-columns: minmax(0, 1fr); }
+  .topic-side { position: static; }
+}
+@media (max-width: 860px) {
+  .learn { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .learn-nav { position: static; }
+  .learn-nav ol { flex-direction: row; overflow-x: auto; gap: 6px; padding-bottom: 4px; }
+  .learn-nav a { white-space: nowrap; background: var(--surface); border: 1px solid var(--border); }
+  .learn-nav a .hint { display: none; }
+  .learn-nav-title { display: none; }
+}

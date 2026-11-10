@@ -1,0 +1,16 @@
+# Dependencies and build output
+node_modules/
+dist/
+
+# Secrets and local deploy settings (Vercel CLI writes a login token to .env.local)
+.env*
+.vercel/
+
+# Local-only folders: old snapshot, design-tool output, editor/agent settings
+versions/
+.taste-skill/
+.claude/
+
+# OS and editor noise
+.DS_Store
+*.log

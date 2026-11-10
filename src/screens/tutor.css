@@ -1,0 +1,34 @@
+.tutor { display: flex; flex-direction: column; height: 100vh; }
+.tutor-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px var(--pad); border-bottom: 1px solid var(--border); background: var(--ground); flex-wrap: wrap; }
+.tutor-head h1 { font-size: 20px; }
+.tutor-scroll { flex: 1; overflow-y: auto; }
+.tutor-col { max-width: 780px; margin: 0 auto; padding: 32px var(--pad) 24px; display: flex; flex-direction: column; gap: 24px; }
+.starters { display: flex; flex-direction: column; gap: 12px; padding-top: 24px; }
+.starters-thinka { display: inline-flex; align-self: flex-start; }
+.starters h2 { font-size: 16px; }
+.starter-list { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.starter { text-align: left; padding: 14px 16px; border: 1px solid var(--border); border-radius: var(--radius-card); background: var(--surface); cursor: pointer; font-size: 14px; line-height: 1.45; transition: background-color 120ms var(--ease), border-color 120ms var(--ease); }
+.starter:hover { border-color: var(--control); background: #fcfcfc; }
+.msg-user { align-self: flex-end; max-width: 85%; background: var(--raised); border-radius: 12px; padding: 10px 14px; }
+.msg-user p { white-space: pre-wrap; font-size: 15px; line-height: 1.5; }
+.msg-ai { display: flex; flex-direction: column; gap: 12px; }
+.tutor-status { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; }
+.tool-ledger { border: 1px solid var(--border); border-radius: var(--radius-card); background: var(--surface); padding: 0 14px; }
+.tool-ledger summary { display: flex; align-items: center; gap: 8px; cursor: pointer; padding: 10px 0; font-size: 13px; color: var(--muted); list-style: none; }
+.tool-ledger summary::-webkit-details-marker { display: none; }
+.tool-ledger summary:hover { color: var(--text); }
+.tool-ledger[open] summary { border-bottom: 1px solid var(--rule); }
+.tool-ledger .formula { font-size: 12px; }
+.composer { padding: 12px var(--pad) 20px; background: linear-gradient(transparent, transparent); }
+.composer-box { max-width: 780px; margin: 0 auto; display: flex; gap: 8px; align-items: flex-end; padding: 8px 8px 8px 14px; background: var(--surface); border: 1px solid var(--control); border-radius: 12px; }
+.composer-box:focus-within { border-color: var(--text); }
+.composer-box textarea { flex: 1; border: 0; outline: none; resize: none; background: transparent; font-size: 15px; line-height: 1.5; padding: 6px 0; max-height: 200px; field-sizing: content; }
+.composer-hint { max-width: 780px; margin: 8px auto 0; }
+.tutor-nokey .tutor-key { max-width: 560px; }
+@media (max-width: 760px) {
+  .tutor { height: calc(100vh - 64px); }
+  .starter-list { grid-template-columns: 1fr; }
+  .tutor-col { padding: 20px 16px; }
+  .composer { padding: 8px 12px 12px; }
+  .composer-hint { display: none; }
+}

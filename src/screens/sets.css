@@ -1,0 +1,21 @@
+.sets-table td { vertical-align: middle; }
+.set-name { font-weight: 600; text-decoration: none; white-space: nowrap; }
+.set-name:hover { text-decoration: underline; }
+.set-actions { justify-content: flex-end; flex-wrap: nowrap; }
+.set-back { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.set-steps { list-style: none; margin: 0 0 16px; padding: 0; display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 6px; }
+.set-step { width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; text-align: left; font-size: 13px; transition: background-color 120ms var(--ease), border-color 120ms var(--ease); }
+.set-step:hover { border-color: var(--control); }
+.set-step.on { border-color: var(--text); box-shadow: inset 0 0 0 1px var(--text); }
+.set-step .num:first-child { font-weight: 600; }
+.set-step-score { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.set-step.right .set-step-score { color: var(--positive); }
+.set-step.wrong .set-step-score { color: var(--negative); }
+.set-step.part .set-step-score { color: var(--pill-warning-ink); }
+.set-skip { margin-top: 12px; }
+.set-skip .linkish { border: 0; background: none; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+@media (max-width: 860px) {
+  .set-steps { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .sets-table th:nth-child(2), .sets-table td:nth-child(2) { display: none; }
+}
+.set-upload { margin-bottom: 16px; }

@@ -1,0 +1,26 @@
+{
+  "name": "thinka-aqm-prep",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 3300",
+    "build": "tsc --noEmit -p . && vite build",
+    "preview": "vite preview --port 3301",
+    "test": "node --experimental-strip-types src/lib/stats.test.ts && node --experimental-strip-types src/lib/practice.test.ts && node --experimental-strip-types src/lib/plan.test.ts && node --experimental-strip-types src/lib/xlsx.test.ts && node --experimental-strip-types src/lib/fnDocs.test.ts && node --experimental-strip-types src/lib/xlsxRead.test.ts && node --experimental-strip-types src/lib/grade.test.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.7.0",
+    "fflate": "^0.8.3",
+    "lucide-react": "^1.70.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.7"
+  }
+}

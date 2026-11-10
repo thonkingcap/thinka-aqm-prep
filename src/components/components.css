@@ -1,0 +1,187 @@
+/* ---------- Curve ---------- */
+
+.curve {
+  width: 100%;
+  min-width: 0;
+  font-family: "Geist", system-ui, sans-serif;
+}
+
+.curve-svg {
+  display: block;
+  width: 100%;
+  overflow: visible;
+}
+
+.curve-svg text {
+  font-family: "Geist", system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+.curve-marker-label {
+  font-weight: 500;
+  /* knock out any line behind the label with the card surface */
+  paint-order: stroke;
+  stroke: var(--surface);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+
+.curve-region {
+  transition: opacity 160ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .curve-region {
+    transition: none;
+  }
+}
+
+/* ---------- Markdown ---------- */
+
+.md {
+  font-family: "Geist", system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.md > * {
+  margin: 0;
+}
+
+.md .md-h {
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.35;
+}
+
+.md h3.md-h {
+  font-size: 16px;
+}
+
+.md h4.md-h {
+  font-size: 14px;
+}
+
+
+.md strong {
+  font-weight: 600;
+}
+
+.md .md-em {
+  font-style: normal;
+  font-weight: 500;
+}
+
+.md a {
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: var(--control);
+  text-underline-offset: 2px;
+}
+
+.md a:hover {
+  text-decoration-color: var(--text);
+}
+
+.md .md-list {
+  padding-left: 20px;
+}
+
+.md .md-list li + li {
+  margin-top: 4px;
+}
+
+.md ol.md-list {
+  font-variant-numeric: tabular-nums;
+}
+
+.md .md-code {
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 13px;
+  background: var(--raised);
+  border-radius: 4px;
+  padding: 1px 4px;
+  overflow-wrap: anywhere;
+}
+
+.md .md-formula {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 0 4px;
+}
+
+.md .md-pre {
+  background: var(--raised);
+  border-radius: var(--radius-control, 6px);
+  padding: 10px 12px;
+  overflow-x: auto;
+  line-height: 1.5;
+}
+
+.md .md-pre code {
+  font-family: "Geist Mono", ui-monospace, monospace;
+  font-size: 13px;
+  white-space: pre;
+  overflow-wrap: normal;
+}
+
+.md .md-gap {
+  height: 0;
+}
+
+/* block rhythm: declared last so it wins over the resets above */
+.md > * + * {
+  margin-top: 10px;
+}
+
+.md > * + .md-h {
+  margin-top: 16px;
+}
+
+/* horizontal rule: a 16px gap, no line */
+.md > .md-gap,
+.md > .md-gap + * {
+  margin-top: 16px;
+}
+
+.md > .md-gap {
+  margin-top: 0;
+}
+
+.md .md-list .md-list {
+  margin: 4px 0 0;
+}
+
+.md .md-table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.md .md-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.md .md-table th,
+.md .md-table td {
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.md .md-table th {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.md .md-table .md-num {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

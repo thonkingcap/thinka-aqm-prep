@@ -1,0 +1,35 @@
+.mock-grid { display: grid; grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); gap: 16px; align-items: start; margin-bottom: 16px; }
+.mock-steps { list-style: none; margin: 0 0 16px; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.mock-steps > li { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.mock-steps h2 { font-size: 15px; }
+.mock-steps p { font-size: 14px; line-height: 1.5; }
+.mock-sections { margin: 0; padding-left: 18px; font-size: 13px; color: var(--muted); }
+.mock-empty { display: flex; align-items: center; gap: 14px; padding: 16px 4px; }
+
+.upload { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.upload-drop { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; padding: 20px 16px; border: 1.5px dashed var(--control); border-radius: var(--radius-card); cursor: pointer; background: var(--surface); transition: background-color 120ms var(--ease), border-color 120ms var(--ease); }
+.upload-drop:hover, .upload-drop.over { background: var(--ground); border-color: var(--text); }
+.upload-drop:focus-within { outline: 2px solid var(--text); outline-offset: 2px; }
+.upload-main { font-weight: 500; font-size: 14px; }
+.upload-error { margin: 0; }
+
+.report { display: flex; flex-direction: column; gap: 16px; }
+.report-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.report-score { font-size: 28px; letter-spacing: -0.02em; }
+.report-score b { font-weight: 700; }
+.report-sections { max-width: 420px; }
+.report-qs { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 20px; }
+.report-q { display: flex; flex-direction: column; gap: 8px; padding-top: 16px; border-top: 1px solid var(--rule); }
+.report-q-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.report-q-head h3 { font-size: 15px; }
+.report-parts td, .report-parts th { padding-right: 12px; }
+.report-parts td.num { white-space: nowrap; }
+.report-parts tr.miss td:first-child > div:first-child { font-weight: 500; }
+.report-fix { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; }
+.ok-mark { color: var(--positive); }
+.no-mark { color: var(--negative); }
+@media (max-width: 960px) {
+  .mock-grid, .mock-steps { grid-template-columns: minmax(0, 1fr); }
+  .report-parts th:nth-child(2), .report-parts td:nth-child(2) { display: none; }
+}
+.report .round-note { font-size: 13px; color: var(--pill-warning-ink); }

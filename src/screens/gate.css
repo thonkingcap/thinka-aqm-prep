@@ -1,0 +1,39 @@
+.gate { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); min-height: 100vh; background: var(--surface); }
+.gate-left { display: flex; flex-direction: column; gap: 32px; padding: 32px clamp(24px, 5vw, 72px) 48px; max-width: 640px; width: 100%; justify-self: end; }
+.gate-brand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 15px; }
+.gate-brand .rail-mark { margin: 0; display: grid; }
+.gate-thinka { display: inline-flex; align-self: flex-start; margin-bottom: 4px; }
+.gate-copy { margin-top: clamp(16px, 8vh, 96px); display: flex; flex-direction: column; gap: 16px; }
+.gate h1 { font-size: clamp(36px, 4.4vw, 56px); line-height: 1.02; letter-spacing: -0.035em; font-weight: 600; }
+.gate-lede { font-size: 18px; line-height: 1.5; max-width: 34ch; }
+.key-form { display: flex; flex-direction: column; gap: 16px; }
+.key-input { display: flex; gap: 8px; }
+.mono-input { font-family: var(--mono); font-size: 13px; }
+.gate-trust { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; font-size: 14px; line-height: 1.5; max-width: 52ch; }
+.gate-trust strong { font-weight: 600; }
+.gate-links { gap: 20px; }
+.gate-browse { border: 0; background: none; padding: 0; cursor: pointer; align-self: flex-start; text-decoration: underline; font-size: 14px; color: var(--text); }
+
+.gate-right { background: var(--ground); border-left: 1px solid var(--border); display: flex; align-items: center; padding: 48px clamp(24px, 5vw, 72px); }
+.gate-figure { margin: 0; width: 100%; max-width: 640px; display: flex; flex-direction: column; gap: 20px; }
+.gate-figure figcaption { display: flex; flex-direction: column; gap: 8px; }
+.gate-figure figcaption h2 { font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+.gate-figure figcaption p { font-size: 15px; line-height: 1.5; max-width: 56ch; }
+.gate-ledger .formula { font-size: 12px; }
+.gate-ledger .lbl { white-space: nowrap; color: var(--muted); }
+.gate-p { color: var(--chart-3); }
+.gate-verdict { font-size: 15px; font-weight: 500; }
+
+.spin { animation: spin 900ms linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@media (max-width: 960px) {
+  .gate { grid-template-columns: minmax(0, 1fr); }
+  .gate-left { justify-self: stretch; max-width: none; }
+  .gate-copy { margin-top: 8px; }
+  .gate-right { border-left: 0; border-top: 1px solid var(--border); padding: 32px 16px 48px; }
+}
+@media (max-width: 520px) {
+  .gate-left { padding: 24px 16px 40px; gap: 24px; }
+  .gate-ledger td:nth-child(2) { display: none; }
+}
