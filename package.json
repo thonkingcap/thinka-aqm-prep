@@ -7,7 +7,7 @@
     "dev": "vite --port 3300",
     "build": "tsc --noEmit -p . && vite build",
     "preview": "vite preview --port 3301",
-    "test": "node --experimental-strip-types src/lib/stats.test.ts && node --experimental-strip-types src/lib/practice.test.ts && node --experimental-strip-types src/lib/plan.test.ts && node --experimental-strip-types src/lib/xlsx.test.ts && node --experimental-strip-types src/lib/fnDocs.test.ts && node --experimental-strip-types src/lib/xlsxRead.test.ts && node --experimental-strip-types src/lib/grade.test.ts"
+    "test": "node --experimental-strip-types src/lib/stats.test.ts && node --experimental-strip-types src/lib/practice.test.ts && node --experimental-strip-types src/lib/plan.test.ts && node --experimental-strip-types src/lib/xlsx.test.ts && node --experimental-strip-types src/lib/fnDocs.test.ts && node --experimental-strip-types src/lib/xlsxRead.test.ts && node --experimental-strip-types src/lib/grade.test.ts && node --experimental-strip-types src/lib/sets.test.ts && node --experimental-strip-types src/lib/ai.test.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.7.0",

@@ -199,7 +199,7 @@ ${names.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" Con
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
 <bookViews><workbookView activeTab="0"/></bookViews>
 <sheets>${names.map((s, i) => `<sheet name="${esc(s)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join("")}</sheets>
-${opts.id ? `<definedNames><definedName name="thinka_id" hidden="1">${esc(`"${opts.id.replace(/"/g, '""')}"`)}</definedName></definedNames>\n` : ""}</workbook>`);
+${opts.id && opts.id.length <= 200 ? `<definedNames><definedName name="thinka_id" hidden="1">${esc(`"${opts.id.replace(/"/g, '""')}"`)}</definedName></definedNames>\n` : ""}</workbook>`);
 
   put("xl/_rels/workbook.xml.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">

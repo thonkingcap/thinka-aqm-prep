@@ -33,3 +33,15 @@
   .report-parts th:nth-child(2), .report-parts td:nth-child(2) { display: none; }
 }
 .report .round-note { font-size: 13px; color: var(--pill-warning-ink); }
+
+/* Review: what went well / what to work on */
+.review-split { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding: 16px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+.review-h { font-size: 13px; font-weight: 500; color: var(--muted); margin-bottom: 8px; }
+.review-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; font-size: 14px; }
+.review-list li { display: flex; flex-direction: column; gap: 2px; }
+.review-list li:has(> svg) { flex-direction: row; align-items: center; gap: 6px; }
+.review-links { gap: 14px; margin-top: 2px; }
+.slip-note { font-size: 13px; color: var(--pill-warning-ink); background: var(--pill-warning-bg); padding: 4px 8px; border-radius: 6px; max-width: 72ch; }
+.written { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; max-width: 80ch; }
+.written p { margin: 2px 0 0; font-size: 14px; white-space: pre-wrap; }
+@media (max-width: 640px) { .review-split { grid-template-columns: 1fr; } }

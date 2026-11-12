@@ -1,6 +1,6 @@
 // A small, safe evaluator for the Excel formulas used in AQM 1000.
 // No eval(): a recursive-descent parser over a fixed function table.
-import { normCdf, normDist, normInv, normInvGeneral, normPdf, tCdf, tPdf, tInv, mean, stdevS } from "./stats.ts";
+import { normCdf, normDist, normInv, normInvGeneral, normPdf, tCdf, tPdf, tInv, mean, stdevS, chisqCdf, chisqPdf, chisqInv } from "./stats.ts";
 
 // A range (D5:D12) evaluates to the list of its numeric cells, as Excel's AVERAGE/STDEV.S see it.
 type Val = number | boolean | number[];
@@ -31,6 +31,10 @@ const FUNCS: Record<string, Fn> = {
   "T.DIST.2T": (a) => { need(a, 2, "T.DIST.2T"); const t = num(a[0], "t"); if (t < 0) throw new Error("#NUM! T.DIST.2T needs a non-negative t: use ABS()"); return 2 * (1 - tCdf(t, num(a[1], "df"))); },
   "T.INV": (a) => { need(a, 2, "T.INV"); const p = num(a[0], "p"); if (p <= 0 || p >= 1) throw new Error("#NUM! probability must be between 0 and 1"); return tInv(p, num(a[1], "df")); },
   "T.INV.2T": (a) => { need(a, 2, "T.INV.2T"); const p = num(a[0], "p"); if (p <= 0 || p > 1) throw new Error("#NUM! probability must be between 0 and 1"); return tInv(1 - p / 2, num(a[1], "df")); },
+  "CHISQ.DIST": (a) => { need(a, 3, "CHISQ.DIST"); const x = num(a[0], "x"), df = num(a[1], "df"); if (x < 0) throw new Error("#NUM! x must be >= 0"); if (df < 1) throw new Error("#NUM! df must be >= 1"); return flag(a[2]) ? chisqCdf(x, df) : chisqPdf(x, df); },
+  "CHISQ.DIST.RT": (a) => { need(a, 2, "CHISQ.DIST.RT"); const x = num(a[0], "x"); if (x < 0) throw new Error("#NUM! x must be >= 0"); return 1 - chisqCdf(x, num(a[1], "df")); },
+  "CHISQ.INV": (a) => { need(a, 2, "CHISQ.INV"); const p = num(a[0], "p"); if (p < 0 || p >= 1) throw new Error("#NUM! probability must be between 0 and 1"); return chisqInv(p, num(a[1], "df")); },
+  "CHISQ.INV.RT": (a) => { need(a, 2, "CHISQ.INV.RT"); const p = num(a[0], "p"); if (p <= 0 || p > 1) throw new Error("#NUM! probability must be between 0 and 1"); return chisqInv(1 - p, num(a[1], "df")); },
   SQRT: (a) => { const x = num(a[0], "SQRT"); if (x < 0) throw new Error("#NUM! SQRT of a negative"); return Math.sqrt(x); },
   ABS: (a) => Math.abs(num(a[0], "ABS")),
   EXP: (a) => Math.exp(num(a[0], "EXP")),
@@ -42,6 +46,7 @@ const FUNCS: Record<string, Fn> = {
   "STDEV.P": (a) => { const x = nums(a); const m = mean(x); return Math.sqrt(x.reduce((s, v) => s + (v - m) ** 2, 0) / x.length); },
   "VAR.S": (a) => stdevS(nums(a)) ** 2,
   COUNT: (a) => nums(a).length,
+  COUNTA: (a) => nums(a).length,
   SUM: (a) => nums(a).reduce((s, v) => s + v, 0),
   MIN: (a) => Math.min(...nums(a)),
   MAX: (a) => Math.max(...nums(a)),

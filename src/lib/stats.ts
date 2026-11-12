@@ -180,3 +180,71 @@ export function stdevS(xs: number[]): number {
   const m = mean(xs);
   return Math.sqrt(xs.reduce((s, v) => s + (v - m) ** 2, 0) / (xs.length - 1));
 }
+
+/** VAR.S */
+export function varS(xs: number[]): number {
+  return stdevS(xs) ** 2;
+}
+
+/** Regularized lower incomplete gamma P(a, x) (Numerical Recipes gser/gcf). */
+function gammaP(a: number, x: number): number {
+  if (x <= 0) return 0;
+  const gln = lgamma(a);
+  if (x < a + 1) {
+    let ap = a, sum = 1 / a, del = sum;
+    for (let n = 1; n <= 10000; n++) {
+      ap += 1; del *= x / ap; sum += del;
+      if (Math.abs(del) < Math.abs(sum) * 1e-16) break;
+    }
+    return sum * Math.exp(-x + a * Math.log(x) - gln);
+  }
+  const FPMIN = 1e-300;
+  let b = x + 1 - a, c = 1 / FPMIN, d = 1 / b, h = d;
+  for (let i = 1; i <= 10000; i++) {
+    const an = -i * (i - a);
+    b += 2;
+    d = an * d + b; if (Math.abs(d) < FPMIN) d = FPMIN;
+    c = b + an / c; if (Math.abs(c) < FPMIN) c = FPMIN;
+    d = 1 / d;
+    const del = d * c;
+    h *= del;
+    if (Math.abs(del - 1) < 1e-16) break;
+  }
+  return 1 - Math.exp(-x + a * Math.log(x) - gln) * h;
+}
+
+/** Chi-squared CDF, CHISQ.DIST(x, df, TRUE). */
+export function chisqCdf(x: number, df: number): number {
+  if (x <= 0) return 0;
+  if (!Number.isFinite(x)) return 1;
+  return gammaP(df / 2, x / 2);
+}
+
+/** Chi-squared density, CHISQ.DIST(x, df, FALSE). */
+export function chisqPdf(x: number, df: number): number {
+  if (x < 0) return 0;
+  if (x === 0) return df === 2 ? 0.5 : df < 2 ? Infinity : 0;
+  const k = df / 2;
+  return Math.exp((k - 1) * Math.log(x) - x / 2 - k * Math.LN2 - lgamma(k));
+}
+
+/** Inverse chi-squared, CHISQ.INV(p, df). Bracket, bisect, then Newton. */
+export function chisqInv(p: number, df: number): number {
+  if (p <= 0) return 0;
+  if (p >= 1) return Infinity;
+  let lo = 0, hi = Math.max(1, df);
+  while (chisqCdf(hi, df) < p) hi *= 2;
+  for (let i = 0; i < 300; i++) {
+    const mid = (lo + hi) / 2;
+    if (chisqCdf(mid, df) < p) lo = mid; else hi = mid;
+    if (hi - lo < 1e-14 * Math.max(1, mid)) break;
+  }
+  let x = (lo + hi) / 2;
+  for (let i = 0; i < 3; i++) {
+    const dens = chisqPdf(x, df);
+    if (!(dens > 0) || !Number.isFinite(dens)) break;
+    const nx = x - (chisqCdf(x, df) - p) / dens;
+    if (nx > 0) x = nx;
+  }
+  return x;
+}

@@ -20,7 +20,7 @@ function check(cond: boolean, msg: () => string) {
   if (!cond) fail(msg());
 }
 
-const BANNED = /T\.DIST\.2T|T\.DIST\.RT|T\.INV\.2T|\bABS\b|STANDARDIZE|CONFIDENCE\.NORM/i;
+const BANNED = /T\.DIST\.2T|T\.DIST\.RT|T\.INV\.2T|CHISQ\.DIST\.RT|CHISQ\.INV\.RT|\bABS\b|STANDARDIZE|CONFIDENCE\.NORM/i;
 let wrongChecked = 0, wrongSkipped = 0;
 let htTotal = 0, htReject = 0;
 
@@ -76,6 +76,15 @@ function verifyQuestion(q: Question, expectKind: QuestionKind) {
       check(!!p.options && p.options.includes(p.answer as string), () => `${q.id}/${p.id}: answer not in options`);
       continue;
     }
+    if (p.kind === "text") {
+      check(typeof p.answer === "string" && p.answer.length > 20 && (p.keyPoints?.length ?? 0) >= 2, () => `${q.id}/${p.id}: written part needs a model answer and key points`);
+      continue;
+    }
+    // Traps: every named slip that's really different from the answer must be graded wrong, and be finite.
+    for (const t of p.traps ?? []) {
+      if (!Number.isFinite(t.value)) continue;
+      if (Math.abs(t.value - (p.answer as number)) > p.tol! * 1.5) { trapChecked++; check(!gradeNumber(String(t.value), p).ok, () => `${q.id}/${p.id}: trap ${t.value} ("${t.why}") graded right`); }
+    }
     const ans = p.answer as number;
     check(typeof ans === "number" && Number.isFinite(ans), () => `${q.id}/${p.id}: non-finite answer`);
     check(p.excel.startsWith("="), () => `${q.id}/${p.id}: excel must start with =`);
@@ -100,7 +109,29 @@ function verifyQuestion(q: Question, expectKind: QuestionKind) {
     }
   }
   if (q.kind === "ht") verifyHt(q);
+  // Every test question: the decision follows p < α, and the critical-value route agrees.
+  const dec = q.parts.find((p) => p.options?.includes("Reject H₀"));
+  const pPart = q.parts.find((p) => /p-value/.test(p.label) && p.kind === "number");
+  const aGiven = q.given?.find((g) => g.label === "α");
+  if (dec && pPart && aGiven) {
+    const rej = (pPart.answer as number) < Number(aGiven.value);
+    check(dec.answer === (rej ? "Reject H₀" : "Do not reject H₀"), () => `${q.id}: decision ${dec.answer} but p = ${pPart.answer}`);
+    const r = (rejByKind[q.kind] ??= [0, 0]); r[1]++; if (rej) r[0]++;
+    const stat = q.parts.find((p) => /[Tt]est statistic/.test(p.label));
+    const crits = q.parts.filter((p) => /critical value/i.test(p.label));
+    if (stat && crits.length) {
+      const st = stat.answer as number, h = q.parts[0].answer as string;
+      const cs = crits.map((c) => c.answer as number);
+      let cr: boolean;
+      if (q.kind === "var-test") cr = cs.length === 2 ? st < cs[0] || st > cs[1] : h.includes("≤") ? st > cs[0] : st < cs[0];
+      else if (h.includes("=") && !h.includes("≤") && !h.includes("≥")) cr = Math.abs(st) > cs[0];
+      else cr = h.includes("≤") ? st > cs[0] : st < cs[0];
+      if (q.kind !== "bernoulli") check(cr === rej, () => `${q.id}: p-value and critical-value routes disagree (stat ${st}, crit ${cs}, p ${pPart.answer})`);
+    }
+  }
 }
+const rejByKind: Record<string, [number, number]> = {};
+let trapChecked = 0;
 
 function verifyHt(q: Question) {
   htTotal++;
@@ -160,7 +191,7 @@ for (let s = 1; s <= 300; s++) {
   seenKinds.add(q.kind);
   check(JSON.stringify(q) === JSON.stringify(generate(q.kind, s)), () => `mixed ${s} != generate(${q.kind}, ${s})`);
 }
-check(seenKinds.size === KINDS.length, () => `mixed only produced ${[...seenKinds]}`);
+check(seenKinds.size === KINDS.length - 1 && !seenKinds.has("concept"), () => `mixed only produced ${[...seenKinds]}`);
 check(typeof generate("mixed").id === "string" && typeof generate("ht").id === "string", () => "unseeded generate failed");
 for (const c of TWELVE) for (let s = 1; s <= 120; s++) {
   const q = generateCase(c.key, s);
@@ -191,9 +222,10 @@ check(!gradeNumber("", generate("normal-less", 1).parts[0]).ok, () => "empty gra
 const skipRate = wrongSkipped / Math.max(1, wrongChecked + wrongSkipped);
 check(skipRate < 0.05, () => `too many wrong-method checks skipped: ${(skipRate * 100).toFixed(1)}%`);
 const rejRate = htReject / htTotal;
+for (const [k, [r, t]] of Object.entries(rejByKind)) check(r / t > 0.25 && r / t < 0.8, () => `${k} reject rate ${(r / t * 100).toFixed(0)}%`);
 check(rejRate > 0.3 && rejRate < 0.7, () => `ht reject rate ${rejRate}`);
 
 for (const m of failMsgs) console.log("FAIL", m);
 console.log(`${fails === 0 ? "PASS" : "FAILED"}: ${checks} checks, ${fails} failures; ${KINDS.length} kinds × ${SEEDS} seeds + 12 cases × 120; ` +
-  `wrong-method answers rejected in ${wrongChecked} cases (${wrongSkipped} too close to judge); ht reject rate ${(rejRate * 100).toFixed(1)}%`);
+  `${trapChecked} named slips graded wrong; wrong-method answers rejected in ${wrongChecked} cases (${wrongSkipped} too close to judge); ht reject rate ${(rejRate * 100).toFixed(1)}%`);
 if (fails) process.exit(1);

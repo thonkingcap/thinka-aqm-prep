@@ -31,11 +31,6 @@
 .skill-bar span { display: block; height: 100%; background: var(--chart-1); border-radius: 3px; }
 .skill-map td.val { vertical-align: middle; }
 
-.diag-steps { list-style: none; margin: 0 0 16px; padding: 0; display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; }
-.diag-steps li { height: 6px; border-radius: 3px; background: var(--raised); }
-.diag-steps li.done { background: var(--chart-1); }
-.diag-steps li.now { background: var(--chart-2); }
-.diag { max-width: 920px; }
 
 @media (max-width: 960px) {
   .plan-grid { grid-template-columns: minmax(0, 1fr); }
@@ -48,3 +43,4 @@
 }
 .diag-excel { max-width: 760px; margin-bottom: 16px; }
 .diag-excel .panel-head h2 { margin: 0; }
+.diag-how { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }

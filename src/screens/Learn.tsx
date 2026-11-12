@@ -8,15 +8,19 @@ import { readAttempts, statsByCase } from "../lib/progress.ts";
 import { normInv, tInv } from "../lib/stats.ts";
 import "./screens.css";
 
+/** The Excel topic set (sets.ts TOPIC_SETS id) that practises each Learn topic. */
 export const PRACTICE_FOR: Record<string, string> = {
-  normal: "normal-between",
-  clt: "sample-mean",
-  "ci-z": "ci-z",
-  t: "ci-t",
-  "ht-logic": "ht",
-  twelve: "ht",
-  "sigma-n": "ht",
-  dictionary: "mixed",
+  normal: "normal",
+  clt: "sampling",
+  "ci-z": "intervals",
+  t: "intervals",
+  "ht-logic": "one-sample",
+  twelve: "one-sample",
+  "sigma-n": "one-sample",
+  variance: "variance",
+  "two-sample": "two-sample",
+  paired: "two-sample",
+  dictionary: "concepts",
 };
 
 function figureFor(id: string): (CurveProps & { caption: string }) | null {
@@ -89,7 +93,7 @@ function TopicBody({ t }: { t: Topic }) {
         <h1>{t.title}</h1>
         <p className="topic-summary">{t.summary}</p>
         <div className="row topic-actions">
-          <a className="btn btn-primary" href={`#/practice/${PRACTICE_FOR[t.id] ?? "mixed"}`}><PencilLine size={16} aria-hidden="true" />Practice this</a>
+          <a className="btn btn-primary" href={PRACTICE_FOR[t.id] ? `#/practice/topic/${PRACTICE_FOR[t.id]}` : "#/practice"} title="Download the set, solve it in Excel, upload it to be marked"><PencilLine size={16} aria-hidden="true" />Practice this in Excel</a>
           <button
             className="btn btn-secondary"
             onClick={() => askTutor(`Teach me "${t.title}" (${t.lesson}) in a few short steps, then give me one exam-style question to try.`)}

@@ -1,4 +1,4 @@
-import { normCdf, normInv, tCdf, tInv, normDist, normInvGeneral } from "./stats.ts";
+import { normCdf, normInv, tCdf, tInv, normDist, normInvGeneral, chisqCdf, chisqInv } from "./stats.ts";
 import { readFileSync } from "node:fs";
 // Reference values generated with SciPy (scripts/ref.py -> src/lib/stats.ref.json).
 const ref = JSON.parse(readFileSync(new URL("./stats.ref.json", import.meta.url), "utf8"));
@@ -69,3 +69,22 @@ for (const bad of ["=A1+1", "=D5:D9", "=B5"]) {
 check("T.DIST still a function", evaluate("=T.DIST(-1,4,TRUE)", ctx), tCdf(-1, 4));
 console.log(`${fails === 0 ? "PASS" : "FAILED"}: cell references, ${fails} failures`);
 if (fails) process.exit(1);
+
+// Chi-squared: exact closed forms (df = 1: 2Φ(√x) − 1; even df: Poisson sum), Lesson 18's own
+// sheet, and the printed table.
+{
+  const even = (x: number, df: number) => { let term = 1, sum = 1; for (let k = 1; k < df / 2; k++) { term *= x / 2 / k; sum += term; } return 1 - Math.exp(-x / 2) * sum; };
+  for (const x of [0.01, 0.3, 1, 2.7, 5, 9.4, 17, 33, 60]) {
+    check(`chisq df1 ${x}`, chisqCdf(x, 1), 2 * normCdf(Math.sqrt(x)) - 1, 1e-10);
+    for (const df of [2, 4, 10, 30, 80]) check(`chisq df${df} ${x}`, chisqCdf(x, df), even(x, df), 1e-10);
+  }
+  for (const p of [0.005, 0.025, 0.05, 0.2, 0.5, 0.8, 0.95, 0.975, 0.995]) for (const df of [1, 3, 4, 9, 14, 29, 99]) check(`chisqInv round trip ${p},${df}`, chisqCdf(chisqInv(p, df), df), p, 1e-10);
+  check("CHISQ.INV(0.95,1)", chisqInv(0.95, 1), 3.841458820694124, 1e-9);
+  check("CHISQ.INV(0.95,10)", chisqInv(0.95, 10), 18.307038053275146, 1e-9);
+  check("CHISQ.INV(0.025,9)", chisqInv(0.025, 9), 2.7003894999803584, 1e-9);
+  check("CHISQ.INV(0.975,9)", chisqInv(0.975, 9), 19.02276780221112, 1e-9);
+  check("L18 CHISQ.INV(0.8,9)", evaluate("=_xlfn.CHISQ.INV(0.8,9)"), 12.24214546984707, 1e-9);
+  check("L18 p-value", evaluate("=1-_xlfn.CHISQ.DIST(((10-1)/1)*0.7684551026184633,10-1,TRUE)"), 0.6458547441942721, 1e-9);
+  console.log(`${fails === 0 ? "PASS" : "FAILED"}: chi-squared, ${fails} failures`);
+  if (fails) process.exit(1);
+}

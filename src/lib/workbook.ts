@@ -28,6 +28,7 @@ const LABELS: Record<string, string> = {
   "μ": "Mean μ", "σ": "Standard deviation σ", "n": "Sample size n", "α": "Significance α",
   "μ₀": "Hypothesized mean μ₀", "x̄": "Sample mean x̄", "Confidence": "Confidence level",
   a: "a", b: "b", x: "x",
+  "σ₀²": "Hypothesized variance σ₀²", "σ₁": "Std. dev. σ₁ (group 1)", "σ₂": "Std. dev. σ₂ (group 2)",
 };
 
 function parseGiven(v: string): { v: number | string; pct?: boolean } {
@@ -51,9 +52,13 @@ export function questionSheet(q: Question, n: number): SheetModel {
     r++;
   }
   if (q.data?.length) {
-    cells.D4 = { v: "Data", role: "header" };
+    cells.D4 = { v: q.dataLabels?.[0] ?? "Data", role: "header" };
     q.data.forEach((x, i) => { cells[`D${5 + i}`] = { v: x, role: "data" }; });
-    if (!q.given?.length) { cells.A5 = { v: `Data in D5:D${4 + q.data.length}`, role: "hint" }; r = 6; }
+    if (q.data2?.length) {
+      cells.E4 = { v: q.dataLabels?.[1] ?? "Data 2", role: "header" };
+      q.data2.forEach((x, i) => { cells[`E${5 + i}`] = { v: x, role: "data" }; });
+    }
+    if (!q.given?.length) { cells.A5 = { v: `Data in D5:D${4 + q.data.length}${q.data2?.length ? ` and E5:E${4 + q.data2.length}` : ""}`, role: "hint" }; r = 6; }
   }
   r += 1;
   cells[`A${r}`] = { v: "Answers", role: "header" };
@@ -62,13 +67,44 @@ export function questionSheet(q: Question, n: number): SheetModel {
   for (const p of q.parts) {
     cells[`A${r}`] = { v: `${p.id}) ${p.label}`, role: "label" };
     cells[`B${r}`] = { role: "answer" };
-    if (p.kind === "choice") cells[`F${r}`] = { v: `Type one: ${p.options!.join("  /  ")}   (H0, mu, <= and >= are fine)`, role: "hint" };
+    if (p.kind === "choice") cells[`F${r}`] = { v: p.options!.includes("Reject H₀") ? "Type R (reject) or DR (do not reject)" : `Type one: ${p.options!.join("  /  ")}   (H0, mu, sigma^2, <= and >= are fine)`, role: "hint" };
+    if (p.kind === "text") cells[`F${r}`] = { v: "Written answer: type a few sentences in the yellow cell (the text can run past it)", role: "hint" };
     answerCells[p.id] = `B${r}`;
     r++;
   }
   cells.F4 = { v: "Your working", role: "header" };
-  const rows = Math.max(r + 2, 5 + (q.data?.length ?? 0) + 2, 18);
-  return { name: `Q${n}`, cells, colWidths: [44, 14, 4, 11, 4, 14, 14, 14], answerCells, rows };
+  const longest = Math.max(q.data?.length ?? 0, q.data2?.length ?? 0);
+  const rows = Math.max(r + 2, 5 + longest + 2, 18);
+  const two = !!q.data2?.length;
+  return { name: `Q${n}`, cells, colWidths: [44, 16, 4, two ? 14 : 11, two ? 14 : 4, 14, 14, 14], answerCells, rows };
+}
+
+// ---------- answer key ----------
+/** The last tab of every workbook: each part's answer, the formula that gets it, and why. */
+export function answerKeySheet(questions: Question[], sheets: SheetModel[]): SheetModel {
+  const cells: Record<string, Cell> = {};
+  cells.A1 = { v: "Answer key", role: "title" };
+  cells.A2 = { v: "Try every question first. Then check each yellow cell against the answer and the formula that produces it (formulas are written with the numbers filled in; yours should point at the cells).", role: "text" };
+  cells.A4 = { v: "Question and part", role: "header" };
+  cells.B4 = { v: "Answer", role: "header" };
+  cells.C4 = { v: "Your cell", role: "header" };
+  cells.D4 = { v: "How (Excel)", role: "header" };
+  cells.E4 = { v: "Why", role: "header" };
+  let r = 5;
+  questions.forEach((q, i) => {
+    cells[`A${r}`] = { v: `Q${i + 1}. ${q.title}`, role: "label" };
+    r++;
+    for (const p of q.parts) {
+      cells[`A${r}`] = { v: `   ${p.id}) ${p.label}`, role: "text" };
+      cells[`B${r}`] = p.kind === "number" ? { v: p.answer as number } : { v: p.kind === "text" ? "See the model answer →" : String(p.answer) };
+      cells[`C${r}`] = { v: `${sheets[i].name}!${sheets[i].answerCells[p.id]}`, role: "hint" };
+      cells[`D${r}`] = { v: p.kind === "text" ? p.answer as string : p.excel };
+      cells[`E${r}`] = { v: p.kind === "text" ? `Key points: ${(p.keyPoints ?? []).join("; ")}` : p.explain, role: "hint" };
+      r++;
+    }
+    r++;
+  });
+  return { name: "Answer key", cells, colWidths: [56, 18, 10, 70, 80], answerCells: {}, rows: r };
 }
 
 // ---------- problem sets ----------
@@ -103,8 +139,16 @@ export function setSheets(set: number): SheetModel[] {
 export function matchChoice(typed: string, options: string[]): string | null {
   const norm = (s: string) => s.toLowerCase()
     .replace(/h₀|h0|h_0/g, "").replace(/<=|=</g, "≤").replace(/>=|=>/g, "≥").replace(/!=|<>/g, "≠")
+    .replace(/sigma\s*\^\s*2|σ\^2|sigma²|sigma2|var(iance)?/g, "σ²").replace(/sigma/g, "σ")
+    .replace(/(mu|µ|μ)\s*_?\s*1|μ₁/g, "μ₁").replace(/(mu|µ|μ)\s*_?\s*2|μ₂/g, "μ₂").replace(/(mu|µ)\s*_?\s*d\b|μ_?d/g, "μ_d")
     .replace(/\bmu\b|µ/g, "μ").replace(/[\s:]/g, "");
   const t = norm(typed);
   if (!t) return null;
+  // Decisions: class writes R and DR.
+  if (options.includes("Reject H₀")) {
+    const d = t.replace(/[.'’]/g, "").replace(/h₀|h0|null/g, "");
+    if (["r", "reject", "rejecth", "rejectthe"].includes(d)) return "Reject H₀";
+    if (["dr", "donotreject", "dontreject", "failtoreject", "notreject", "fr"].includes(d)) return "Do not reject H₀";
+  }
   return options.find((o) => norm(o) === t) ?? null;
 }

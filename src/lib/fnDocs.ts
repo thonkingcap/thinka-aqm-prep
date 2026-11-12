@@ -43,6 +43,18 @@ const DOCS: FnDoc[] = [
     args: [{ name: "number1", help: "a range like D5:D14" }, { name: "number2", help: "more numbers or ranges", optional: true }] },
   { name: "COUNT", inClass: true, summary: "How many numbers there are: n", variadic: true,
     args: [{ name: "value1", help: "a range like D5:D14" }, { name: "value2", help: "more ranges", optional: true }] },
+  { name: "CHISQ.DIST", inClass: true, summary: "Area to the left of x under a chi-squared curve",
+    args: [
+      { name: "x", help: "the test statistic (n − 1)·S²/σ₀²" },
+      { name: "deg_freedom", help: "degrees of freedom ν = n − 1" },
+      { name: "cumulative", help: "TRUE = area to the left (a probability)" },
+    ] },
+  { name: "CHISQ.INV", inClass: true, summary: "The chi-squared value with this much area to its left",
+    args: [
+      { name: "probability", help: "area to the left: right-tail critical value uses 1-α, left tail α" },
+      { name: "deg_freedom", help: "degrees of freedom ν = n − 1" },
+    ] },
+  { name: "VAR.S", inClass: true, summary: "Sample variance S² (divides by n − 1)", variadic: true, args: [{ name: "number1", help: "a range like D5:D14" }, { name: "number2", help: "more", optional: true }] },
   { name: "SQRT", inClass: true, summary: "Square root, e.g. SQRT(n) in σ/√n",
     args: [{ name: "number", help: "the number to take the square root of" }] },
   { name: "SUM", inClass: false, summary: "Adds the numbers", variadic: true,
@@ -55,10 +67,12 @@ const DOCS: FnDoc[] = [
   { name: "ABS", inClass: false, summary: "Absolute value. Class uses the sign rule instead", args: [{ name: "number", help: "the number" }] },
   { name: "EXP", inClass: false, summary: "e raised to a power", args: [{ name: "number", help: "the exponent" }] },
   { name: "LN", inClass: false, summary: "Natural logarithm", args: [{ name: "number", help: "a positive number" }] },
-  { name: "VAR.S", inClass: false, summary: "Sample variance s²", variadic: true, args: [{ name: "number1", help: "a range" }, { name: "number2", help: "more", optional: true }] },
   { name: "STDEV.P", inClass: false, summary: "Population standard deviation (divides by n). Use STDEV.S for samples", variadic: true, args: [{ name: "number1", help: "a range" }, { name: "number2", help: "more", optional: true }] },
   { name: "T.DIST.2T", inClass: false, summary: "Two-tailed t probability. Class uses 2*T.DIST with the sign rule", args: [{ name: "x", help: "a non-negative t" }, { name: "deg_freedom", help: "ν = n − 1" }] },
   { name: "T.DIST.RT", inClass: false, summary: "Right-tail t probability. Class uses 1-T.DIST", args: [{ name: "x", help: "the t-value" }, { name: "deg_freedom", help: "ν = n − 1" }] },
+  { name: "COUNTA", inClass: false, summary: "How many cells are filled in: n", variadic: true, args: [{ name: "value1", help: "a range" }, { name: "value2", help: "more", optional: true }] },
+  { name: "CHISQ.DIST.RT", inClass: false, summary: "Right-tail chi-squared probability. Class uses 1-CHISQ.DIST", args: [{ name: "x", help: "the statistic" }, { name: "deg_freedom", help: "ν = n − 1" }] },
+  { name: "CHISQ.INV.RT", inClass: false, summary: "Right-tail chi-squared critical value. Class uses CHISQ.INV(1-α, ν)", args: [{ name: "probability", help: "α" }, { name: "deg_freedom", help: "ν = n − 1" }] },
   { name: "T.INV.2T", inClass: false, summary: "Two-tailed t critical value. Class uses T.INV(1-α/2, ν)", args: [{ name: "probability", help: "α" }, { name: "deg_freedom", help: "ν = n − 1" }] },
 ];
 

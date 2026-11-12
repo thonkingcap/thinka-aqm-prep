@@ -10,8 +10,6 @@ import Practice from "./screens/Practice.tsx";
 import Tutor from "./screens/Tutor.tsx";
 import KeySettings from "./screens/KeySettings.tsx";
 import Plan from "./screens/Plan.tsx";
-import Sets from "./screens/Sets.tsx";
-import Mocks from "./screens/Mocks.tsx";
 import { ThinkaMark } from "./components/Thinka.tsx";
 
 const NAV = [
@@ -41,7 +39,7 @@ export default function App() {
     case "plan": body = <Plan sub={route[1]} />; break;
     case "learn": body = <Learn topicId={route[1]} />; break;
     case "lab": body = <Lab />; break;
-    case "practice": body = route[1] === "sets" ? <Sets n={route[2]} /> : route[1] === "mocks" ? <Mocks n={route[2]} /> : <Practice initial={route[1]} />; break;
+    case "practice": body = <Practice route={route.slice(1)} key={route.slice(1).join("/")} />; break;
     case "tutor": body = <Tutor />; break;
     case "key": body = <KeySettings />; break;
     default: body = <Home />;

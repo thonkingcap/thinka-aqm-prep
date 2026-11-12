@@ -19,7 +19,14 @@ const L16_RNG = [80, 80, 83, 80, 79, 79, 80, 81];
 const L14_ORDERS = [884, 645, 248, 648, 569, 1024, 945, 399, 871, 685];
 const L15_T = [5, 4, 5, 5, 3, 3, 1];
 const L17_CEREAL = [10.1, 9.8, 9.7, 9.1, 10.2];
+const L18_VAR = [-1.939079083967954, -0.37007680475653615, -0.4816070031665731, -1.0269309314026032, -0.46645709517179057, 0.8394863471039571, 1.0074245437863283, -0.05828610483149532, -0.9869245332083665, -0.8156757758115418];
+const L18_X = [7.531012922991067, 9.475853655894753, 11.035000423144083, 11.113176040234976, 9.880185441725189, 9.681792814953951, 9.469259819306899, 10.76589458331, 8.859839251963422, 10.26963789423462];
+const L18_Y = [8.099989054229809, 7.424127625185065, 8.305907749658218, 7.612897798011545, 8.796065139889834, 8.19695483185933, 10.033956777973799, 7.920998223184142, 8.763380174044869, 8.796689280628925];
+const PAIRED_E1 = [72, 65, 80, 58, 90, 77, 69];
+const PAIRED_E2 = [78, 70, 79, 66, 93, 80, 75];
+const PAIRED_D = PAIRED_E2.map((x, i) => x - PAIRED_E1[i]);
 const list = (xs: number[]) => xs.join(",");
+const short = (xs: number[]) => xs.map((x) => x.toFixed(3)).join(", ");
 
 export const TOPICS: Topic[] = [
   {
@@ -129,6 +136,10 @@ export const TOPICS: Topic[] = [
         body: "Question A, μ is known: inside what range will the sample mean land? μ ± Z_α/2 · σ/√n (Lesson 14 heights, Lesson 15 IQ). Question B, μ is unknown: inside what range is the true mean? x̄ ± Z_α/2 · σ/√n (Lesson 14 orders, Lesson 15 mortar). Same width, different centre.",
       },
       {
+        heading: "The three levels on the syllabus",
+        body: "Level 1: μ and σ both known, so find where x̄ will land, μ ± Z_α/2 · σ/√n. Level 2: σ known, μ unknown, so x̄ ± Z_α/2 · σ/√n. Level 3: both unknown, so replace σ with s and Z with T on n − 1 degrees of freedom (next topic).",
+      },
+      {
         heading: "α and the critical value",
         body: "α is the small probability you find suspicious; confidence is 1 − α. The critical value Z_α/2 = `NORM.S.INV(1-α/2)` leaves α/2 in each tail: 1.645 for 90%, 1.960 for 95%, 2.576 for 99%. More confidence means a wider interval; a larger n means a narrower one.",
       },
@@ -230,6 +241,10 @@ export const TOPICS: Topic[] = [
       {
         heading: "Saying the decision",
         body: "Say \"reject H₀\" or \"do not reject (fail to reject) H₀\", never \"accept H₀\" or \"prove\". Then translate: \"At the 5% significance level, there is enough evidence that the average cost is less than $50.\" Rejecting does not prove H₀ false: extremely unlikely samples do happen.",
+      },
+      {
+        heading: "No calculators on Exam 2",
+        body: "Every number must come from Excel. Type formulas that point at the data cells (`=AVERAGE(B2:B11)`), and chain later steps off earlier cells, never off rounded numbers you copied by hand.",
       },
     ],
     formulas: [
@@ -335,10 +350,151 @@ export const TOPICS: Topic[] = [
     pitfalls: ["Thinking a bigger σ makes a result more significant. It does the opposite."],
   },
   {
+    id: "variance",
+    title: "Testing a variance (chi-squared)",
+    lesson: "Lesson 18",
+    summary: "To test a claim about σ², scale the sample variance into a chi-squared statistic with n − 1 degrees of freedom.",
+    notes: [
+      {
+        heading: "S² estimates σ² without bias",
+        body: "The sample variance S² = `VAR.S(data)` divides by n − 1 and is an unbiased estimate of σ². The \"dumb variance\" that divides by n is biased. An estimate is biased if, on average, it isn't equal to the true parameter.",
+      },
+      {
+        heading: "The FACT from class",
+        body: "If X₁, …, Xₙ are iid normal, then (n − 1)S²/σ² follows a chi-squared distribution (χ²) with n − 1 degrees of freedom. Chi-squared is only positive, right-skewed and not symmetric, so the left and right critical values are two different numbers, not ± the same one.",
+      },
+      {
+        heading: "The steps",
+        body: "Step 0: choose α. Step 1: H₀: σ² ≤ σ₀² (right tail), H₀: σ² ≥ σ₀² (left tail) or H₀: σ² = σ₀² (two tails). Step 2: χ² = (n − 1)S²/σ₀². Step 3: reject H₀ if p-value < α, or if the statistic is beyond the critical value. If the question gives a standard deviation σ₀, square it first.",
+      },
+      {
+        heading: "p-values and critical values",
+        body: "Same one-tail rule as before: `CHISQ.DIST(stat, n-1, TRUE)` is the area to the left. Right tail: p = `1-CHISQ.DIST(stat, n-1, TRUE)`, critical value `CHISQ.INV(1-α, n-1)`. Left tail: p = `CHISQ.DIST(stat, n-1, TRUE)`, critical value `CHISQ.INV(α, n-1)`. Two tails: double the smaller side (2 × DIST if the stat is in the left tail, 2 × (1 − DIST) if in the right); critical values `CHISQ.INV(α/2, n-1)` and `CHISQ.INV(1-α/2, n-1)`.",
+      },
+    ],
+    formulas: [
+      { label: "Sample variance", math: "S² (divides by n − 1)", excel: "=VAR.S(range)" },
+      { label: "Test statistic", math: "χ² = (n − 1)S² / σ₀², ν = n − 1", excel: "=(n-1)*VAR.S(range)/σ₀^2" },
+      { label: "Right tail (H₀: σ² ≤ σ₀²)", math: "p and critical value", excel: "=1-CHISQ.DIST(χ²,n-1,TRUE)  ·  =CHISQ.INV(1-α,n-1)" },
+      { label: "Left tail (H₀: σ² ≥ σ₀²)", math: "p and critical value", excel: "=CHISQ.DIST(χ²,n-1,TRUE)  ·  =CHISQ.INV(α,n-1)" },
+      { label: "Two tails (H₀: σ² = σ₀²)", math: "two different cut-offs", excel: "=CHISQ.INV(α/2,n-1)  ·  =CHISQ.INV(1-α/2,n-1)" },
+    ],
+    example: {
+      title: "Is the variance at most 1?",
+      source: "Lesson 18, Exercise",
+      setup: "Ten values were drawn from N(0, 1). Test H₀: σ² ≤ 1 against H_A: σ² > 1 (right tail) at α = 0.2.",
+      data: L18_VAR,
+      steps: [
+        { label: "S²", formula: `=VAR.S(${list(L18_VAR)})` },
+        { label: "χ² = (n − 1)S²/σ₀²", formula: `=((10-1)/1)*VAR.S(${list(L18_VAR)})` },
+        { label: "p-value (right tail)", formula: `=1-CHISQ.DIST(((10-1)/1)*VAR.S(${list(L18_VAR)}),9,TRUE)`, format: "prob" },
+        { label: "Critical value, ν = 9", formula: "=CHISQ.INV(1-0.2,9)" },
+      ],
+      conclusion: "p ≈ 0.646 > 0.2 and χ² ≈ 6.92 is left of the critical value 12.242, so we do not reject H₀: no evidence the variance is above 1.",
+    },
+    pitfalls: [
+      "Plugging in σ₀ when the formula needs σ₀². Square a given standard deviation.",
+      "Using ± one critical value on a two-tailed test. Chi-squared isn't symmetric: compute CHISQ.INV(α/2, …) and CHISQ.INV(1-α/2, …) separately.",
+      "Using n instead of n − 1 for the degrees of freedom.",
+    ],
+  },
+  {
+    id: "two-sample",
+    title: "Comparing two means (Toolpak)",
+    lesson: "Lesson 18",
+    summary: "Test whether two populations have the same mean with the Analysis Toolpak, then read its p-value correctly.",
+    notes: [
+      {
+        heading: "The hypotheses",
+        body: "H₀: μ₁ = μ₂ (two tails), or H₀: μ₁ − μ₂ ≤ 0 (right tail) / H₀: μ₁ − μ₂ ≥ 0 (left tail). The statistic measures how far apart the two sample means are, in standard errors.",
+      },
+      {
+        heading: "Two cases on the syllabus",
+        body: "σ's known: Toolpak \"z-Test: Two Sample for Means\", Z = (x̄₁ − x̄₂)/√(σ₁²/n₁ + σ₂²/n₂). Enter variances, not standard deviations, in \"Variable 1 Variance (known)\" and \"Variable 2 Variance (known)\". σ's unknown but assumed equal: Toolpak \"t-Test: Two-Sample Assuming Equal Variances\", which pools the two sample variances and uses T with ν = n₁ + n₂ − 2.",
+      },
+      {
+        heading: "Turning on the Toolpak",
+        body: "Windows: File › Options › Add-ins › Manage Excel Add-ins › Go › tick Analysis ToolPak. Mac: Tools › Excel Add-ins › tick Analysis ToolPak. Then Data › Data Analysis. Set Hypothesized Mean Difference to 0 and Alpha to α; tick Labels if your ranges include the header cells.",
+      },
+      {
+        heading: "Reading the output",
+        body: "The Toolpak's \"P(Z<=z) one-tail\" or \"P(T<=t) one-tail\" is always the SMALLER tail, whatever your H_A says. For a one-tail test, check the statistic's sign points the way H_A says; if it doesn't, the p-value is 1 − that number. The two-tail line is fine for H₀: μ₁ = μ₂. You can also recompute it the class way: for a positive z, `=(1-NORM.S.DIST(z,TRUE))*2`.",
+      },
+    ],
+    formulas: [
+      { label: "Z (σ's known)", math: "Z = (x̄₁ − x̄₂) / √(σ₁²/n₁ + σ₂²/n₂)", excel: "=(x̄₁-x̄₂)/SQRT(σ₁^2/n₁+σ₂^2/n₂)" },
+      { label: "Pooled variance", math: "S_p² = ((n₁−1)S₁² + (n₂−1)S₂²) / (n₁+n₂−2)", excel: "=((n₁-1)*VAR.S(r1)+(n₂-1)*VAR.S(r2))/(n₁+n₂-2)" },
+      { label: "T (σ's unknown, equal)", math: "T = (x̄₁ − x̄₂) / √(S_p²(1/n₁ + 1/n₂)), ν = n₁+n₂−2", excel: "=(x̄₁-x̄₂)/SQRT(Sp2*(1/n₁+1/n₂))" },
+      { label: "Two-tail p, statistic > 0", math: "H₀: μ₁ = μ₂", excel: "=2*(1-NORM.S.DIST(Z,TRUE))  ·  =2*(1-T.DIST(T,ν,TRUE))" },
+    ],
+    example: {
+      title: "Do X and Y have the same mean?",
+      source: "Lesson 18, Two-sample sheet",
+      setup: `Two samples of 10, both with known σ = 1. Test H₀: μ₁ = μ₂ at α = 0.2. X (shown to 3 decimals): ${short(L18_X)}. Y: ${short(L18_Y)}. The formulas use the full values; in Excel, point them at the data cells.`,
+      steps: [
+        { label: "x̄₁", formula: `=AVERAGE(${list(L18_X)})` },
+        { label: "x̄₂", formula: `=AVERAGE(${list(L18_Y)})` },
+        { label: "Z = (x̄₁ − x̄₂)/√(1/10 + 1/10)", formula: `=(AVERAGE(${list(L18_X)})-AVERAGE(${list(L18_Y)}))/SQRT(1/10+1/10)` },
+        { label: "p-value (two tails, Z > 0)", formula: `=2*(1-NORM.S.DIST((AVERAGE(${list(L18_X)})-AVERAGE(${list(L18_Y)}))/SQRT(1/10+1/10),TRUE))`, format: "prob" },
+        { label: "Critical value Z_α/2", formula: "=NORM.S.INV(1-0.2/2)" },
+      ],
+      conclusion: "Z ≈ 3.16 is beyond 1.28 and p ≈ 0.0016 < 0.2, so we reject H₀: the two means differ. The Toolpak's z-Test (variances 1 and 1) gives the same z and two-tail p.",
+    },
+    pitfalls: [
+      "Typing σ instead of σ² into \"Variable 1 Variance (known)\".",
+      "Copying the Toolpak's one-tail p without checking the sign of the statistic against H_A.",
+      "Forgetting Hypothesized Mean Difference = 0, or ticking Labels when you didn't select the headers.",
+    ],
+  },
+  {
+    id: "paired",
+    title: "Paired data (before/after)",
+    lesson: "Lesson 18",
+    summary: "Two measurements on the same subjects become one column of differences, tested with an ordinary one-sample t-test.",
+    notes: [
+      {
+        heading: "When data are paired",
+        body: "Each subject is measured twice: Exam 1 and Exam 2 for the same student, before and after for the same patient. The two columns aren't independent samples, so don't use the two-sample test. Make a column of differences D = second − first.",
+      },
+      {
+        heading: "Run a one-sample t-test on D",
+        body: "Test μ_D against μ₀ = 0. σ_D is unknown, so T = (d̄ − 0)/(s_D/√n) with ν = n − 1, where n is the number of pairs. Then use T.DIST / T.INV exactly as in the twelve questions.",
+      },
+      {
+        heading: "Pick the tail from H₀",
+        body: "\"Scores have improved\" means D > 0 is the claim, so H₀: μ_D ≤ 0 (right tail). If the question writes H₀: μ_D ≥ 0, it's a left-tail test. If you define D the other way (first − second), every sign flips, so stick with second − first.",
+      },
+    ],
+    formulas: [
+      { label: "Difference column", math: "D = second − first", excel: "=C2-B2  (fill down)" },
+      { label: "T-statistic", math: "T = d̄ / (s_D/√n), ν = n − 1", excel: "=AVERAGE(D)/(STDEV.S(D)/SQRT(n))" },
+      { label: "Right tail (H₀: μ_D ≤ 0)", math: "p and critical value", excel: "=1-T.DIST(T,n-1,TRUE)  ·  =T.INV(1-α,n-1)" },
+    ],
+    example: {
+      title: "Did exam scores improve?",
+      source: "Practice numbers",
+      setup: `Seven students. Exam 1: ${PAIRED_E1.join(", ")}. Exam 2: ${PAIRED_E2.join(", ")}. Test whether scores improved, H₀: μ_D ≤ 0, at α = 5%. The data below are the differences D = Exam 2 − Exam 1.`,
+      data: PAIRED_D,
+      steps: [
+        { label: "d̄", formula: `=AVERAGE(${list(PAIRED_D)})` },
+        { label: "s_D", formula: `=STDEV.S(${list(PAIRED_D)})` },
+        { label: "T-statistic", formula: `=AVERAGE(${list(PAIRED_D)})/(STDEV.S(${list(PAIRED_D)})/SQRT(7))` },
+        { label: "p-value (right tail)", formula: `=1-T.DIST(AVERAGE(${list(PAIRED_D)})/(STDEV.S(${list(PAIRED_D)})/SQRT(7)),6,TRUE)`, format: "prob" },
+        { label: "Critical value T_α, ν = 6", formula: "=T.INV(1-0.05,6)" },
+      ],
+      conclusion: "T ≈ 3.87 is beyond 1.943 and p ≈ 0.004 < 0.05, so we reject H₀: at the 5% level, scores improved.",
+    },
+    pitfalls: [
+      "Running a two-sample test on paired data.",
+      "Using 2n − 2 degrees of freedom. There are n pairs, so ν = n − 1.",
+      "Mixing up D = second − first with first − second, which flips the tail.",
+    ],
+  },
+  {
     id: "dictionary",
-    title: "Dictionary of symbols and functions",
+    title: "Dictionary: symbols, functions and definitions",
     lesson: "Whiteboard",
-    summary: "Every symbol from the board, said out loud, with the Excel function it goes with.",
+    summary: "Every symbol from the board, said out loud, with the Excel function it goes with, and the words the written parts ask you to define.",
     notes: [
       {
         heading: "Symbols",
@@ -346,12 +502,16 @@ export const TOPICS: Topic[] = [
       },
       {
         heading: "Excel functions",
-        body: "Class keeps the list short. `NORM.DIST(x, μ, σ, TRUE)`: area left of x. `NORM.INV(p, μ, σ)`: value with p to its left. `NORM.S.DIST(z, TRUE)` and `NORM.S.INV(p)`: the same for N(0, 1). `T.DIST(t, ν, TRUE)`: area left of t. `T.INV(p, ν)`: t with p to its left. Plus `AVERAGE`, `STDEV.S`, `COUNT` and `SQRT`. Every right-tail or two-tail answer is built from these with 1 − … and 2 × ….",
+        body: "Class keeps the list short. `NORM.DIST(x, μ, σ, TRUE)`: area left of x. `NORM.INV(p, μ, σ)`: value with p to its left. `NORM.S.DIST(z, TRUE)` and `NORM.S.INV(p)`: the same for N(0, 1). `T.DIST(t, ν, TRUE)`: area left of t. `T.INV(p, ν)`: t with p to its left. For variances: `VAR.S(range)`, `CHISQ.DIST(x, ν, TRUE)` and `CHISQ.INV(p, ν)`. Plus `AVERAGE`, `STDEV.S`, `COUNT` and `SQRT`. Every right-tail or two-tail answer is built from these with 1 − … and 2 × ….",
+      },
+      {
+        heading: "Words the written parts ask you to define",
+        body: "Type I error: rejecting H₀ when H₀ is true; its probability is α. Type II error: not rejecting H₀ when H₀ is false. For a fixed n, a smaller α means more Type II errors. p-value: the probability, if H₀ were true, of a sample result at least as extreme as the one you got; it is not the probability that H₀ is true. α (significance level): the Type I error rate you decide to accept before looking at the data. Unbiased: an estimator whose average over many samples equals the parameter; x̄ is unbiased for μ and S² (dividing by n − 1) for σ², while dividing by n is biased low. Shapes: the normal is a symmetric bell; t is symmetric with heavier tails than Z and gets closer to Z as ν grows; χ² is only positive, skewed right, and gets more symmetric as ν grows.",
       },
     ],
     formulas: [
-      { label: "value → probability", math: ".DIST", excel: "NORM.DIST · NORM.S.DIST · T.DIST" },
-      { label: "probability → value", math: ".INV", excel: "NORM.INV · NORM.S.INV · T.INV" },
+      { label: "value → probability", math: ".DIST", excel: "NORM.DIST · NORM.S.DIST · T.DIST · CHISQ.DIST" },
+      { label: "probability → value", math: ".INV", excel: "NORM.INV · NORM.S.INV · T.INV · CHISQ.INV" },
     ],
     pitfalls: ["σ and s are different: σ is the population's (given), s is computed from your sample."],
   },

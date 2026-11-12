@@ -72,7 +72,7 @@ const COLS: { sigma: Sigma; method: Method; label: string }[] = [
   { sigma: "unknown", method: "crit", label: "σ unknown · critical value" },
 ];
 
-/** The whiteboard's 12 hypothesis test questions. Each cell links to practice for that case. */
+/** The whiteboard's 12 hypothesis test questions. Each cell links to the Excel set for tests of a mean. */
 export function TwelveGrid({ stats, compact = false }: { stats?: Map<string, { correct: number; total: number }>; compact?: boolean }) {
   return (
     <div className={`twelve${compact ? " compact" : ""}`} role="table" aria-label="The 12 hypothesis test questions">
@@ -99,7 +99,7 @@ export function TwelveGrid({ stats, compact = false }: { stats?: Map<string, { c
             const g2 = compact ? short(1) : full(1);
             const s = stats?.get(key);
             return (
-              <a role="cell" key={key} className="twelve-cell" href={`#/practice/case:${key}`} aria-label={`${n.h0}, ${c.label}: practise this case`}>
+              <a role="cell" key={key} className="twelve-cell" href="#/practice/topic/one-sample" aria-label={`${n.h0}, ${c.label}: practise the hypothesis test set in Excel`}>
                 <span className="twelve-sr">{c.label}</span>
                 {c.method === "p" ? (
                   n.id === "eq" ? (

@@ -1,45 +1,38 @@
-.practice { max-width: 1180px; }
-.practice-grid { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 24px; align-items: start; }
-.practice-kinds { display: flex; flex-direction: column; gap: 2px; position: sticky; top: 24px; }
-.kind { text-align: left; border: 0; background: transparent; padding: 8px 10px; border-radius: 6px; cursor: pointer; font-size: 14px; transition: background-color 120ms var(--ease); }
-.kind:hover { background: var(--raised); }
-.kind.on { background: var(--active); font-weight: 500; }
-.kind-case { padding: 8px 10px; }
-
-.qcard { display: flex; flex-direction: column; gap: 16px; padding: 24px; }
-.qcard-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.qcard-head h2 { font-size: 18px; }
-.qcard-prompt { font-size: 16px; line-height: 1.55; max-width: 72ch; }
-.qcard-given { display: flex; flex-wrap: wrap; gap: 8px 20px; padding: 12px 14px; background: var(--ground); border-radius: 6px; font-size: 15px; }
-.given-data { flex-basis: 100%; }
-.parts { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
-.part { display: flex; flex-direction: column; gap: 10px; padding: 16px 0; border-top: 1px solid var(--rule); }
-.part-q { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 16px; align-items: center; }
-.part-label { font-size: 15px; font-weight: 500; }
-.part-input { display: flex; align-items: center; gap: 8px; }
-.choices { display: flex; flex-wrap: wrap; gap: 6px; grid-column: 1 / -1; }
-.choice { display: inline-flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; border: 1px solid var(--control); border-radius: 6px; cursor: pointer; font-size: 14px; transition: background-color 120ms var(--ease), border-color 120ms var(--ease); }
-.choice input { position: absolute; opacity: 0; pointer-events: none; }
-.choice:hover { background: var(--ground); }
-.choice.on { border-color: var(--text); box-shadow: inset 0 0 0 1px var(--text); }
-.choice:has(input:focus-visible) { outline: 2px solid var(--text); outline-offset: 2px; }
-.part:has(.choices) .part-q { grid-template-columns: minmax(0, 1fr); }
-.part-feedback { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border-radius: 6px; background: var(--ground); font-size: 14px; }
-.is-right .part-feedback { background: #f1fbf4; }
-.is-wrong .part-feedback { background: #fff5f3; }
-.is-right .part-feedback strong:first-child { color: var(--positive); }
-.is-wrong .part-feedback strong:first-child { color: var(--negative); }
-.part-explain { color: #3d3d3d; max-width: 72ch; }
-.qcard-actions { padding-top: 4px; gap: 12px; }
-@media (max-width: 860px) {
-  .practice-grid { grid-template-columns: minmax(0, 1fr); }
-  .practice-kinds { position: static; flex-direction: row; align-items: flex-start; overflow-x: auto; gap: 6px; padding-bottom: 4px; }
-  .kind { flex: 0 0 auto; white-space: nowrap; background: var(--surface); border: 1px solid var(--border); }
-  .kind-case { display: none; }
-  .part-q { grid-template-columns: minmax(0, 1fr); }
-  .qcard { padding: 16px; }
-}
-.sheet-toggle { font-size: 13px; align-items: center; }
-.sheet-toggle input { margin: 0; }
-.qcard .sheet { margin: 4px 0; }
+/* Practice hub: everything is an Excel workbook. */
+.practice .panel + .panel, .practice .report { margin-top: 16px; }
+.steps-strip { list-style: none; margin: 0 0 16px; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--border); border-radius: var(--radius-card); background: var(--surface); }
+.steps-strip li { display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; font-size: 14px; }
+.steps-strip li + li { border-left: 1px solid var(--rule); }
+.steps-strip span { font-size: 12px; color: var(--muted); }
+.hub-lead { margin: -6px 0 12px; max-width: 80ch; }
+.hub-table td { vertical-align: middle; padding-right: 12px; }
+.hub-table td b { font-weight: 500; }
+.hub-table tr.hub-hit td { background: var(--raised); }
+.hub-scores { display: flex; gap: 10px; justify-content: flex-end; font-size: 13px; }
+.hub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.hub-card { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; padding: 12px; border: 1px solid var(--rule); border-radius: 8px; }
+.hub-card b { font-weight: 500; font-size: 14px; }
+.pick-groups { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-bottom: 14px; }
+.pick-group { border: 1px solid var(--rule); border-radius: 8px; padding: 8px 12px 10px; margin: 0; min-width: 0; }
+.pick-group legend { font-size: 12px; color: var(--muted); padding: 0 4px; }
+.pick { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 14px; padding: 3px 0; }
+.pick-n { width: 64px; height: 30px; padding: 0 6px; }
+.ask-claude { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--rule); display: flex; flex-direction: column; gap: 10px; }
+.ask-claude h3 { font-size: 14px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
+.ask-box { height: auto; padding: 8px 10px; resize: vertical; font: inherit; }
+.designed { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+.designed ol { margin: 0; padding-left: 20px; }
 .round-note { font-size: 14px; color: var(--pill-warning-ink); max-width: 72ch; }
+.show-sm { display: none; }
+@media (max-width: 720px) {
+  .steps-strip { grid-template-columns: 1fr 1fr; }
+  .steps-strip li:nth-child(3) { border-left: 0; }
+  .steps-strip li:nth-child(n+3) { border-top: 1px solid var(--rule); }
+  .hide-sm { display: none; }
+  .show-sm { display: block; }
+  .hub-table th:last-child, .hub-table td:last-child { display: none; }
+}
+.hub-table .row { flex-wrap: nowrap; gap: 6px; }
+.hub-table .btn-small { padding: 0 8px; }
+@media (max-width: 1000px) { .hub-table .row { flex-wrap: wrap; } }
+.hub-section .panel-head { flex-wrap: wrap; }

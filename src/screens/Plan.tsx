@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowRight, Download, MessageSquare, RotateCcw } from "lucide-react";
-import type { Question } from "../lib/practice.ts";
+import { useEffect, useState } from "react";
+import { ArrowRight, Download, MessageSquare } from "lucide-react";
 import {
-  DIAGNOSTIC, SKILLS, DIAG_SEED_MAX, diagnosticQuestion, diagnosticQuestions, skillById, scoreDiagnostic, saveResult, readResult, readHistory, currentPlan, readDone, setDone, todayIso, lcFirst,
+  DIAGNOSTIC, DIAGNOSED_SKILLS, UNCHECKED_SKILLS, DIAG_SEED_MAX, diagnosticQuestions, skillById, readResult, readHistory, currentPlan, readDone, setDone, todayIso, lcFirst,
   type DiagnosticResult, type PlanDay, type SkillScore,
 } from "../lib/plan.ts";
 import { examDate } from "../lib/progress.ts";
@@ -11,23 +10,10 @@ import { buildXlsx, downloadXlsx } from "../lib/xlsx.ts";
 import { UploadBox, GradeReport, DownloadNote } from "../components/UploadGrade.tsx";
 import type { WorkbookGrade } from "../lib/grade.ts";
 import { useSession } from "../session.tsx";
-import { QuestionCard } from "./Practice.tsx";
 import Thinka from "../components/Thinka.tsx";
 import "./screens.css";
-import "./practice.css";
 import "./mocks.css";
 import "./plan.css";
-
-const PROGRESS = "aqm.diag.progress";
-type Progress = { seeds: number[]; answers: { slot: number; ok: boolean[] }[] };
-
-function readProgress(): Progress | null {
-  try { const raw = localStorage.getItem(PROGRESS); return raw ? (JSON.parse(raw) as Progress) : null; } catch { return null; }
-}
-function writeProgress(p: Progress | null) {
-  try { if (p) localStorage.setItem(PROGRESS, JSON.stringify(p)); else localStorage.removeItem(PROGRESS); } catch { /* ignore */ }
-}
-const questionFor = (slot: number, seed: number): Question => diagnosticQuestion(slot, seed);
 
 // ---------------------------------------------------------------- the diagnostic as an Excel workbook
 // One base seed (kept until the workbook is uploaded, so a re-download gives the same file)
@@ -63,13 +49,18 @@ function downloadDiagnostic() {
   downloadXlsx(bytes, "AQM-Midterm2-Diagnostic.xlsx");
 }
 
-function DiagExcel({ onGraded, compact }: { onGraded: (g: WorkbookGrade) => void; compact?: boolean }) {
+/** The diagnostic, Excel only: download the workbook, solve it in Excel, upload it here. */
+function DiagExcel({ onGraded, retake }: { onGraded: (g: WorkbookGrade) => void; retake?: boolean }) {
   return (
     <section className="panel stack diag-excel">
-      <div className="panel-head"><h2>{compact ? "Retake in Excel" : "Or take it in Excel"}</h2></div>
-      <p className="hint">Download the diagnostic as one workbook, solve it in real Excel, then upload it here. It's graded on this device and builds your plan the same way.</p>
+      <div className="panel-head"><h2>{retake ? "Retake the diagnostic in Excel" : "Take the diagnostic in Excel"}</h2></div>
+      <ol className="hint diag-how">
+        <li>Download the workbook: {DIAGNOSTIC.length} questions, one tab each, about 25 minutes.</li>
+        <li>Solve it in Excel with formulas, no calculator, like the exam. Leave what you don't know blank.</li>
+        <li>Save it and upload it here. It's marked on this device{retake ? " and writes a new plan from today" : " and becomes your day-by-day plan"}.</li>
+      </ol>
       <div className="row">
-        <button className="btn btn-secondary" onClick={downloadDiagnostic}><Download size={16} aria-hidden="true" />Download the diagnostic (.xlsx)</button>
+        <button className={`btn ${retake ? "btn-secondary" : "btn-primary"}`} onClick={downloadDiagnostic}><Download size={16} aria-hidden="true" />Download the diagnostic (.xlsx)</button>
         <DownloadNote />
       </div>
       <UploadBox onGraded={(g) => { if (g.kind === "diag") { try { localStorage.removeItem(XLSX_SEED); } catch { /* ignore */ } } onGraded(g); }} />
@@ -92,95 +83,33 @@ const LEVEL: Record<SkillScore["level"], { label: string; cls: string }> = {
   gap: { label: "Gap", cls: "pill-neg" },
 };
 
-// ---------------------------------------------------------------- the diagnostic run
-function Diagnostic() {
-  const [prog, setProg] = useState<Progress>(() => {
-    const existing = readProgress();
-    if (existing && existing.answers.length < DIAGNOSTIC.length) return existing;
-    const fresh = { seeds: DIAGNOSTIC.map(() => Math.floor(Math.random() * 2 ** 31)), answers: [] };
-    writeProgress(fresh);
-    return fresh;
-  });
-  const [answered, setAnswered] = useState(false);
-  const pending = useRef<Progress | null>(null);
-  const slot = prog.answers.length;
-  const q = useMemo(() => (slot < DIAGNOSTIC.length ? questionFor(slot, prog.seeds[slot]) : null), [slot, prog.seeds]);
-
-  function done(_c: number, _t: number, ok: boolean[]) {
-    const next = { ...prog, answers: [...prog.answers, { slot, ok }] };
-    writeProgress(next);
-    setAnswered(true);
-    // The card stays on screen with its feedback until "Next" is pressed.
-    pending.current = next;
-  }
-
-  function next() {
-    const p = pending.current ?? prog;
-    pending.current = null;
-    setAnswered(false);
-    if (p.answers.length >= DIAGNOSTIC.length) {
-      const result = scoreDiagnostic(p.answers.map((a) => ({ q: questionFor(a.slot, p.seeds[a.slot]), slot: a.slot, ok: a.ok })));
-      saveResult(result);
-      writeProgress(null);
-      location.hash = "#/plan";
-      return;
-    }
-    setProg(p);
-    window.scrollTo(0, 0);
-  }
-
-  const [sheetOn, setSheetOn] = useState(() => { try { return localStorage.getItem("aqm.sheetOn") !== "0"; } catch { return true; } });
-  const sheetModel = useMemo(() => (q ? questionSheet(q, slot + 1) : null), [q, slot]);
-  function toggleSheet() {
-    setSheetOn((v) => { try { localStorage.setItem("aqm.sheetOn", v ? "0" : "1"); } catch { /* ignore */ } return !v; });
-  }
-
-  if (!q) return null;
-  const isLast = slot === DIAGNOSTIC.length - 1;
-  return (
-    <div className="page practice diag">
-      <div className="title-row">
-        <div>
-          <h1>Diagnostic</h1>
-          <p className="sub">Question {slot + 1} of {DIAGNOSTIC.length}: {DIAGNOSTIC[slot].label}. Answer the way you would on the exam: full values or formulas, not rounded numbers. Skip what you don't know.</p>
-        </div>
-        <div className="row">
-          <label className="check sheet-toggle"><input type="checkbox" checked={sheetOn} onChange={toggleSheet} /><span>Work in the Excel sheet</span></label>
-          <a className="linkish" href="#/plan">Save and finish later</a>
-        </div>
-      </div>
-      <ol className="diag-steps" aria-label="Progress">
-        {DIAGNOSTIC.map((d, i) => (
-          <li key={d.label} className={i < slot || (i === slot && answered) ? "done" : i === slot ? "now" : ""}>
-            <span className="sr-only">{d.label}{i < slot ? ", answered" : i === slot ? ", current" : ""}</span>
-          </li>
-        ))}
-      </ol>
-      <QuestionCard key={q.id + slot} q={q} sheet={sheetOn && sheetModel ? { model: sheetModel, storageId: `diag-${slot}-${prog.seeds[slot]}` } : undefined} onDone={done} onNext={next} nextLabel={isLast ? "See my results and plan" : "Next question"} allowTutor={false} allowSkip />
-    </div>
-  );
-}
-
 // ---------------------------------------------------------------- intro (no result yet)
 function Intro({ onGraded }: { onGraded: (g: WorkbookGrade) => void }) {
-  const inProgress = readProgress();
   return (
     <div className="page plan">
       <header className="plan-intro">
         <span className="thinka-hop plan-thinka"><Thinka size={72} mood="thinking" /></span>
         <h1>Find your gaps before {longDate(examDate())}</h1>
-        <p className="plan-lede">Nine exam-style questions, one for each kind the midterm asks. Each answer is graded part by part, and the results become a day-by-day plan that spends your time on what you got wrong.</p>
-        <div className="row">
-          <a className="btn btn-primary" href="#/plan/check">{inProgress?.answers.length ? `Continue: question ${inProgress.answers.length + 1} of ${DIAGNOSTIC.length}` : "Start the diagnostic"}<ArrowRight size={16} aria-hidden="true" /></a>
-          <span className="hint">About 25 minutes · graded on this device · uses no API credit</span>
-        </div>
+        <p className="plan-lede">Nine exam-style questions in one Excel workbook, one for each kind the midterm asks. Each answer is marked part by part, and the results become a day-by-day plan that spends your time on what you got wrong.</p>
+        <p className="hint">About 25 minutes · Excel only, no calculator · marked on this device · uses no API credit</p>
       </header>
       <DiagExcel onGraded={onGraded} />
       <section className="panel plan-covers">
         <div className="panel-head"><h2>What it checks</h2></div>
         <table className="ledger">
           <tbody>
-            {SKILLS.map((s) => (
+            {DIAGNOSED_SKILLS.map((s) => (
+              <tr key={s.id}><td className="lbl"><div className="formula-label">{s.name}</div><div className="hint">{s.task}</div></td></tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+      <section className="panel plan-covers">
+        <div className="panel-head"><h2>Not in the diagnostic yet</h2><span className="hint">Lesson 18 and the written parts</span></div>
+        <p className="hint">The plan gives each of these at least one day before the exam-style mock, whatever your score.</p>
+        <table className="ledger">
+          <tbody>
+            {UNCHECKED_SKILLS.map((s) => (
               <tr key={s.id}><td className="lbl"><div className="formula-label">{s.name}</div><div className="hint">{s.task}</div></td></tr>
             ))}
           </tbody>
@@ -212,6 +141,13 @@ function SkillMap({ r, prev }: { r: DiagnosticResult; prev?: DiagnosticResult })
             </tr>
           );
         })}
+        {UNCHECKED_SKILLS.filter((u) => !r.scores.some((s) => s.id === u.id)).map((u) => (
+          <tr key={u.id}>
+            <td className="lbl"><div className="skill-name">{u.name}</div></td>
+            <td className="val num"><span className="muted">—</span></td>
+            <td className="val"><span className="pill pill-neutral">Not checked</span></td>
+          </tr>
+        ))}
       </tbody>
     </table>
   );
@@ -274,6 +210,7 @@ function Results({ r, onGraded }: { r: DiagnosticResult; onGraded: (g: WorkbookG
     askTutor(
       `I just took the site's diagnostic for Midterm 2 (exam on ${longDate(examDate())}). My results by skill:\n` +
       r.scores.map((s) => `- ${skillById(s.id).name}: ${s.correct}/${s.total} (${s.level})`).join("\n") +
+      `\nNot checked by the diagnostic yet: ${UNCHECKED_SKILLS.map((u) => lcFirst(u.name)).join(", ")}.` +
       `\n\nThe site gave me this plan:\n` + plan.map((d) => `- ${dayLabel(d.date)}: ${d.title}`).join("\n") +
       `\n\nIn a few sentences, tell me what these results say about how I think about the material, which single misconception to fix first, and then give me one exam-style question on my weakest skill.`,
     );
@@ -310,19 +247,31 @@ function Results({ r, onGraded }: { r: DiagnosticResult; onGraded: (g: WorkbookG
           </section>
           <section className="panel stack">
             <button className="btn btn-secondary" onClick={aiRead}><MessageSquare size={16} aria-hidden="true" />Ask Claude to read my results</button>
-            <a className="btn btn-ghost" href="#/plan/check"><RotateCcw size={16} aria-hidden="true" />Retake the diagnostic</a>
-            <p className="hint">A retake writes a new plan from that day, based on the new results.</p>
           </section>
-          <DiagExcel onGraded={onGraded} compact />
+          <DiagExcel onGraded={onGraded} retake />
         </aside>
       </div>
     </div>
   );
 }
 
+function Retake({ onGraded }: { onGraded: (g: WorkbookGrade) => void }) {
+  return (
+    <div className="page plan">
+      <div className="title-row">
+        <div>
+          <h1>Retake the diagnostic</h1>
+          <p className="sub">A fresh workbook with new numbers. Your plan is rebuilt from today when you upload it.</p>
+        </div>
+        <a className="btn btn-ghost" href="#/plan">Back to the plan</a>
+      </div>
+      <DiagExcel onGraded={onGraded} retake />
+    </div>
+  );
+}
+
 export default function Plan({ sub }: { sub?: string }) {
   const [graded, setGraded] = useState<WorkbookGrade | null>(null);
-  if (sub === "check") return <Diagnostic />;
   const show = (g: WorkbookGrade) => { setGraded(g); window.scrollTo(0, 0); };
   if (graded) {
     const diag = graded.kind === "diag";
@@ -333,12 +282,14 @@ export default function Plan({ sub }: { sub?: string }) {
             <h1>{diag ? "Your diagnostic, graded" : graded.title}</h1>
             <p className="sub">{diag ? "Every yellow cell checked on the full value. Your study plan has been rebuilt from these results." : "That's not the diagnostic workbook, so your plan is unchanged. Here's its grade anyway."}</p>
           </div>
-          <button className="btn btn-primary" onClick={() => setGraded(null)}>{diag ? "See my results and plan" : "Back to the plan"}<ArrowRight size={16} aria-hidden="true" /></button>
+          <button className="btn btn-primary" onClick={() => { setGraded(null); if (sub === "check") location.hash = "#/plan"; }}>{diag ? "See my results and plan" : "Back to the plan"}<ArrowRight size={16} aria-hidden="true" /></button>
         </div>
         <GradeReport g={graded} />
       </div>
     );
   }
   const r = readResult();
+  // #/plan/check (the plan's retake task): just the Excel diagnostic, download and upload.
+  if (sub === "check" && r) return <Retake onGraded={show} />;
   return r ? <Results r={r} onGraded={show} /> : <Intro onGraded={show} />;
 }

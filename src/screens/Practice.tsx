@@ -1,220 +1,227 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { ArrowRight, MessageSquare, RotateCcw } from "lucide-react";
-import { generate, generateCase, gradeNumber, KINDS, type Question, type Part, type QuestionKind } from "../lib/practice.ts";
-import { addAttempt } from "../lib/progress.ts";
-import { NULLS } from "../lib/tests12.ts";
-import { questionSheet, matchChoice, type SheetModel } from "../lib/workbook.ts";
-import Sheet, { type SheetValue } from "../components/Sheet.tsx";
-import { PracticeTabs } from "./Sets.tsx";
+// Practice happens in Excel, like the exam: download a workbook, solve it, upload it here.
+// Topic sets, mixed sets and exam-style mocks are fixed (same for everyone); custom sets are built
+// here from a pick list, or designed by Claude on the student's key. Every number and every answer
+// key comes from the site's verified stats engine, never from Claude.
+import { useEffect, useState } from "react";
+import { Download, LoaderCircle, Sparkles, Timer } from "lucide-react";
+import { buildXlsx, downloadXlsx } from "../lib/xlsx.ts";
+import { KINDS, CONCEPTS, type QuestionKind } from "../lib/practice.ts";
+import {
+  TOPIC_SETS, TOPIC_VERSIONS, MIX_COUNT, EXAM_COUNT, EXAM_MINUTES,
+  workbookById, workbookSheets, workbookIntro, specId, topicForKind, type CustomSpec, type WorkbookDef,
+} from "../lib/sets.ts";
+import { designCustomSet } from "../lib/ai.ts";
+import { UploadBox, GradeReport, readScores, DownloadNote } from "../components/UploadGrade.tsx";
+import type { WorkbookGrade } from "../lib/grade.ts";
 import { useSession } from "../session.tsx";
-import { Formula, fmt } from "../components/ui.tsx";
 import "./screens.css";
 import "./practice.css";
 
-type Result = { ok: boolean; shown: string; error?: string; roundedTo?: number };
+export function downloadWorkbook(def: WorkbookDef) {
+  const bytes = buildXlsx(workbookSheets(def), { title: `Thinka's AQM Prep · ${def.title}`, intro: workbookIntro(def), id: def.id });
+  downloadXlsx(bytes, `${def.file}.xlsx`);
+}
+const download = (id: string) => { const d = workbookById(id); if (d) downloadWorkbook(d); };
 
-export function caseName(key: string): string {
-  const [h0, sigma, method] = key.split("-");
-  const n = NULLS.find((x) => x.id === h0);
-  if (!n) return key;
-  return `${n.h0}, σ ${sigma}, ${method === "p" ? "p-value" : "critical value"}`;
+function Score({ id }: { id: string }) {
+  const s = readScores()[id];
+  if (!s) return <span className="muted">—</span>;
+  return <span className="num" title={`Best ${s.best}/${s.total}`}>{Math.round(s.got * 10) / 10}/{s.total}</span>;
 }
 
-function showAnswer(p: Part): string {
-  if (typeof p.answer === "string") return p.answer;
-  return p.format === "prob" ? fmt(p.answer, "prob") : fmt(p.answer);
+/** Where a route points: a section, plus a topic set to highlight. */
+function target(route: string[]): { section: string; topic?: string } {
+  const [a, b] = route;
+  if (!a) return { section: "" };
+  if (a === "topic" && b) return { section: "topics", topic: b };
+  if (a === "mixed" || a === "sets") return { section: "mixed" };
+  if (a === "mocks") return { section: "mocks" };
+  if (a === "custom") return { section: "custom" };
+  return { section: "topics", topic: topicForKind(a) };
 }
 
-export function QuestionCard({ q, onDone, nextLabel = "Next question", onNext, allowTutor = true, allowSkip = false, sheet }: {
-  q: Question;
-  /** Show the practice spreadsheet with this layout; answers can come from its yellow cells. */
-  sheet?: { model: SheetModel; storageId: string };
-  onDone?: (correct: number, total: number, ok: boolean[]) => void;
-  onNext?: () => void;
-  nextLabel?: string;
-  allowTutor?: boolean;
-  allowSkip?: boolean;
-}) {
-  const { askTutor } = useSession();
-  const [vals, setVals] = useState<Record<string, string>>({});
-  const [results, setResults] = useState<Record<string, Result> | null>(null);
-  const sheetGet = useRef<((a: string) => SheetValue) | null>(null);
-  const onValues = useCallback((g: (a: string) => SheetValue) => { sheetGet.current = g; }, []);
-  const ctx = sheet ? { get: (a: string) => sheetGet.current?.(a) ?? null } : undefined;
+export default function Practice({ route = [] }: { route?: string[] }) {
+  const [graded, setGraded] = useState<WorkbookGrade | null>(null);
+  const [, refresh] = useState(0);
+  const t = target(route);
 
-  useEffect(() => { setVals({}); setResults(null); }, [q.id]);
-
-  function check(e: FormEvent | null, skip = false) {
-    e?.preventDefault();
-    if (results) return;
-    const r: Record<string, Result> = {};
-    for (const p of q.parts) {
-      let v = skip ? "" : vals[p.id] ?? "";
-      // An empty box falls back to the part's yellow answer cell in the sheet.
-      const cellAddr = sheet?.model.answerCells[p.id];
-      const cellVal = cellAddr ? sheetGet.current?.(cellAddr) ?? null : null;
-      if (!skip && !v.trim() && cellVal !== null) {
-        if (p.kind === "choice") v = matchChoice(String(cellVal), p.options!) ?? String(cellVal);
-        else v = typeof cellVal === "number" ? String(cellVal) : String(cellVal);
-      }
-      if (skip) r[p.id] = { ok: false, shown: "Skipped" };
-      else if (p.kind === "choice") r[p.id] = { ok: v === p.answer, shown: v || "No answer" };
-      else {
-        const g = gradeNumber(v, p, ctx);
-        r[p.id] = { ok: g.ok, shown: g.value === null ? (v || "No answer") : g.roundedTo !== undefined ? v.trim() : fmt(g.value, p.format), error: g.error, roundedTo: g.roundedTo };
-      }
-    }
-    setResults(r);
-    const correct = Object.values(r).filter((x) => x.ok).length;
-    addAttempt({ kind: q.kind, topic: q.topic, caseKey: q.caseKey, correct, total: q.parts.length, ts: Date.now() });
-    onDone?.(correct, q.parts.length, q.parts.map((p) => r[p.id].ok));
-  }
-
-  const correct = results ? Object.values(results).filter((x) => x.ok).length : 0;
-
-  function explain() {
-    const lines = q.parts.map((p) => {
-      const r = results?.[p.id];
-      return `${p.id}) ${p.label}\n   my answer: ${r?.shown ?? "none"} (${r?.ok ? "right" : "wrong"})\n   official answer: ${showAnswer(p)} via ${p.excel}`;
-    });
-    askTutor(
-      `Help me understand this practice question. Explain the method for the parts I got wrong, and where my answer likely went wrong.\n\n${q.title}\n${q.prompt}` +
-      (q.data ? `\nData: ${q.data.join(", ")}` : "") +
-      (q.given?.length ? `\nGiven: ${q.given.map((g) => `${g.label} = ${g.value}`).join(", ")}` : "") +
-      `\n\n${lines.join("\n")}`,
-    );
-  }
-
-  return (
-    <form className="panel qcard" onSubmit={check} noValidate>
-      <div className="qcard-head">
-        <h2>{q.title}</h2>
-        {results && <span className={`pill ${correct === q.parts.length ? "pill-pos" : correct === 0 ? "pill-neg" : "pill-warn"}`}>{correct} of {q.parts.length} right</span>}
-      </div>
-      <p className="qcard-prompt">{q.prompt}</p>
-      {sheet && <Sheet model={sheet.model} storageId={sheet.storageId} onValues={onValues} />}
-      {!sheet && (q.data || q.given?.length) && (
-        <div className="qcard-given">
-          {q.given?.map((g) => <span key={g.label} className="given"><span className="muted">{g.label}</span> <span className="num">{g.value}</span></span>)}
-          {q.data && (
-            <span className="given given-data">
-              <span className="muted">Data</span> <span className="num">{q.data.join(", ")}</span>
-            </span>
-          )}
-        </div>
-      )}
-
-      <ol className="parts">
-        {q.parts.map((p) => {
-          const r = results?.[p.id];
-          return (
-            <li key={p.id} className={`part${r ? (r.ok ? " is-right" : " is-wrong") : ""}`}>
-              <div className="part-q">
-                <label htmlFor={`${q.id}-${p.id}`} className="part-label">{p.label}</label>
-                {p.kind === "choice" ? (
-                  <div className="choices" role="radiogroup" aria-label={p.label}>
-                    {p.options!.map((o) => (
-                      <label key={o} className={`choice${vals[p.id] === o ? " on" : ""}`}>
-                        <input type="radio" name={`${q.id}-${p.id}`} value={o} checked={vals[p.id] === o} disabled={!!results} onChange={() => setVals((v) => ({ ...v, [p.id]: o }))} />
-                        <span>{o}</span>
-                      </label>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="part-input">
-                    <input
-                      id={`${q.id}-${p.id}`}
-                      className="input"
-                      placeholder={sheet ? `Full value, =formula, or =${sheet.model.answerCells[p.id]}` : "Full value (4+ decimals) or =formula"}
-                      value={vals[p.id] ?? ""}
-                      disabled={!!results}
-                      onChange={(e) => setVals((v) => ({ ...v, [p.id]: e.target.value }))}
-                      autoComplete="off"
-                      spellCheck={false}
-                    />
-                    {p.unit && <span className="hint">{p.unit}</span>}
-                  </div>
-                )}
-              </div>
-              {r && (
-                <div className="part-feedback">
-                  <p>
-                    <strong>{r.ok ? "Right." : r.roundedTo !== undefined ? "Close, but rounded." : "Not quite."}</strong>{" "}
-                    {!r.ok && <>You had <span className="num">{r.shown}</span>{r.error ? ` (${r.error})` : ""}. </>}
-                    Answer: <strong className="num">{showAnswer(p)}</strong>
-                  </p>
-                  {r.roundedTo !== undefined && (
-                    <p className="round-note">Your method is right: that's the answer rounded to {r.roundedTo} decimal place{r.roundedTo === 1 ? "" : "s"}. Class grades the full value, so enter at least 4 decimals, or better, the formula or a cell like =B10.</p>
-                  )}
-                  {p.excel.startsWith("=") ? <Formula f={p.excel} /> : <p className="hint">{p.excel}</p>}
-                  <p className="part-explain">{p.explain}</p>
-                </div>
-              )}
-            </li>
-          );
-        })}
-      </ol>
-
-      <div className="row qcard-actions">
-        {!results ? (
-          <button className="btn btn-primary" type="submit">Check answers</button>
-        ) : (
-          <>
-            {onNext && <button type="button" className="btn btn-primary" onClick={onNext}>{nextLabel}<ArrowRight size={16} aria-hidden="true" /></button>}
-            {allowTutor && correct < q.parts.length && (
-              <button type="button" className="btn btn-secondary" onClick={explain}><MessageSquare size={16} aria-hidden="true" />Explain my mistakes</button>
-            )}
-          </>
-        )}
-        {!results && allowSkip && <button type="button" className="btn btn-ghost" onClick={() => check(null, true)}>I don't know this one</button>}
-        {!results && <span className="hint">{sheet ? "Work in the sheet, then fill the yellow cells, or point a box at a cell like =B12. Don't round: like class, the full value is graded." : "Enter the full value (at least 4 decimals) or an Excel formula like =NORM.S.INV(0.975). Like class, hand-rounded answers count as wrong."}</span>}
-      </div>
-    </form>
-  );
-}
-
-export default function Practice({ initial }: { initial?: string }) {
-  const caseKey = initial?.startsWith("case:") ? initial.slice(5) : undefined;
-  const startKind = (!caseKey && initial && (KINDS.some((k) => k.id === initial) || initial === "mixed") ? initial : "mixed") as QuestionKind | "mixed";
-  const [kind, setKind] = useState<QuestionKind | "mixed">(startKind);
-  const [lockCase, setLockCase] = useState<string | undefined>(caseKey);
-  const [n, setN] = useState(0);
-  const [score, setScore] = useState({ c: 0, t: 0 });
-
-  useEffect(() => { setLockCase(caseKey); if (!caseKey) setKind(startKind); setN((x) => x + 1); }, [initial]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const q = useMemo(() => (lockCase ? generateCase(lockCase) : generate(kind)), [kind, lockCase, n]);
-  const [sheetOn, setSheetOn] = useState(() => { try { return localStorage.getItem("aqm.sheetOn") !== "0"; } catch { return true; } });
-  const sheetModel = useMemo(() => questionSheet(q, 1), [q]);
-  function toggleSheet() {
-    setSheetOn((v) => { try { localStorage.setItem("aqm.sheetOn", v ? "0" : "1"); } catch { /* ignore */ } return !v; });
-  }
+  useEffect(() => {
+    const el = document.getElementById(t.topic ? `set-${t.topic}` : t.section ? `sec-${t.section}` : "");
+    if (el) el.scrollIntoView({ block: "start", behavior: "smooth" });
+  }, [t.section, t.topic]);
 
   return (
     <div className="page practice">
       <div className="title-row">
         <div>
-          <h1>Practice</h1>
-          <p className="sub">Fresh numbers every time, graded on the full value like class: enter 4+ decimals, a formula, or a cell reference, never a rounded number.</p>
-        </div>
-        <div className="row">
-          <PracticeTabs on="quick" />
-          <label className="check sheet-toggle"><input type="checkbox" checked={sheetOn} onChange={toggleSheet} /><span>Work in the Excel sheet</span></label>
-          <span className="hint num">This session: {score.c} of {score.t} parts right</span>
-          <button className="btn btn-ghost btn-small" onClick={() => setScore({ c: 0, t: 0 })} aria-label="Reset session score"><RotateCcw size={14} aria-hidden="true" /></button>
+          <h1>Practice in Excel</h1>
+          <p className="sub">The exam is answered in Excel with no calculator, so every practice set is a workbook. Download one, solve it in Excel with formulas pointing at the data, then upload it here. Each workbook has an answer key as its last tab.</p>
         </div>
       </div>
 
-      <div className="practice-grid">
-        <nav className="practice-kinds" aria-label="Question types">
-          <button className={`kind${!lockCase && kind === "mixed" ? " on" : ""}`} onClick={() => { setLockCase(undefined); setKind("mixed"); setN((x) => x + 1); location.hash = "#/practice/mixed"; }}>Mixed: all topics</button>
-          {KINDS.map((k) => (
-            <button key={k.id} className={`kind${!lockCase && kind === k.id ? " on" : ""}`} onClick={() => { setLockCase(undefined); setKind(k.id); setN((x) => x + 1); location.hash = `#/practice/${k.id}`; }}>{k.label}</button>
+      <ol className="steps-strip" aria-label="How it works">
+        <li><b>1. Download</b><span>a set below</span></li>
+        <li><b>2. Solve in Excel</b><span>formulas, no calculator</span></li>
+        <li><b>3. Upload</b><span>the saved .xlsx</span></li>
+        <li><b>4. Review</b><span>what went well, what slipped</span></li>
+      </ol>
+
+      <section className="panel hub-upload" aria-label="Upload a workbook">
+        <UploadBox onGraded={(g) => { setGraded(g); refresh((x) => x + 1); }} />
+        <p className="hint">Any workbook from this site works here, including older problem sets, mocks and the diagnostic.</p>
+      </section>
+      {graded && <GradeReport g={graded} onClose={() => setGraded(null)} />}
+
+      <section className="panel hub-section" id="sec-topics">
+        <div className="panel-head"><h2>By topic</h2><DownloadNote /></div>
+        <p className="hint hub-lead">Three versions of each, built from the notes' tasks and last spring's Exam 3. Same numbers for everyone, so you can compare with classmates.</p>
+        <table className="ledger hub-table">
+          <thead><tr><th>Topic</th><th className="hide-sm">Covers</th><th>Download</th><th className="val">Last score</th></tr></thead>
+          <tbody>
+            {TOPIC_SETS.map((s) => (
+              <tr key={s.id} id={`set-${s.id}`} className={t.topic === s.id ? "hub-hit" : ""}>
+                <td className="lbl"><b>{s.title}</b><div className="hint show-sm">{s.covers}</div></td>
+                <td className="lbl hint hide-sm">{s.covers}</td>
+                <td>
+                  <div className="row">
+                    {Array.from({ length: TOPIC_VERSIONS }, (_, v) => v + 1).map((v) => (
+                      <button key={v} className={`btn btn-small ${t.topic === s.id && Number(route[2]) === v ? "btn-primary" : "btn-ghost"}`} onClick={() => download(`topic:${s.id}:${v}`)} aria-label={`Download ${s.title}, set ${v}`}>
+                        <Download size={13} aria-hidden="true" />Set {v}
+                      </button>
+                    ))}
+                  </div>
+                </td>
+                <td className="val">
+                  <div className="hub-scores">
+                    {Array.from({ length: TOPIC_VERSIONS }, (_, v) => <Score key={v} id={`topic:${s.id}:${v + 1}`} />)}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </section>
+
+      <section className="panel hub-section" id="sec-mocks">
+        <div className="panel-head"><h2>Exam-style mocks</h2><span className="hint"><Timer size={12} aria-hidden="true" /> {EXAM_MINUTES} minutes each</span></div>
+        <p className="hint hub-lead">Laid out like last spring's Exam 3: confidence intervals, hypothesis testing I and II, two-sample tests, plus a variance test. Set a timer and use no calculator.</p>
+        <div className="hub-grid">
+          {Array.from({ length: EXAM_COUNT }, (_, k) => k + 1).map((n) => (
+            <div key={n} className="hub-card">
+              <b>Mock {n}</b>
+              <span className="hint">Last score: <Score id={`exam:${n}`} /></span>
+              <button className="btn btn-secondary btn-small" onClick={() => download(`exam:${n}`)}><Download size={13} aria-hidden="true" />Download</button>
+            </div>
           ))}
-          {lockCase && <p className="hint kind-case">Drilling one of the 12 cases: {caseName(lockCase)}</p>}
-        </nav>
-        <QuestionCard key={q.id} q={q} sheet={sheetOn ? { model: sheetModel, storageId: `quick-${q.id}` } : undefined} onDone={(c, t) => setScore((s) => ({ c: s.c + c, t: s.t + t }))} onNext={() => setN((x) => x + 1)} />
-      </div>
+        </div>
+      </section>
+
+      <section className="panel hub-section" id="sec-mixed">
+        <div className="panel-head"><h2>Mixed sets</h2></div>
+        <p className="hint hub-lead">Ten questions each, one from every syllabus topic: normal, sample means, intervals, tests for a mean, variance, two samples and a written part.</p>
+        <div className="hub-grid">
+          {Array.from({ length: MIX_COUNT }, (_, k) => k + 1).map((n) => (
+            <div key={n} className="hub-card">
+              <b>Mixed set {n}</b>
+              <span className="hint">Last score: <Score id={`mix:${n}`} /></span>
+              <button className="btn btn-ghost btn-small" onClick={() => download(`mix:${n}`)}><Download size={13} aria-hidden="true" />Download</button>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <CustomBuilder />
     </div>
+  );
+}
+
+// ---------- build your own ----------
+const GROUPS: { title: string; kinds: QuestionKind[] }[] = [
+  { title: "Normal distribution", kinds: ["normal-less", "normal-more", "normal-between", "normal-inverse", "zscore"] },
+  { title: "Sample means and intervals", kinds: ["sample-mean", "xbar-range", "ci-z", "ci-t"] },
+  { title: "Tests for a mean", kinds: ["ht-full", "bernoulli"] },
+  { title: "Lesson 18", kinds: ["var-test", "two-z", "two-t", "paired"] },
+  { title: "Written", kinds: ["concept"] },
+];
+const label = (k: QuestionKind) => KINDS.find((x) => x.id === k)?.label ?? k;
+const rand = () => 1000 + Math.floor(Math.random() * 1e9);
+
+function CustomBuilder() {
+  const { apiKey, fp } = useSession();
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const [request, setRequest] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [designed, setDesigned] = useState<{ def: WorkbookDef; summary: string } | null>(null);
+  const total = Object.values(counts).reduce((s, n) => s + n, 0);
+
+  function buildPicked() {
+    const q: CustomSpec["q"] = [];
+    const concepts = [...CONCEPTS.keys()].sort(() => Math.random() - 0.5);
+    for (const [k, n] of Object.entries(counts)) for (let i = 0; i < n; i++) q.push([k as QuestionKind, k === "concept" ? concepts[i % concepts.length] : rand()]);
+    const def = workbookById(specId({ t: `Custom set (${total} questions)`, q }));
+    if (def) downloadWorkbook(def);
+  }
+
+  async function design() {
+    if (!apiKey || !request.trim()) return;
+    setBusy(true); setError(null); setDesigned(null);
+    try {
+      const { spec, summary } = await designCustomSet(apiKey, fp ?? "", request.trim());
+      const def = workbookById(specId(spec));
+      if (!def) throw new Error("Claude's plan couldn't be built into a set. Try rewording it.");
+      setDesigned({ def, summary });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="panel hub-section" id="sec-custom">
+      <div className="panel-head"><h2>Build your own</h2></div>
+      <p className="hint hub-lead">Pick question types for a fresh set with new numbers every time. It has its own answer key and is marked here like the others.</p>
+      <div className="pick-groups">
+        {GROUPS.map((g) => (
+          <fieldset key={g.title} className="pick-group">
+            <legend>{g.title}</legend>
+            {g.kinds.map((k) => (
+              <label key={k} className="pick">
+                <span>{label(k)}</span>
+                <select className="input pick-n" value={counts[k] ?? 0} onChange={(e) => setCounts({ ...counts, [k]: Number(e.target.value) })} aria-label={`How many: ${label(k)}`}>
+                  {[0, 1, 2, 3, 4].map((n) => <option key={n} value={n}>{n}</option>)}
+                </select>
+              </label>
+            ))}
+          </fieldset>
+        ))}
+      </div>
+      <div className="row">
+        <button className="btn btn-primary" disabled={!total || total > 30} onClick={buildPicked}><Download size={16} aria-hidden="true" />Download {total ? `${total} question${total === 1 ? "" : "s"}` : "a custom set"}</button>
+        {total > 30 && <span className="hint">30 questions at most.</span>}
+      </div>
+
+      <div className="ask-claude">
+        <h3><Sparkles size={14} aria-hidden="true" /> Or describe it to Claude</h3>
+        <p className="hint">For example: "12 hypothesis tests about sports, mostly σ unknown", or "drill me on chi-squared and paired data". Claude only chooses the mix and the stories; the numbers and the answer key come from the site's checked stats engine. Uses a little of your API credit.</p>
+        {apiKey ? (
+          <>
+            <textarea className="input ask-box" rows={3} maxLength={600} value={request} onChange={(e) => setRequest(e.target.value)} placeholder="What do you want to practise?" />
+            <div className="row">
+              <button className="btn btn-secondary" disabled={busy || !request.trim()} onClick={design}>{busy ? <LoaderCircle size={16} className="spin" aria-hidden="true" /> : <Sparkles size={16} aria-hidden="true" />}{busy ? "Designing" : "Design my set"}</button>
+            </div>
+          </>
+        ) : <p className="notice">Add your API key (the key icon) to use this. The pick list above works without one.</p>}
+        {error && <p className="notice upload-error" role="alert">{error}</p>}
+        {designed && (
+          <div className="designed">
+            <p><b>{designed.def.title}</b>: {designed.def.questions.length} questions. {designed.summary}</p>
+            <ol className="hint">{designed.def.questions.map((q, i) => <li key={i}>{q.title}</li>)}</ol>
+            <button className="btn btn-primary" onClick={() => downloadWorkbook(designed.def)}><Download size={16} aria-hidden="true" />Download this set</button>
+          </div>
+        )}
+      </div>
+    </section>
   );
 }
