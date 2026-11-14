@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import KeyHelp from "../components/KeyHelp.tsx";
 import { ArrowRight, Eye, EyeOff, LoaderCircle } from "lucide-react";
 import { useSession } from "../session.tsx";
 import { verifyKey } from "../lib/claude.ts";
@@ -66,9 +67,8 @@ export function KeyForm({ onDone }: { onDone?: () => void; compact?: boolean }) 
             {show ? <EyeOff size={16} strokeWidth={1.6} /> : <Eye size={16} strokeWidth={1.6} />}
           </button>
         </div>
-        <span id="key-help" className="hint">
-          Paste the key from Babson's email. A key made at <a href={KEYS_URL} target="_blank" rel="noopener noreferrer">platform.claude.com</a> works too.
-        </span>
+        <KeyHelp id="key-help" />
+        <span className="hint">A key made at <a href={KEYS_URL} target="_blank" rel="noopener noreferrer">platform.claude.com</a> works too.</span>
       </div>
 
       <label className="check key-shared">
@@ -99,7 +99,7 @@ export default function Gate() {
         <div className="gate-copy">
           <span className="thinka-hop gate-thinka"><Thinka size={88} mood="happy" title="Thinka, a bell curve with a face" /></span>
           <h1>Thinka's AQM Prep</h1>
-          <p className="gate-lede">Study for AQM 1000 Midterm 2: class notes, exact Excel practice and a Claude tutor that runs on your own API key.</p>
+          <p className="gate-lede">Study for AQM 1000 Midterm 2: class notes, Excel practice sets that mark themselves, and a Claude tutor that runs on the free Claude credit Babson gives every freshman.</p>
         </div>
 
         <KeyForm />

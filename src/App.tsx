@@ -11,6 +11,7 @@ import Tutor from "./screens/Tutor.tsx";
 import KeySettings from "./screens/KeySettings.tsx";
 import Plan from "./screens/Plan.tsx";
 import { ThinkaMark } from "./components/Thinka.tsx";
+import { useOnline } from "./lib/online.ts";
 
 const NAV = [
   { id: "home", label: "Home", icon: House },
@@ -30,6 +31,7 @@ export default function App() {
   const route = useRoute();
   const screen = route[0] ?? "home";
   const [problem, setProblem] = useState(false);
+  const online = useOnline();
 
   if (!ready) return <div className="boot" aria-busy="true" />;
   if (!apiKey && !browsing && screen !== "key") return <Gate />;
@@ -71,7 +73,7 @@ export default function App() {
           </a>
         </div>
       </nav>
-      <main className="main" id="main">{body}</main>
+      <main className="main" id="main">{!online && <p className="offline-bar" role="status">You're offline. Notes, workbook downloads and marking all still work; the tutor and the Claude features come back when you reconnect.</p>}{body}</main>
       <ProblemDialog open={problem} onClose={() => setProblem(false)} />
     </div>
   );

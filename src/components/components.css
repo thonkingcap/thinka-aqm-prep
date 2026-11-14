@@ -185,3 +185,7 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+.key-help { display: flex; flex-direction: column; gap: 6px; font-size: 13px; line-height: 1.5; color: var(--muted); max-width: 60ch; }
+.key-help p { margin: 0; }
+.key-help strong { color: var(--text); font-weight: 500; }
+.key-help code { font-family: var(--mono); font-size: 12px; background: var(--raised); padding: 0 4px; border-radius: 4px; color: var(--text); }

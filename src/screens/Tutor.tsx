@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import { useOnline } from "../lib/online.ts";
 import { ArrowUp, Calculator, LoaderCircle, Plus, Square } from "lucide-react";
 import type { BetaMessageParam } from "@anthropic-ai/sdk/resources/beta/messages/messages";
 import { useSession } from "../session.tsx";
@@ -47,6 +48,7 @@ function ToolLedger({ runs }: { runs: ToolRun[] }) {
 
 export default function Tutor() {
   const { apiKey, fp, spend, remote, provider, takePending } = useSession();
+  const online = useOnline();
   const bal = balanceView(remote, spend);
   const [turns, setTurns] = useState<Turn[]>(store.turns);
   const [draft, setDraft] = useState("");
@@ -189,7 +191,7 @@ export default function Tutor() {
           {busy ? (
             <button type="button" className="btn btn-primary btn-icon" onClick={() => abortRef.current?.abort()} aria-label="Stop"><Square size={14} aria-hidden="true" /></button>
           ) : (
-            <button type="submit" className="btn btn-primary btn-icon" disabled={!draft.trim()} aria-label="Send"><ArrowUp size={16} aria-hidden="true" /></button>
+            <button type="submit" className="btn btn-primary btn-icon" disabled={!draft.trim() || !online} aria-label={online ? "Send" : "Send (needs internet)"}><ArrowUp size={16} aria-hidden="true" /></button>
           )}
         </div>
         <p className="hint composer-hint">Enter to send, Shift+Enter for a new line. Claude can be wrong; the formulas show how each number was made.</p>

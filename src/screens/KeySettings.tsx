@@ -1,4 +1,5 @@
 import { useState } from "react";
+import KeyHelp from "../components/KeyHelp.tsx";
 import { ExternalLink, RefreshCw, Trash2 } from "lucide-react";
 import { useSession } from "../session.tsx";
 import { mask, isShared, IDLE_DAYS } from "../lib/vault.ts";
@@ -38,7 +39,8 @@ export default function KeySettings() {
       <section className="set-row">
         <div className="set-label">
           <h2>Your key</h2>
-          <p>Paste the key from Babson's email. The tutor runs on {provider?.modelLabel ?? "Claude Sonnet"} with your own key, and the page sends it only to {babson ? "Babson's Claude gateway" : provider ? "api.anthropic.com" : "Babson's Claude gateway (or Anthropic, for keys made at platform.claude.com)"}. The site's security policy blocks every other destination.</p>
+          <KeyHelp />
+          <p>The tutor runs on {provider?.modelLabel ?? "Claude Sonnet"} with your own key, and the page sends it only to {babson ? "Babson's Claude gateway" : provider ? "api.anthropic.com" : "Babson's Claude gateway (or Anthropic, for keys made at platform.claude.com)"}. The site's security policy blocks every other destination.</p>
         </div>
         <div className="set-panel">
           {apiKey ? (

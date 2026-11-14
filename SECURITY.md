@@ -33,3 +33,7 @@ A web page can't protect a key from malware or a malicious browser extension on 
 ## Reporting a problem
 
 Please report security issues privately through GitHub's **"Report a vulnerability"** button on this repository (Security tab), or through the site's "Have a problem?" form. Please don't open a public issue for them.
+
+## Offline mode
+
+The site registers a service worker (`/sw.js`, generated at build time from `src/sw-template.js`) that saves the site's own files on the device so it works without internet. It only handles same-origin GET requests for those files: it never sees or stores your API key or any request to Claude, Babson's gateway or the feedback form. The Content-Security-Policy allows `worker-src 'self'` and `connect-src 'self'` for this, and Trusted Types allows a single policy, `sw`, that accepts exactly the URL `/sw.js`; any other script URL still throws.

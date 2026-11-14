@@ -10,6 +10,7 @@ import { saveResult, scoreDiagnostic } from "../lib/plan.ts";
 import { topicForKind } from "../lib/sets.ts";
 import { markWritten } from "../lib/ai.ts";
 import { useSession } from "../session.tsx";
+import { useOnline } from "../lib/online.ts";
 import { Formula } from "./ui.tsx";
 import "../screens/mocks.css";
 
@@ -100,6 +101,7 @@ export function GradeReport({ g, onClose }: { g: WorkbookGrade; onClose?: () => 
   // Written parts: score 0, 0.5 or 1 each, from Claude or the student.
   const [marks, setMarks] = useState<Record<string, { score: number; feedback?: string; by: "claude" | "self" }>>({});
   const [marking, setMarking] = useState(false);
+  const online = useOnline();
   const [markError, setMarkError] = useState<string | null>(null);
 
   const written = useMemo(() => g.questions.flatMap((q) => q.parts.filter((p) => p.status === "written").map((p) => ({ q, p }))), [g]);
@@ -229,7 +231,7 @@ export function GradeReport({ g, onClose }: { g: WorkbookGrade; onClose?: () => 
       {written.length > 0 && (
         <div className="row">
           {apiKey
-            ? <button className="btn btn-secondary" onClick={markWithClaude} disabled={marking}>{marking ? <LoaderCircle size={16} className="spin" aria-hidden="true" /> : <Sparkles size={16} aria-hidden="true" />}{marking ? "Claude is marking" : `Mark my ${written.length} written answer${written.length === 1 ? "" : "s"} with Claude`}</button>
+            ? <button className="btn btn-secondary" onClick={markWithClaude} disabled={marking || !online} title={online ? undefined : "Needs internet"}>{marking ? <LoaderCircle size={16} className="spin" aria-hidden="true" /> : <Sparkles size={16} aria-hidden="true" />}{marking ? "Claude is marking" : `Mark my ${written.length} written answer${written.length === 1 ? "" : "s"} with Claude`}</button>
             : <span className="hint">Add your API key to have Claude mark written answers. Until then, mark them yourself against the model answer.</span>}
           {markError && <p className="notice upload-error" role="alert">{markError}</p>}
         </div>

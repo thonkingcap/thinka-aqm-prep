@@ -14,6 +14,7 @@ import { designCustomSet } from "../lib/ai.ts";
 import { UploadBox, GradeReport, readScores, DownloadNote } from "../components/UploadGrade.tsx";
 import type { WorkbookGrade } from "../lib/grade.ts";
 import { useSession } from "../session.tsx";
+import { useOnline } from "../lib/online.ts";
 import "./screens.css";
 import "./practice.css";
 
@@ -55,7 +56,7 @@ export default function Practice({ route = [] }: { route?: string[] }) {
       <div className="title-row">
         <div>
           <h1>Practice in Excel</h1>
-          <p className="sub">The exam is answered in Excel with no calculator, so every practice set is a workbook. Download one, solve it in Excel with formulas pointing at the data, then upload it here. Each workbook has an answer key as its last tab.</p>
+          <p className="sub">The exam is answered in Excel with no calculator, so every practice set is a workbook. Download one, solve it in Excel with formulas pointing at the data, then upload it here. Each workbook has an answer key as its last tab. If your wifi drops, it keeps working on any device that has opened it before.</p>
         </div>
       </div>
 
@@ -148,6 +149,7 @@ const rand = () => 1000 + Math.floor(Math.random() * 1e9);
 
 function CustomBuilder() {
   const { apiKey, fp } = useSession();
+  const online = useOnline();
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [request, setRequest] = useState("");
   const [busy, setBusy] = useState(false);
@@ -209,7 +211,7 @@ function CustomBuilder() {
           <>
             <textarea className="input ask-box" rows={3} maxLength={600} value={request} onChange={(e) => setRequest(e.target.value)} placeholder="What do you want to practise?" />
             <div className="row">
-              <button className="btn btn-secondary" disabled={busy || !request.trim()} onClick={design}>{busy ? <LoaderCircle size={16} className="spin" aria-hidden="true" /> : <Sparkles size={16} aria-hidden="true" />}{busy ? "Designing" : "Design my set"}</button>
+              <button className="btn btn-secondary" disabled={busy || !request.trim() || !online} onClick={design}>{busy ? <LoaderCircle size={16} className="spin" aria-hidden="true" /> : <Sparkles size={16} aria-hidden="true" />}{busy ? "Designing" : "Design my set"}</button>
             </div>
           </>
         ) : <p className="notice">Add your API key (the key icon) to use this. The pick list above works without one.</p>}
