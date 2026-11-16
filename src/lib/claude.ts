@@ -8,6 +8,7 @@ import { evaluateSafe } from "./excel.ts";
 import { courseNotesText } from "./course.ts";
 import { providerFor, type Provider } from "./provider.ts";
 import { logClaude } from "./usage.ts";
+import { cleanGraphic, DRAW_SCHEMA, DRAW_TOOL_DESCRIPTION, type GraphicSpec } from "./graphic.ts";
 
 export function makeClient(apiKey: string) {
   // dangerouslyAllowBrowser: this app is "bring your own key": each student uses their own key in
@@ -82,6 +83,7 @@ How to work:
 - Critical values: right tail .INV(1-α); left tail .INV(α) (negative); two tails ±.INV(1-α/2). Intervals use Z_α/2 = NORM.S.INV(1-α/2) or T_α/2 = T.INV(1-α/2, n-1).
 - For hypothesis tests follow the class's steps: (0) α, (1) H₀ and H_A (H₀ holds the equality; the claim to be shown goes in H_A), (2) test statistic and p-value or critical value, (3) decision. End with one sentence in business terms. Say "reject H₀" or "do not reject H₀", never "accept H₀" or "prove".
 - Use the class notation in plain text: μ, μ₀, σ, x̄, s, n, SE, α, ν = n − 1, H₀, H_A, Z_α/2. Never use LaTeX or $…$.
+- Pictures: call the draw tool whenever a simple picture helps, which is most of the time for tails, p-values, critical values, α, intervals and comparisons: shade the area on the curve, mark the statistic and the critical value, or put the interval on a number line. One picture per idea, placed right after the sentence it illustrates, with numbers already computed by the excel tool. Don't describe the picture in words as well; refer to it ("the shaded area").
 - Be brief and concrete: the student is studying under time pressure. Short paragraphs, numbered steps when solving, a small table only when comparing. No filler, no exclamation marks.
 - When asked to quiz, ask one question at a time, wait for the answer, then grade it and show the correct formula.
 - If something is outside Lessons 12–18 (proportions, regression, ANOVA, unequal-variance t-tests), say it is probably outside this midterm, then help briefly.
@@ -113,12 +115,24 @@ const TOOLS: BetaToolUnion[] = [
     strict: true,
     eager_input_streaming: true,
   } as BetaToolUnion,
+  { name: "draw", description: DRAW_TOOL_DESCRIPTION, input_schema: DRAW_SCHEMA } as unknown as BetaToolUnion,
 ];
+
+/** Added after the course notes when "Explain like I'm 5" is on (the default). */
+const SIMPLE_STYLE = `# Explain like I'm 5 (on)
+The student asked for the simplest possible explanations. For every answer:
+- Start with the idea in one or two plain sentences, using an everyday picture (a pizza, a coin, a bag of chips, test scores) before any symbol or formula.
+- Short sentences and everyday words. Explain every symbol the first time in plain words ("σ, how spread out the numbers are").
+- One small step at a time, numbered, each step one line plus its Excel formula.
+- Draw a simple picture with the draw tool whenever it helps.
+- Finish with a one-line "In short:" summary.
+Simple doesn't mean vague: keep the class's exact formulas, functions and conventions, and get every number from the excel tool.`;
 
 export type ToolRun = { formula: string; value?: number; error?: string };
 export type TutorEvents = {
   onText: (delta: string) => void;
   onTool: (runs: ToolRun[]) => void;
+  onGraphic: (spec: GraphicSpec) => void;
   onStatus: (s: "thinking" | "writing" | "calculating" | "idle") => void;
 };
 
@@ -134,12 +148,13 @@ const PLAIN_TOOLS = TOOLS.map((t) => {
 });
 const levelFor: Record<string, number> = { anthropic: 0, babson: 1 };
 
-function paramsAt(level: number, model: string, history: BetaMessageParam[]) {
+function paramsAt(level: number, model: string, history: BetaMessageParam[], simple: boolean) {
   const base = { model, max_tokens: 16000, messages: history };
+  const system = simple ? [...SYSTEM, { type: "text" as const, text: SIMPLE_STYLE }] : SYSTEM;
   if (level <= 1) {
     return {
       ...base,
-      system: SYSTEM,
+      system,
       tools: TOOLS,
       thinking: { type: "adaptive" as const },
       output_config: { effort: "medium" as const },
@@ -148,9 +163,9 @@ function paramsAt(level: number, model: string, history: BetaMessageParam[]) {
     };
   }
   if (level === 2) {
-    return { ...base, system: [{ ...SYSTEM[0], cache_control: { type: "ephemeral" as const } }], tools: PLAIN_TOOLS, thinking: { type: "adaptive" as const } };
+    return { ...base, system: [{ ...SYSTEM[0], cache_control: { type: "ephemeral" as const } }, ...system.slice(1)], tools: PLAIN_TOOLS, thinking: { type: "adaptive" as const } };
   }
-  return { ...base, system: SYSTEM, tools: PLAIN_TOOLS };
+  return { ...base, system, tools: PLAIN_TOOLS };
 }
 
 /**
@@ -158,13 +173,13 @@ function paramsAt(level: number, model: string, history: BetaMessageParam[]) {
  * `history` is the full conversation (content blocks kept as returned, thinking blocks included); it is
  * appended to in place.
  */
-export async function runTutorTurn(apiKey: string, keyFp: string, history: BetaMessageParam[], ev: TutorEvents, signal: AbortSignal): Promise<{ stop: string }> {
+export async function runTutorTurn(apiKey: string, keyFp: string, history: BetaMessageParam[], ev: TutorEvents, signal: AbortSignal, opts: { simple?: boolean } = {}): Promise<{ stop: string }> {
   const client = makeClient(apiKey);
   const p = providerFor(apiKey);
-  for (let round = 0; round < 6; round++) {
+  for (let round = 0; round < 10; round++) {
     ev.onStatus("thinking");
     const level = levelFor[p.id];
-    const params = paramsAt(level, p.model, history);
+    const params = paramsAt(level, p.model, history, opts.simple ?? true);
     let final;
     try {
       // Anthropic: the beta endpoint (needed for fallbacks). Babson's gateway: the plain /v1/messages.
@@ -203,6 +218,12 @@ export async function runTutorTurn(apiKey: string, keyFp: string, history: BetaM
     const results: BetaToolResultBlockParam[] = [];
     for (const block of final.content) {
       if (block.type !== "tool_use") continue;
+      if (block.name === "draw") {
+        const g = cleanGraphic(block.input);
+        if ("spec" in g) ev.onGraphic(g.spec);
+        results.push({ type: "tool_result", tool_use_id: block.id, ...("spec" in g ? { content: "shown" } : { is_error: true, content: `Not drawn: ${g.error}` }) });
+        continue;
+      }
       const input = block.input as { formulas?: unknown };
       const formulas = Array.isArray(input?.formulas) ? input.formulas.filter((f): f is string => typeof f === "string").slice(0, 40) : null;
       if (block.name !== "excel" || !formulas) {

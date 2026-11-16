@@ -1,23 +1,29 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 import { useOnline } from "../lib/online.ts";
-import { ArrowUp, Calculator, LoaderCircle, Plus, Square } from "lucide-react";
+import { ArrowUp, Baby, Calculator, LoaderCircle, Plus, Square } from "lucide-react";
 import type { BetaMessageParam } from "@anthropic-ai/sdk/resources/beta/messages/messages";
 import { useSession } from "../session.tsx";
 import { KEY_IN_TEXT } from "../lib/vault.ts";
 import { runTutorTurn, type ToolRun } from "../lib/claude.ts";
 import { money, balanceView } from "../lib/spend.ts";
 import Markdown from "../components/Markdown.tsx";
+import TutorGraphic from "../components/TutorGraphic.tsx";
+import type { GraphicSpec } from "../lib/graphic.ts";
 import { fmt } from "../components/ui.tsx";
 import { KeyForm } from "./Gate.tsx";
 import Thinka from "../components/Thinka.tsx";
 import "./screens.css";
 import "./tutor.css";
 
-type Part = { type: "text"; text: string } | { type: "tool"; runs: ToolRun[] };
+type Part = { type: "text"; text: string } | { type: "tool"; runs: ToolRun[] } | { type: "graphic"; spec: GraphicSpec };
 type Turn = { role: "user"; text: string } | { role: "assistant"; parts: Part[]; error?: string; note?: string };
 
 // Kept at module level so the conversation survives switching screens (not page reloads).
 const store: { history: BetaMessageParam[]; turns: Turn[] } = { history: [], turns: [] };
+
+// "Explain like I'm 5": on unless the student turns it off (remembered on this device).
+const SIMPLE_KEY = "aqm.tutor.simple";
+const readSimple = () => { try { return localStorage.getItem(SIMPLE_KEY) !== "off"; } catch { return true; } };
 
 const STARTERS = [
   "Quiz me on the 12 hypothesis test questions, one at a time.",
@@ -65,6 +71,8 @@ export default function Tutor() {
     if (spend && startSpent.current !== null) setChatCost(spend.spent - startSpent.current);
   }, [spend]);
 
+  const [simple, setSimpleState] = useState(readSimple);
+  const setSimple = (v: boolean) => { setSimpleState(v); try { localStorage.setItem(SIMPLE_KEY, v ? "on" : "off"); } catch { /* ignore */ } };
   const [keyWarn, setKeyWarn] = useState(false);
   async function send(text: string) {
     const t = text.trim();
@@ -98,8 +106,9 @@ export default function Tutor() {
           else a.parts.push({ type: "text", text: d });
         }),
         onTool: (runs) => update((a) => { a.parts.push({ type: "tool", runs }); }),
+        onGraphic: (spec) => update((a) => { a.parts.push({ type: "graphic", spec }); }),
         onStatus: setStatus,
-      }, ac.signal);
+      }, ac.signal, { simple });
       if (stop === "refusal") update((a) => { a.note = "Claude declined to answer this one. Try rephrasing the question."; });
       if (stop === "max_tokens") update((a) => { a.note = "The answer hit its length limit. Ask Claude to continue."; });
     } catch (e) {
@@ -149,6 +158,9 @@ export default function Tutor() {
           <p className="hint">{provider?.modelLabel ?? "Claude Sonnet"} · every number is computed with the class's Excel functions</p>
         </div>
         <div className="row">
+          <button type="button" className={`eli5${simple ? " on" : ""}`} role="switch" aria-checked={simple} onClick={() => setSimple(!simple)} title="Plain words, everyday examples and simple pictures">
+            <Baby size={14} aria-hidden="true" /><span>Explain like I'm 5</span><span className="eli5-track" aria-hidden="true"><span className="eli5-knob" /></span>
+          </button>
           {bal && <span className="hint num" title={bal.real ? "Balance from Babson's gateway" : "Estimated from token usage"}>This chat about {money(chatCost, chatCost < 1 ? 3 : 2)} · {bal.left !== null ? `${money(bal.left)} left` : `${money(bal.spent)} spent`}{bal.real ? "" : " (estimate)"}</span>}
           <button className="btn btn-ghost btn-small" onClick={newChat} disabled={turns.length === 0}><Plus size={14} aria-hidden="true" />New chat</button>
         </div>
@@ -170,9 +182,9 @@ export default function Tutor() {
               <div key={i} className="msg msg-user"><p>{t.text}</p></div>
             ) : (
               <div key={i} className="msg msg-ai">
-                {t.parts.map((p, j) => (p.type === "text" ? <Markdown key={j} text={p.text} /> : <ToolLedger key={j} runs={p.runs} />))}
+                {t.parts.map((p, j) => (p.type === "text" ? <Markdown key={j} text={p.text} /> : p.type === "graphic" ? <TutorGraphic key={j} spec={p.spec} /> : <ToolLedger key={j} runs={p.runs} />))}
                 {i === turns.length - 1 && busy && (
-                  <p className="tutor-status"><LoaderCircle size={14} className="spin" aria-hidden="true" /> {status === "calculating" ? "Running the Excel formulas" : status === "thinking" ? "Thinking" : "Writing"}</p>
+                  <p className="tutor-status"><LoaderCircle size={14} className="spin" aria-hidden="true" /> {status === "calculating" ? "Working it out in Excel" : status === "thinking" ? "Thinking" : "Writing"}</p>
                 )}
                 {t.note && <p className="notice neutral">{t.note}</p>}
                 {t.error && <p className="notice" role="alert">{t.error}</p>}

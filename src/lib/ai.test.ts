@@ -95,3 +95,21 @@ import { parseAdvice } from "./aiParse.ts";
   console.log(`${f ? "FAILED" : "PASS"}: Exam 3 advice parsing`);
   if (f) process.exit(1);
 }
+
+// Tutor pictures: specs from Claude are checked before drawing.
+import { cleanGraphic } from "./graphic.ts";
+{
+  let f = 0;
+  const bad = (m: string) => { f++; console.log("FAIL", m); };
+  const c = cleanGraphic({ type: "curve", title: "p", dist: "t", df: 16, shade: [{ from: null, to: -3.69 }], markers: [{ x: -3.69, label: "T" }, { x: "x", label: "no" }] });
+  if (!("spec" in c) || c.spec.type !== "curve" || c.spec.shade[0].from !== null || c.spec.markers.length !== 1) bad("curve spec");
+  if ("spec" in cleanGraphic({ type: "curve", title: "t", dist: "t" })) bad("t without df accepted");
+  if ("spec" in cleanGraphic({ type: "interval", title: "i", lower: 5, upper: 3 })) bad("backwards interval accepted");
+  const iv = cleanGraphic({ type: "interval", title: "<script>x", lower: 50.6, upper: 59.4, points: [{ x: 55, label: "μ" }] });
+  if (!("spec" in iv) || iv.spec.title.includes("<")) bad("interval / title cleaning");
+  if ("spec" in cleanGraphic({ type: "svg", title: "x" })) bad("unknown type accepted");
+  const bars = cleanGraphic({ type: "bars", title: "b", bars: Array.from({ length: 9 }, (_, i) => ({ label: `b${i}`, value: i })) });
+  if (!("spec" in bars) || bars.spec.type !== "bars" || bars.spec.bars.length !== 6) bad("bars capped at 6");
+  console.log(`${f ? "FAILED" : "PASS"}: tutor pictures`);
+  if (f) process.exit(1);
+}
