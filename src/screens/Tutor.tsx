@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ClipboardEvent, type DragEvent, type FormEvent, type KeyboardEvent } from "react";
 import { useOnline } from "../lib/online.ts";
-import { ArrowUp, Baby, Calculator, ImagePlus, LoaderCircle, Plus, Square, X } from "lucide-react";
+import { ArrowUp, Calculator, ImagePlus, LoaderCircle, Plus, Square, X } from "lucide-react";
 import type { BetaMessageParam } from "@anthropic-ai/sdk/resources/beta/messages/messages";
 import { useSession } from "../session.tsx";
 import { KEY_IN_TEXT } from "../lib/vault.ts";
@@ -22,17 +22,13 @@ type Turn = { role: "user"; text: string; shots?: string[] } | { role: "assistan
 // Kept at module level so the conversation survives switching screens (not page reloads).
 const store: { history: BetaMessageParam[]; turns: Turn[] } = { history: [], turns: [] };
 
-// "Explain like I'm 5": on unless the student turns it off (remembered on this device).
-const SIMPLE_KEY = "aqm.tutor.simple";
-const readSimple = () => { try { return localStorage.getItem(SIMPLE_KEY) !== "off"; } catch { return true; } };
-
 const STARTERS = [
   "Quiz me on the 12 hypothesis test questions, one at a time.",
   "When do I use Z and when do I use T?",
   "Explain why the two-tailed p-value formula changes with the sign of the statistic.",
   "What's the difference between \"where will x̄ land\" and \"where is μ\"?",
   "Give me an exam-style left-tailed t-test with raw data.",
-  "How do I read \"more than\", \"less than\" and \"different from\" into H₀ and H_A?",
+  "How do I tell from H₀ whether it's a left, right or two-tailed test?",
 ];
 
 function ToolLedger({ runs }: { runs: ToolRun[] }) {
@@ -72,8 +68,6 @@ export default function Tutor() {
     if (spend && startSpent.current !== null) setChatCost(spend.spent - startSpent.current);
   }, [spend]);
 
-  const [simple, setSimpleState] = useState(readSimple);
-  const setSimple = (v: boolean) => { setSimpleState(v); try { localStorage.setItem(SIMPLE_KEY, v ? "on" : "off"); } catch { /* ignore */ } };
   const [keyWarn, setKeyWarn] = useState(false);
   const [shots, setShots] = useState<Shot[]>([]);
   const [shotError, setShotError] = useState<string | null>(null);
@@ -144,7 +138,7 @@ export default function Tutor() {
         onTool: (runs) => update((a) => { a.parts.push({ type: "tool", runs }); }),
         onGraphic: (spec) => update((a) => { a.parts.push({ type: "graphic", spec }); }),
         onStatus: setStatus,
-      }, ac.signal, { simple });
+      }, ac.signal);
       if (stop === "refusal") update((a) => { a.note = "Claude declined to answer this one. Try rephrasing the question."; });
       if (stop === "max_tokens") update((a) => { a.note = "The answer hit its length limit. Ask Claude to continue."; });
     } catch (e) {
@@ -199,9 +193,6 @@ export default function Tutor() {
           </div>
         </div>
         <div className="row">
-          <button type="button" className={`eli5${simple ? " on" : ""}`} role="switch" aria-checked={simple} onClick={() => setSimple(!simple)} title="Plain words, everyday examples and simple pictures">
-            <Baby size={14} aria-hidden="true" /><span>Explain like I'm 5</span><span className="eli5-track" aria-hidden="true"><span className="eli5-knob" /></span>
-          </button>
           {bal && provider?.id !== "code" && <span className="hint num" title={bal.real ? "Balance from Babson's gateway" : "Estimated from token usage"}>This chat about {money(chatCost, chatCost < 1 ? 3 : 2)} · {bal.left !== null ? `${money(bal.left)} left` : `${money(bal.spent)} spent`}{bal.real ? "" : " (estimate)"}</span>}
           <button className="btn btn-ghost btn-small" onClick={newChat} disabled={turns.length === 0}><Plus size={14} aria-hidden="true" />New chat</button>
         </div>

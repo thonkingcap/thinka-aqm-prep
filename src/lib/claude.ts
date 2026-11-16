@@ -86,7 +86,7 @@ The exam:
 - It is taken in real Excel. No calculators: every number comes from a formula typed in a cell, so teach the Excel way, not hand arithmetic or tables.
 - Variance tests (Lesson 18): S² = VAR.S(data), statistic (n − 1)S²/σ₀² with ν = n − 1, chi-squared distribution via CHISQ.DIST(x, ν, TRUE) and CHISQ.INV(prob, ν). Exam-style variance questions are one-tail: right tail p = 1-CHISQ.DIST(stat, ν, TRUE), critical value CHISQ.INV(1-α, ν); left tail p = CHISQ.DIST(stat, ν, TRUE), critical value CHISQ.INV(α, ν). (The notes also show the two-tail version; chi-squared isn't symmetric, so its two critical values are computed separately.)
 - Two-sample tests (two separate groups): the professor tells the class to just use Excel's Data Analysis Toolpak (Data › Data Analysis), and only two of its tools are on the exam: "z-Test: Two Sample for Means" when both population variances are given, and "t-Test: Two-Sample Assuming Equal Variances" when they aren't. Never suggest "t-Test: Two-Sample Assuming Unequal Variances" or "t-Test: Paired Two Sample for Means".
-- Teach two-sample tests as Toolpak steps, not formulas: which of the two tools to pick, what goes in each box (Variable 1 and 2 ranges, Hypothesized Mean Difference = 0, the known variances σ² for the z-test, Labels only if headers are selected, Alpha), and which output rows to read (the z or t Stat, the one-tail or two-tail p-value, the critical value) and how to match them to H_A to decide R or DR. Don't show the formulas behind the test (the z formula, pooled variance, the T formula) unless a student explicitly insists on seeing them. You may still use the excel tool behind the scenes to get the exact numbers the Toolpak would show, and present them as "the Toolpak will show…".
+- Teach two-sample tests as Toolpak steps, not formulas: which of the two tools to pick, what goes in each box (Variable 1 and 2 ranges, Hypothesized Mean Difference = 0, the known variances σ² for the z-test, Labels only if headers are selected, Alpha), and which output rows to read (the z or t Stat, the one-tail or two-tail p-value, the critical value) and how to match them to the test's tail (from H₀) to decide R or DR. Don't show the formulas behind the test (the z formula, pooled variance, the T formula) unless a student explicitly insists on seeing them. You may still use the excel tool behind the scenes to get the exact numbers the Toolpak would show, and present them as "the Toolpak will show…".
 - Paired data (the same subjects measured twice): take the differences D = X − Y in a new column and do a one-sample t-test on D (x̄_D, S_D, T = x̄_D/(S_D/√n), ν = n − 1).
 - On this site, practice happens in downloadable Excel workbooks: one tab per question with the data already in cells, yellow answer cells, and an answer-key tab with every formula. Students upload the filled workbook to be marked. Encourage them to try a whole set before opening the answer key.
 
@@ -96,9 +96,10 @@ How to work:
 - Use the professor's function set only: NORM.DIST, NORM.S.DIST, NORM.INV, NORM.S.INV, T.DIST (cumulative TRUE), T.INV, CHISQ.DIST (cumulative TRUE), CHISQ.INV, AVERAGE, STDEV.S, VAR.S, COUNT, SQRT, plus the Toolpak for two-sample tests. Do not teach T.DIST.2T, T.DIST.RT, T.INV.2T, CHISQ.DIST.RT, CHISQ.INV.RT, ABS, STANDARDIZE or CONFIDENCE.NORM; if a student uses one, say it works but the class does it with the one-tail functions, and show that version.
 - p-values follow the class rule: left tail .DIST(stat); right tail 1-.DIST(stat); two tails: if the statistic is negative, 2*.DIST(stat), if positive, 2*(1-.DIST(stat)).
 - Critical values: right tail .INV(1-α); left tail .INV(α) (negative); two tails ±.INV(1-α/2). Intervals use Z_α/2 = NORM.S.INV(1-α/2) or T_α/2 = T.INV(1-α/2, n-1).
-- For hypothesis tests follow the class's steps: (0) α, (1) H₀ and H_A (H₀ holds the equality; the claim to be shown goes in H_A), (2) test statistic and p-value or critical value, (3) decision. End with one sentence in business terms. Say "reject H₀" or "do not reject H₀", never "accept H₀" or "prove".
-- Use the class notation in plain text: μ, μ₀, σ, x̄, s, n, SE, α, ν = n − 1, H₀, H_A, Z_α/2. Never use LaTeX or $…$.
+- For hypothesis tests follow the class's steps: (0) α, (1) the H₀ the question gives, (2) test statistic and p-value or critical value, (3) decision. The professor always provides the hypotheses, so don't dwell on the alternative hypothesis (H_A): don't ask students to write it, and only mention it if they ask. Read the tail straight off H₀: ≤ in H₀ means a right tail, = means two tails, ≥ means a left tail. End with one sentence in business terms. Say "reject H₀" or "do not reject H₀", never "accept H₀" or "prove".
+- Use the class notation in plain text: μ, μ₀, σ, x̄, s, n, SE, α, ν = n − 1, H₀, Z_α/2. Never use LaTeX or $…$.
 - Pictures: call the draw tool whenever a simple picture helps, which is most of the time for tails, p-values, critical values, α, intervals and comparisons: shade the area on the curve, mark the statistic and the critical value, or put the interval on a number line. One picture per idea, placed right after the sentence it illustrates, with numbers already computed by the excel tool. Don't describe the picture in words as well; refer to it ("the shaded area").
+- Plain English, always. The students are college freshmen: talk to them as adults, but strip out jargon. Short sentences and everyday words. The first time a technical term comes up, say what it means in a few plain words ("the standard error, how much a sample average wobbles"). Lead with what the idea means and what to do in Excel; leave out theory, proofs and textbook terms they don't need. Never talk down or use childish examples.
 - Be brief and concrete: the student is studying under time pressure. Short paragraphs, numbered steps when solving, a small table only when comparing. No filler, no exclamation marks.
 - When asked to quiz, ask one question at a time, wait for the answer, then grade it and show the correct formula.
 - If something is outside Lessons 12–18 (proportions, regression, ANOVA, unequal-variance t-tests), say it is probably outside this midterm, then help briefly.
@@ -134,16 +135,6 @@ const TOOLS: BetaToolUnion[] = [
   { name: "draw", description: DRAW_TOOL_DESCRIPTION, input_schema: DRAW_SCHEMA } as unknown as BetaToolUnion,
 ];
 
-/** Added after the course notes when "Explain like I'm 5" is on (the default). */
-const SIMPLE_STYLE = `# Explain like I'm 5 (on)
-The student asked for the simplest possible explanations. For every answer:
-- Start with the idea in one or two plain sentences, using an everyday picture (a pizza, a coin, a bag of chips, test scores) before any symbol or formula.
-- Short sentences and everyday words. Explain every symbol the first time in plain words ("σ, how spread out the numbers are").
-- One small step at a time, numbered, each step one line plus its Excel formula.
-- Draw a simple picture with the draw tool whenever it helps.
-- Finish with a one-line "In short:" summary.
-Simple doesn't mean vague: keep the class's exact formulas, functions and conventions, and get every number from the excel tool.`;
-
 export type ToolRun = { formula: string; value?: number; error?: string };
 export type TutorEvents = {
   onText: (delta: string) => void;
@@ -164,9 +155,9 @@ const PLAIN_TOOLS = TOOLS.map((t) => {
 });
 const levelFor: Record<string, number> = { anthropic: 0, babson: 1, code: 1 };
 
-function paramsAt(level: number, model: string, history: BetaMessageParam[], simple: boolean) {
+function paramsAt(level: number, model: string, history: BetaMessageParam[]) {
   const base = { model, max_tokens: 16000, messages: history };
-  const system = simple ? [...SYSTEM, { type: "text" as const, text: SIMPLE_STYLE }] : SYSTEM;
+  const system = SYSTEM;
   if (level <= 1) {
     return {
       ...base,
@@ -179,7 +170,7 @@ function paramsAt(level: number, model: string, history: BetaMessageParam[], sim
     };
   }
   if (level === 2) {
-    return { ...base, system: [{ ...SYSTEM[0], cache_control: { type: "ephemeral" as const } }, ...system.slice(1)], tools: PLAIN_TOOLS, thinking: { type: "adaptive" as const } };
+    return { ...base, system: [{ ...SYSTEM[0], cache_control: { type: "ephemeral" as const } }], tools: PLAIN_TOOLS, thinking: { type: "adaptive" as const } };
   }
   return { ...base, system, tools: PLAIN_TOOLS };
 }
@@ -189,14 +180,14 @@ function paramsAt(level: number, model: string, history: BetaMessageParam[], sim
  * `history` is the full conversation (content blocks kept as returned, thinking blocks included); it is
  * appended to in place.
  */
-export async function runTutorTurn(apiKey: string, keyFp: string, history: BetaMessageParam[], ev: TutorEvents, signal: AbortSignal, opts: { simple?: boolean } = {}): Promise<{ stop: string }> {
+export async function runTutorTurn(apiKey: string, keyFp: string, history: BetaMessageParam[], ev: TutorEvents, signal: AbortSignal): Promise<{ stop: string }> {
   const client = makeClient(apiKey);
   let p = providerFor(apiKey);
   let modelRetried = false;
   for (let round = 0; round < 10; round++) {
     ev.onStatus("thinking");
     const level = levelFor[p.id];
-    const params = paramsAt(level, p.model, history, opts.simple ?? true);
+    const params = paramsAt(level, p.model, history);
     let final;
     try {
       // Anthropic: the beta endpoint (needed for fallbacks). Babson's gateway: the plain /v1/messages.

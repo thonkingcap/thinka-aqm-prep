@@ -93,7 +93,7 @@ function TestMode() {
         <div className="field">
           <span className="label">Null hypothesis</span>
           <Seg label="Null hypothesis" value={h0} onChange={setH0} options={NULLS.map((x) => ({ id: x.id, label: x.h0.replace("H₀: ", "") }))} />
-          <span className="hint">{nl.ha} · {nl.tail.toLowerCase()}</span>
+          <span className="hint">{nl.tail}</span>
         </div>
         <div className="field">
           <span className="label">Population σ</span>

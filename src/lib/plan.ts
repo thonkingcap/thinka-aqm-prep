@@ -31,7 +31,7 @@ export const SKILLS: Skill[] = [
   { id: "clt", name: "Sample means and the CLT", learn: "clt", area: "ci", diagnosed: true, task: "Questions about x̄ use σ/√n, not σ. Practise P(X̄ < a) and where x̄ will land." },
   { id: "ci-z", name: "Intervals with σ known", learn: "ci-z", area: "ci", diagnosed: true, task: "x̄ ± NORM.S.INV(1−α/2)·σ/√n, and the difference between \"where is μ\" and \"where will x̄ land\"." },
   { id: "ci-t", name: "Intervals with σ unknown", learn: "t", area: "ci", diagnosed: true, task: "STDEV.S for s, ν = n − 1, and T.INV(1−α/2, ν) in place of Z." },
-  { id: "h0-setup", name: "Setting up H₀ from the wording", learn: "ht-logic", area: "ht1", diagnosed: false, task: "\"More than\" is a right tail, \"less than\" a left tail, \"different\" two tails; the claim goes in H_A." },
+  { id: "h0-setup", name: "Setting up H₀ from the wording", learn: "ht-logic", area: "ht1", diagnosed: false, task: "Read the tail off the H₀ you're given: ≤ is a right tail, ≥ a left tail, = two tails." },
   { id: "stat", name: "Computing the test statistic", learn: "ht-logic", area: "ht1", diagnosed: true, task: "x̄ and s from the data, SE, then (x̄ − μ₀)/SE; Z if σ is given, T if not." },
   { id: "pvalue", name: "p-values and the sign rule", learn: "twelve", area: "ht1", diagnosed: true, task: "Left .DIST(stat), right 1 − .DIST(stat), two tails 2 × the smaller tail, chosen by the sign." },
   { id: "crit", name: "Critical values and decisions", learn: "twelve", area: "ht2", diagnosed: true, task: ".INV(1−α), .INV(α) or ±.INV(1−α/2), then reject only when the statistic is past it." },
@@ -42,7 +42,7 @@ export const SKILLS: Skill[] = [
 export const skillById = (id: SkillId) => SKILLS.find((s) => s.id === id)!;
 /** Skills the diagnostic scores, and the ones it doesn't check yet. */
 export const DIAGNOSED_SKILLS = SKILLS.filter((s) => s.diagnosed);
-export const UNCHECKED_SKILLS = SKILLS.filter((s) => !s.diagnosed);
+export const UNCHECKED_SKILLS = SKILLS.filter((s) => !s.diagnosed && s.id !== "h0-setup");
 
 /** The 9 diagnostic slots: one question each. */
 export const DIAGNOSTIC: { kind?: QuestionKind; caseKey?: string; skill?: SkillId; label: string }[] = [
@@ -201,7 +201,8 @@ export function buildPlan(result: DiagnosticResult, today = new Date(), exam = e
   const order = (lvl: SkillScore["level"]) => SKILLS.filter((s) => scoreOf(s.id)?.level === lvl).map((s) => s.id);
   const gaps = order("gap"), shaky = order("shaky"), strong = order("strong");
   // Not checked: skills Exam 3 doesn't test, plus anything an older saved result lacks.
-  const unchecked = SKILLS.filter((s) => !scoreOf(s.id)).map((s) => s.id);
+  // Setting up H₀ isn't scheduled: the professor gives the hypotheses on the exam.
+  const unchecked = SKILLS.filter((s) => !scoreOf(s.id) && s.id !== "h0-setup").map((s) => s.id);
   const weak = [...gaps, ...shaky, ...unchecked];
 
   const endDays = days >= 4 ? 2 : days >= 2 ? 1 : 0;

@@ -390,7 +390,7 @@ function decisionPart(reject: boolean, alpha: number, rule: string, method: "p" 
     label: "Decision at α = " + fmt(alpha) + " (R or DR)", kind: "choice", answer: decision, options: DECISIONS,
     excel: `${rule} → ${decision}`,
     explain: method === "p" ? "Reject H₀ when the p-value is smaller than α."
-      : method === "crit" ? `Reject H₀ when ${S} falls beyond the critical value, in the tail named by H_A.`
+      : method === "crit" ? `Reject H₀ when ${S} falls beyond the critical value, in the test's tail.`
       : `Reject H₀ when the p-value is smaller than α, which is the same as ${S} falling beyond the critical value.`,
   };
 }
@@ -434,12 +434,11 @@ function hypothesis(rng: Rng, caseKey?: string, full = false): Draft {
   const options = NULL_OPTIONS(mu0s);
   const nl = NULLS.find((x) => x.id === h0)!;
   const nullAns = nl.h0.replace("μ₀", mu0s);
-  const ha = nl.ha.replace("μ₀", mu0s);
 
   const parts: P[] = [{
     label: "Which null hypothesis?", kind: "choice", answer: nullAns, options,
-    excel: `"${DIR_WORD[h0]} ${mu0s}" is the claim to show, so H_A: ${ha.slice(5)} and ${nullAns}`,
-    explain: `The question asks whether μ is ${DIR_WORD[h0]} ${mu0s}; that goes in H_A (${ha}). H₀ is the opposite and always contains the equals sign.`,
+    excel: `"${DIR_WORD[h0]} ${mu0s}" → ${nullAns}`,
+    explain: `The question asks whether μ is ${DIR_WORD[h0]} ${mu0s}. H₀ is the opposite of that, and always has the equals part (=, ≤ or ≥). On the exam the professor gives you H₀.`,
   }];
   if (useData) {
     const se = sd / Math.sqrt(n);
@@ -459,7 +458,7 @@ function hypothesis(rng: Rng, caseKey?: string, full = false): Draft {
     ...(h0 === "eq"
       ? [{ value: res.pValue / 2, why: "Gave one tail only. H₀ has an equals sign, so the test is two-tailed: double the tail area." },
          { value: 1 - res.pValue / 2, why: "Took the area on the wrong side of the statistic. Double the tail that the statistic points into." }]
-      : [{ value: 1 - res.pValue, why: `Took the wrong tail. H_A: ${ha.slice(5)} points ${h0 === "le" ? "right, so the p-value is the area to the right: 1 − .DIST" : "left, so the p-value is the area to the left: .DIST"}.` },
+      : [{ value: 1 - res.pValue, why: `Took the wrong tail. ${nullAns} is a ${h0 === "le" ? "right-tail test, so the p-value is the area to the right: 1 − .DIST" : "left-tail test, so the p-value is the area to the left: .DIST"}.` },
          { value: 2 * Math.min(res.pValue, 1 - res.pValue), why: "Doubled the tail, but this is a one-tailed test: don't multiply by 2." }]),
   ];
   const crit1 = h0 === "eq" ? res.crit[1] : res.crit[0];
@@ -472,8 +471,8 @@ function hypothesis(rng: Rng, caseKey?: string, full = false): Draft {
   ];
   const pPart = (): P => {
     const pF = h0 === "le" ? `=1-${D(statF)}` : h0 === "ge" ? `=${D(statF)}` : res.stat < 0 ? `=2*${D(statF)}` : `=2*(1-${D(statF)})`;
-    const ex = h0 === "le" ? `Right-tailed test (H_A: μ > ${mu0s}): the p-value is the area to the right of ${S}, 1 − .DIST(${S}).`
-      : h0 === "ge" ? `Left-tailed test (H_A: μ < ${mu0s}): the p-value is the area to the left of ${S}, .DIST(${S}).`
+    const ex = h0 === "le" ? `Right-tailed test (${nullAns}): the p-value is the area to the right of ${S}, 1 − .DIST(${S}).`
+      : h0 === "ge" ? `Left-tailed test (${nullAns}): the p-value is the area to the left of ${S}, .DIST(${S}).`
       : res.stat < 0 ? `Two-tailed test and ${S} is negative, so double the left tail: 2·.DIST(${S}).`
       : `Two-tailed test and ${S} is positive, so double the right tail: 2·(1 − .DIST(${S})).`;
     return { ...num("What is the p-value?", res.pValue, pF, tolProb(res.pValue), "prob", ex), traps: pTraps };
@@ -563,8 +562,8 @@ function varianceTest(rng: Rng): Draft {
   const nullAns = options[h0 === "le" ? 0 : h0 === "eq" ? 1 : 2];
   const word = h0 === "le" ? "more than" : h0 === "ge" ? "less than" : "different from";
   const parts: P[] = [
-    { label: "Which null hypothesis?", kind: "choice", answer: nullAns, options, excel: `The claim to show is "variance ${word} ${v0s}", so it goes in H_A; H₀ is the opposite: ${nullAns}`,
-      explain: "H_A is what you want to show; H₀ is its opposite and always contains the equals sign." },
+    { label: "Which null hypothesis?", kind: "choice", answer: nullAns, options, excel: `"variance ${word} ${v0s}" → ${nullAns}`,
+      explain: "H₀ is the opposite of what the question asks about, and always has the equals part. On the exam the professor gives you H₀." },
     { ...num("Sample variance S²", s2, `=${s2F}`, Math.max(0.0005, 0.005 * s2), "num", "S² = VAR.S of the data (divides by n − 1, the unbiased estimate of σ²)."),
       traps: [{ value: (s2 * (n - 1)) / n, why: "Divided by n (VAR.P). The sample variance divides by n − 1." }, { value: Math.sqrt(s2), why: "That's S, not S². Use VAR.S (or STDEV.S squared)." }] },
     { ...num("Test statistic χ²", stat, `=${statF}`, Math.max(0.005, 0.002 * stat), "num", `χ² = (n − 1)·S²/σ₀² with σ₀² = ${v0s}.`),
@@ -623,7 +622,7 @@ const NULL2_OPTIONS = ["H₀: μ₁ ≤ μ₂", "H₀: μ₁ = μ₂", "H₀: μ
 const WORD2 = (h0: Null, sc: TwoScenario) => h0 === "le" ? `${sc.a} has a higher mean ${sc.quantity} than ${sc.b}` : h0 === "ge" ? `${sc.a} has a lower mean ${sc.quantity} than ${sc.b}` : `the mean ${sc.quantity} differs between ${sc.a} and ${sc.b}`;
 function nullPart2(h0: Null, sc: TwoScenario): P {
   return { label: "Which null hypothesis? (μ₁ = " + sc.a + ", μ₂ = " + sc.b + ")", kind: "choice", answer: NULL2(h0), options: NULL2_OPTIONS,
-    excel: `The claim "${WORD2(h0, sc)}" goes in H_A, so ${NULL2(h0)}`, explain: "H_A is what the question wants to show; H₀ is the opposite, with the equals sign." };
+    excel: `"${WORD2(h0, sc)}" → ${NULL2(h0)}`, explain: "H₀ is the opposite of what the question asks about, with the equals part. On the exam the professor gives you H₀." };
 }
 
 function twoZ(rng: Rng): Draft {
@@ -652,7 +651,7 @@ function twoZ(rng: Rng): Draft {
         traps: [{ value: (mean(a) - mean(b)) / Math.sqrt(sA / n1 + sB / n2), why: "Entered σ where the Toolpak (and the formula) wants the variance σ²." }, { value: -z, why: "Subtracted the other way round: Variable 1 is " + sc.a + "." }] },
       { ...num(h0 === "eq" ? "Positive critical value (±)" : "Critical value", crit, critF, TOL_CRIT, "num", h0 === "eq" ? "Two tails: ±NORM.S.INV(1 − α/2), the Toolpak's \"z Critical two-tail\"." : h0 === "le" ? "Right tail: NORM.S.INV(1 − α)." : "Left tail: NORM.S.INV(α), negative."),
         traps: h0 === "eq" ? [{ value: normInv(1 - alpha), why: "That's the one-tail cutoff; two tails use 1 − α/2." }] : [{ value: -crit, why: "Wrong sign for this tail." }, { value: normInv(1 - alpha / 2) * (h0 === "ge" ? -1 : 1), why: "Used α/2 in a one-tailed test." }] },
-      { ...num("p-value", p, pFormula(h0, `NORM.S.DIST(${zF},TRUE)`, left), tolProb(p), "prob", pExplain(h0, "z", left) + " The Toolpak's one-tail line is always the smaller tail, so check it points the way H_A does."), traps: wrongTail(h0, p) },
+      { ...num("p-value", p, pFormula(h0, `NORM.S.DIST(${zF},TRUE)`, left), tolProb(p), "prob", pExplain(h0, "z", left) + " The Toolpak's one-tail line is always the smaller tail, so check the statistic points into your test's tail."), traps: wrongTail(h0, p) },
       decisionPart(reject, alpha, `p-value ${r4(p)} ${reject ? "<" : "≥"} α = ${fmt(alpha)}`, "both", "z"),
     ],
   };
@@ -717,7 +716,7 @@ function paired(rng: Rng): Draft {
   const first = Array.from({ length: n }, () => roundTo(base + sdB * gauss(rng), sc.dp));
   const second = first.map((x) => roundTo(x + real + sdD * gauss(rng), sc.dp));
   const d = second.map((x, i) => roundTo(x - first[i], 6));
-  // "Improved" (D > 0) is H_A, so H₀: μ_D ≤ 0; "lowered" (D < 0) gives H₀: μ_D ≥ 0. Exam 3 phrased it as the null itself.
+  // "Improved" (D > 0) is the claim, so H₀: μ_D ≤ 0; "lowered" (D < 0) gives H₀: μ_D ≥ 0. Exam 3 phrased it as the null itself.
   const h0: Null = sc.up ? "le" : "ge";
   const df = n - 1;
   const dbar = mean(d), sd = stdevS(d);
@@ -737,7 +736,7 @@ function paired(rng: Rng): Draft {
     given: [{ label: "α", value: fmt(alpha) }],
     parts: [
       { label: "Which null hypothesis?", kind: "choice", answer: nullAns, options: ["H₀: μ_D ≤ 0", "H₀: μ_D = 0", "H₀: μ_D ≥ 0"],
-        excel: `"${sc.up ? "μ_D > 0" : "μ_D < 0"}" is the claim to show, so ${nullAns}`, explain: "The claim goes in H_A; H₀ is the opposite, with the equals sign." },
+        excel: `"${sc.up ? "μ_D > 0" : "μ_D < 0"}" is the claim to show, so ${nullAns}`, explain: "H₀ is the opposite of the claim, with the equals part. On the exam the professor gives you H₀." },
       { ...num("Mean difference d̄", dbar, `=AVERAGE(${DL})`, Math.max(0.0005, 0.01 * sd / Math.sqrt(n)), "num", "Make a column D = second − first, then AVERAGE it."),
         traps: [{ value: -dbar, why: `Subtracted the wrong way: D = ${sc.second} − ${sc.first}.` }] },
       { ...num("Standard deviation of D, s_D", sd, `=STDEV.S(${DL})`, Math.max(0.0005, 0.01 * sd), "num", "STDEV.S of the D column.") },
@@ -786,8 +785,8 @@ function bernoulli(rng: Rng): Draft {
         traps: [{ value: xbar * (1 - xbar), why: "That's the variance x̄(1 − x̄); take the square root." }] },
       { ...num(`Test statistic T (ν = ${df})`, t, `=${tF}`, TOL_STAT, "num", "σ is unknown, so T = (x̄ − μ₀)/(S/√n). With n this large T and Z are almost the same."),
         traps: [{ value: (xbar - sc.p0) / s, why: "Divided by S instead of S/√n." }] },
-      { ...num("p-value", p, `=1-T.DIST(${tF},${df},TRUE)`, Math.max(tolProb(p), Math.abs(p - pZ) + 0.0002), "prob", "Right tail (H_A: μ > μ₀): 1 − T.DIST(T, n − 1, TRUE). 1 − NORM.S.DIST(T) is also accepted here, since n is large."),
-        traps: [{ value: 1 - p, why: "Took the left tail; H_A: μ > μ₀ points right." }, { value: 2 * Math.min(p, 1 - p), why: "Doubled it, but this is a one-tailed test." }] },
+      { ...num("p-value", p, `=1-T.DIST(${tF},${df},TRUE)`, Math.max(tolProb(p), Math.abs(p - pZ) + 0.0002), "prob", "Right tail (H₀: μ ≤ μ₀): 1 − T.DIST(T, n − 1, TRUE). 1 − NORM.S.DIST(T) is also accepted here, since n is large."),
+        traps: [{ value: 1 - p, why: "Took the left tail; H₀: μ ≤ μ₀ is a right-tail test." }, { value: 2 * Math.min(p, 1 - p), why: "Doubled it, but this is a one-tailed test." }] },
       decisionPart(reject, alpha, `p-value ${r4(p)} ${reject ? "<" : "≥"} α = ${fmt(alpha)}`, "p", "T"),
     ],
   };
@@ -798,8 +797,8 @@ function bernoulli(rng: Rng): Draft {
 type Concept = { title: string; q: string; model: string; points: string[] };
 export const CONCEPTS: Concept[] = [
   { title: "Type I error", q: "What is a Type I error, and which number in a hypothesis test is its probability?", model: "A Type I error is rejecting H₀ when H₀ is actually true. Its probability is the significance level α.", points: ["rejecting H₀", "when H₀ is true", "probability is α"] },
-  { title: "Type II error", q: "What is a Type II error?", model: "A Type II error is not rejecting H₀ when H₀ is actually false (H_A is true).", points: ["not rejecting H₀", "when H₀ is false"] },
-  { title: "The p-value", q: "Define the p-value of a hypothesis test.", model: "The p-value is the probability, assuming H₀ is true, of getting a test statistic at least as extreme as the one observed (in the direction of H_A). A small p-value means the data would be surprising if H₀ were true.", points: ["probability", "assuming H₀ is true", "at least as extreme as observed"] },
+  { title: "Type II error", q: "What is a Type II error?", model: "A Type II error is not rejecting H₀ when H₀ is actually false.", points: ["not rejecting H₀", "when H₀ is false"] },
+  { title: "The p-value", q: "Define the p-value of a hypothesis test.", model: "The p-value is the probability, assuming H₀ is true, of getting a test statistic at least as extreme as the one observed (in the direction of the test's tail). A small p-value means the data would be surprising if H₀ were true.", points: ["probability", "assuming H₀ is true", "at least as extreme as observed"] },
   { title: "Significance α", q: "What does the significance level α mean, and how do you use it to decide?", model: "α is a small probability we decide in advance to count as suspiciously small (for example 5%). We reject H₀ if the p-value is below α (equivalently, if the statistic falls beyond the critical value); otherwise we do not reject.", points: ["small probability chosen in advance", "reject if p-value < α"] },
   { title: "Why n − 1?", q: "Why does the sample variance S² divide by n − 1 and not n?", model: "Dividing by n − 1 makes S² an unbiased estimate of σ²: on average it equals the true variance. Dividing by n (the \"dumb variance\") is biased: on average it underestimates σ², because the data are measured from x̄ rather than the true μ.", points: ["unbiased", "on average equals σ²", "dividing by n underestimates / is biased"] },
   { title: "Biased estimate", q: "What does it mean for an estimate to be biased? Give an example from class.", model: "An estimate is biased if on average it is not equal to the true parameter it estimates. Example: the variance that divides by n is biased; the sample variance S² (divides by n − 1) is unbiased.", points: ["on average not equal to the true parameter", "example: dividing by n"] },
@@ -812,7 +811,7 @@ export const CONCEPTS: Concept[] = [
   { title: "Outside the interval", q: "A student's sample mean falls outside the interval where it had a 95% chance of landing. Must the student have made a mistake? Explain.", model: "No. There was a 5% chance the sample mean would fall outside the interval just by randomness, so it can happen without any mistake. It is unusual, which may make us suspicious, but it is not proof.", points: ["no", "5% chance it falls outside anyway", "unusual is not impossible"] },
   { title: "Do not reject", q: "Why do we say \"do not reject H₀\" rather than \"accept H₀\"?", model: "Not finding enough evidence against H₀ doesn't prove H₀ is true; the data are just consistent with it. A Type II error is possible, so we only say we don't reject it.", points: ["lack of evidence is not proof", "data are consistent with H₀"] },
   { title: "Paired or two-sample?", q: "When should you use a paired test instead of a two-sample test?", model: "Use a paired test when each value in one sample is matched to one in the other, such as the same students before and after. Work with the differences D and do a one-sample t-test on them. Use a two-sample test when the two groups are independent, different people.", points: ["same subjects measured twice / matched pairs", "test the differences D", "two-sample for independent groups"] },
-  { title: "One tail or two?", q: "Why does a two-tailed test use α/2 for its critical values while a one-tailed test uses α?", model: "In a two-tailed test, rejection can happen in either tail, so the total α is split into α/2 in each tail. In a one-tailed test, H_A points one way, so all of α goes in that one tail.", points: ["two tails split α into α/2 each", "one tail puts all of α on one side"] },
+  { title: "One tail or two?", q: "Why does a two-tailed test use α/2 for its critical values while a one-tailed test uses α?", model: "In a two-tailed test, rejection can happen in either tail, so the total α is split into α/2 in each tail. In a one-tailed test, rejection can only happen on one side, so all of α goes in that one tail.", points: ["two tails split α into α/2 each", "one tail puts all of α on one side"] },
 ];
 /** Seeds below 1000 pick CONCEPTS[seed] directly, so a set can ask for a particular idea. */
 function concept(rng: Rng, seed: number): Draft {

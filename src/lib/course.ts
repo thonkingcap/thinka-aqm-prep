@@ -246,7 +246,7 @@ export const TOPICS: Topic[] = [
     plain: {
       idea: "Start by assuming nothing special is going on: that's H₀, the null hypothesis. Work out how likely data like yours would be if H₀ were true: that's the p-value. If it's tiny (below α), you reject H₀.",
       like: "A courtroom: assume innocent (H₀) until the evidence makes that hard to believe. \"Not guilty\" isn't the same as \"proven innocent\", which is why we say \"do not reject\", never \"accept\".",
-      doThis: ["Write H₀ (it always has =, ≤ or ≥) and H_A (the claim you want to show)", "Work out the test statistic and the p-value in Excel", "p-value < α → reject H₀ (R); otherwise do not reject (DR)"],
+      doThis: ["Look at the H₀ you're given: ≤ means right tail, = means two tails, ≥ means left tail", "Work out the test statistic and the p-value in Excel", "p-value < α → reject H₀ (R); otherwise do not reject (DR)"],
     },
     notes: [
       {
@@ -255,11 +255,11 @@ export const TOPICS: Topic[] = [
       },
       {
         heading: "The four steps from class",
-        body: "Step 0: pick α (usually 5% or 1%). Step 1: write H₀ and H_A; H₀ always holds the equals sign. Step 2: work out the test statistic and its p-value. Step 3: if p-value < α, reject H₀; otherwise, do not reject H₀.",
+        body: "Step 0: note α (usually 5% or 1%). Step 1: read the H₀ the question gives you. Step 2: work out the test statistic and its p-value. Step 3: if p-value < α, reject H₀; otherwise, do not reject H₀.",
       },
       {
-        heading: "Which tail? Read the wording",
-        body: "\"Different from\", \"changed\": two tails. H₀: μ = μ₀, H_A: μ ≠ μ₀. \"More than\", \"increased\": right tail. H₀: μ ≤ μ₀, H_A: μ > μ₀. \"Less than\", \"decreased\": left tail. H₀: μ ≥ μ₀, H_A: μ < μ₀. The claim you want evidence for goes in H_A. (μ₀, \"mu-nought\", is the number being claimed.)",
+        heading: "Which tail? Read it off H₀",
+        body: "The professor gives you H₀, so you never have to write it yourself. Just read the sign: H₀: μ ≤ μ₀ is a right-tail test, H₀: μ = μ₀ is two tails, and H₀: μ ≥ μ₀ is a left-tail test. (μ₀, \"mu-nought\", is the number in H₀.) The tail is always on the side H₀ doesn't cover.",
       },
       {
         heading: "Z or T?",
@@ -282,7 +282,7 @@ export const TOPICS: Topic[] = [
     example: {
       title: "Is the student's random number generator honest?",
       source: "Lesson 16, Hypothesis testing sheet",
-      setup: "A student says these 8 numbers came from N(100, 15²). Test H₀: μ = 100 against H_A: μ ≠ 100 at α = 1%.",
+      setup: "A student says these 8 numbers came from N(100, 15²). Test H₀: μ = 100 (two tails) at α = 1%.",
       data: L16_RNG,
       steps: [
         { label: "x̄", formula: `=AVERAGE(${list(L16_RNG)})` },
@@ -294,7 +294,7 @@ export const TOPICS: Topic[] = [
     },
     pitfalls: [
       "Forgetting to double the tail on a two-tailed test.",
-      "Putting the claim you want to show in H₀. It belongs in H_A.",
+      "Reading the tail the wrong way round: H₀ with ≤ is a RIGHT-tail test, with ≥ a LEFT-tail test.",
       "Writing \"we accept H₀\". Say \"do not reject H₀\".",
     ],
   },
@@ -426,7 +426,7 @@ export const TOPICS: Topic[] = [
     example: {
       title: "Is the variance at most 1?",
       source: "Lesson 18, Exercise",
-      setup: "Ten values were drawn from N(0, 1). Test H₀: σ² ≤ 1 against H_A: σ² > 1 (right tail) at α = 0.2.",
+      setup: "Ten values were drawn from N(0, 1). Test H₀: σ² ≤ 1 (right tail) at α = 0.2.",
       data: L18_VAR,
       steps: [
         { label: "S²", formula: `=VAR.S(${list(L18_VAR)})` },
@@ -467,7 +467,7 @@ export const TOPICS: Topic[] = [
       },
       {
         heading: "Reading the output",
-        body: "The Toolpak's \"one-tail\" p-value is always the SMALLER tail, whatever your H_A says. For a one-tailed test, check that the statistic points the way H_A does; if it doesn't, the p-value is 1 − that number. The \"two-tail\" line is right for H₀: μ₁ = μ₂.",
+        body: "The Toolpak's \"one-tail\" p-value is always the SMALLER tail. For a one-tailed test, check that the statistic points into your test's tail (positive for a right tail, negative for a left tail); if it doesn't, the p-value is 1 − that number. The \"two-tail\" line is right for H₀: μ₁ = μ₂.",
       },
     ],
     formulas: [
@@ -491,7 +491,7 @@ export const TOPICS: Topic[] = [
     },
     pitfalls: [
       "Typing σ instead of σ² into \"Variable 1 Variance (known)\".",
-      "Copying the one-tail p without checking the statistic points the way H_A does.",
+      "Copying the one-tail p without checking the statistic points into your test's tail.",
       "Forgetting Hypothesized Mean Difference = 0, or ticking Labels when you didn't select the headers.",
     ],
   },
@@ -557,7 +557,7 @@ export const TOPICS: Topic[] = [
     notes: [
       {
         heading: "Symbols",
-        body: "H₀: the null hypothesis, \"nothing special is going on\". H_A: the alternative, the claim you want to show. μ (\"mu\"): the true average of everyone. μ₀ (\"mu-nought\"): the average H₀ claims. σ (\"sigma\"): the true spread of everyone. x̄ (\"x-bar\"): your sample's average. s: your sample's spread. n: how many you measured. SE: standard error, how much a sample average wobbles, σ/√n or s/√n. N(μ, σ²): a normal curve with average μ and variance σ². α (\"alpha\"): how small a chance counts as \"too surprising\". ν (\"nu\"): degrees of freedom, usually n − 1.",
+        body: "H₀: the null hypothesis, \"nothing special is going on\"; the question gives it to you. μ (\"mu\"): the true average of everyone. μ₀ (\"mu-nought\"): the average H₀ claims. σ (\"sigma\"): the true spread of everyone. x̄ (\"x-bar\"): your sample's average. s: your sample's spread. n: how many you measured. SE: standard error, how much a sample average wobbles, σ/√n or s/√n. N(μ, σ²): a normal curve with average μ and variance σ². α (\"alpha\"): how small a chance counts as \"too surprising\". ν (\"nu\"): degrees of freedom, usually n − 1.",
       },
       {
         heading: "Excel functions",

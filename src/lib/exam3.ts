@@ -126,12 +126,12 @@ function build(world?: { q12?: { xbar: number; s: number } }): QDef[] {
     { n: 7, title: "Left-tailed Z test, H₀: μ ≥ 330 (σ = 3)", kind: "ht-full", topic: "ht", specs: testParts({
       n: n7, alpha: 0.05, stat: z7, statF: "=(AVERAGE(Table2)-330)/(3/SQRT(17))", crit: normInv(0.05), critF: "=NORM.S.INV(0.05)",
       p: normCdf(z7), pF: "=NORM.S.DIST(Z,TRUE)", tail: "left", S: "Z",
-      traps: { stat: [{ value: t8, why: "Used S from the data, but here σ = 3 is trusted: divide by 3/√n." }], crit: [{ value: -normInv(0.05), why: "Wrong sign: a left-tail critical value is negative." }, { value: normInv(0.025), why: "Used α/2, but this is one-tailed." }], p: [{ value: 1 - normCdf(z7), why: "Took the right tail; H_A: μ < 330 points left." }, { value: 2 * normCdf(z7), why: "Doubled it, but this test is one-tailed." }] },
+      traps: { stat: [{ value: t8, why: "Used S from the data, but here σ = 3 is trusted: divide by 3/√n." }], crit: [{ value: -normInv(0.05), why: "Wrong sign: a left-tail critical value is negative." }, { value: normInv(0.025), why: "Used α/2, but this is one-tailed." }], p: [{ value: 1 - normCdf(z7), why: "Took the right tail; H₀: μ ≥ 330 is a left-tail test." }, { value: 2 * normCdf(z7), why: "Doubled it, but this test is one-tailed." }] },
     }) },
     { n: 8, title: "Left-tailed T test, H₀: μ ≥ 330 (σ unknown)", kind: "ht-full", topic: "ht", specs: testParts({
       n: n7, alpha: 0.05, stat: t8, statF: "=(AVERAGE(Table2)-330)/(STDEV.S(Table2)/SQRT(17))", crit: tInv(0.05, n7 - 1), critF: "=T.INV(0.05,16)",
       p: tCdf(t8, n7 - 1), pF: "=T.DIST(T,16,TRUE)", tail: "left", S: "T",
-      traps: { stat: [{ value: z7, why: "Used σ = 3, but now σ is doubted: estimate it with STDEV.S." }], crit: [{ value: normInv(0.05), why: "Used NORM.S.INV; σ is unknown, so T.INV with ν = 16." }, { value: -tInv(0.05, n7 - 1), why: "Wrong sign: a left-tail critical value is negative." }], p: [{ value: normCdf(t8), why: "Used NORM.S.DIST; σ is unknown, so T.DIST with ν = 16." }, { value: 1 - tCdf(t8, n7 - 1), why: "Took the right tail; H_A: μ < 330 points left." }] },
+      traps: { stat: [{ value: z7, why: "Used σ = 3, but now σ is doubted: estimate it with STDEV.S." }], crit: [{ value: normInv(0.05), why: "Used NORM.S.INV; σ is unknown, so T.INV with ν = 16." }, { value: -tInv(0.05, n7 - 1), why: "Wrong sign: a left-tail critical value is negative." }], p: [{ value: normCdf(t8), why: "Used NORM.S.DIST; σ is unknown, so T.DIST with ν = 16." }, { value: 1 - tCdf(t8, n7 - 1), why: "Took the right tail; H₀: μ ≥ 330 is a left-tail test." }] },
     }) },
     { n: 9, title: "Must Questions 7 and 8 agree?", kind: "concept", topic: "concept", specs: [
       text("Must the answers be the same?", "No. Question 7 trusts σ = 3 and uses a Z statistic; Question 8 estimates σ with S from the data and uses a T distribution with 16 degrees of freedom. Different assumptions give a different statistic, critical value and p-value, so the decisions can differ (here they happen to agree).",
@@ -147,12 +147,12 @@ function build(world?: { q12?: { xbar: number; s: number } }): QDef[] {
     { n: 12, title: "Right-tailed T test, H₀: μ ≤ 0.5", kind: "bernoulli", topic: "ht", specs: testParts({
       n: 1000, alpha: 0.05, stat: t12, statF: "=(xbar-0.5)/(S/SQRT(1000))", crit: tInv(0.95, 999), critF: "=T.INV(0.95,999)",
       p: 1 - tCdf(t12, 999), pF: "=1-T.DIST(T,999,TRUE)", tail: "right", S: "T",
-      traps: { crit: [{ value: -tInv(0.95, 999), why: "Wrong sign: a right-tail critical value is positive." }], p: [{ value: tCdf(t12, 999), why: "Took the left tail; H_A: μ > 0.5 points right." }] },
+      traps: { crit: [{ value: -tInv(0.95, 999), why: "Wrong sign: a right-tail critical value is positive." }], p: [{ value: tCdf(t12, 999), why: "Took the left tail; H₀: μ ≤ 0.5 is a right-tail test." }] },
     }) },
     { n: 13, title: "Paired test: did students improve?", kind: "paired", topic: "two", specs: testParts({
       n: n13, alpha: 0.05, stat: t13, statF: "=AVERAGE(D)/(STDEV.S(D)/SQRT(101)), D = Exam 2 − Exam 1", crit: tInv(0.05, n13 - 1), critF: "=T.INV(0.05,100)",
       p: tCdf(t13, n13 - 1), pF: "=T.DIST(T,100,TRUE)", tail: "left", S: "T",
-      traps: { stat: [{ value: -t13, why: "Took Exam 1 − Exam 2. D is positive when a student improved, so D = Exam 2 − Exam 1." }], p: [{ value: 1 - tCdf(t13, n13 - 1), why: "Took the right tail; H_A: μ_D < 0 points left." }], crit: [{ value: -tInv(0.05, n13 - 1), why: "Wrong sign: a left-tail critical value is negative." }] },
+      traps: { stat: [{ value: -t13, why: "Took Exam 1 − Exam 2. D is positive when a student improved, so D = Exam 2 − Exam 1." }], p: [{ value: 1 - tCdf(t13, n13 - 1), why: "Took the right tail; H₀: μ_D ≥ 0 is a left-tail test." }], crit: [{ value: -tInv(0.05, n13 - 1), why: "Wrong sign: a left-tail critical value is negative." }] },
     }) },
     { n: 14, title: "Pooled t test: Tables 4 and 5", kind: "two-t", topic: "two", specs: testParts({
       n: n14, alpha: 0.05, stat: t14, statF: "=(AVERAGE(T4)-AVERAGE(T5))/(Sp*SQRT(2/23)), Sp = SQRT((VAR.S(T4)+VAR.S(T5))/2)", crit: tInv(0.975, df14), critF: "=T.INV(0.975,44)",

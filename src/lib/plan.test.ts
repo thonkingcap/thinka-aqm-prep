@@ -60,7 +60,8 @@ for (const [name, r] of [
 }
 const sample = buildPlan(result({ pvalue: [0, 4], "two-sample": [1, 3], clt: [1, 2] }), today, "2026-11-18");
 console.log(sample.map((p) => `${p.date}  ${p.title}\n${p.tasks.filter((t) => t.kind === "practice").map((t) => `            ${t.label}  ${t.href}`).join("\n")}`).join("\n"));
-ok(SKILLS.length === DIAGNOSED_SKILLS.length + UNCHECKED_SKILLS.length && DIAGNOSED_SKILLS.length === 8, "eight skills on Exam 3");
+ok(SKILLS.length === DIAGNOSED_SKILLS.length + UNCHECKED_SKILLS.length + 1 && DIAGNOSED_SKILLS.length === 8, "eight skills on Exam 3, plus H₀ setup (not scheduled)");
+ok(!buildPlan(result({}), today, "2026-11-25").some((d) => d.skills.includes("h0-setup")), "the plan never schedules writing H₀: the professor gives it");
 console.log(`${fails === 0 ? "PASS" : "FAILED"}: plan builder, ${fails} failures`);
 if (fails) process.exit(1);
 
