@@ -113,3 +113,15 @@ import { cleanGraphic } from "./graphic.ts";
   console.log(`${f ? "FAILED" : "PASS"}: tutor pictures`);
   if (f) process.exit(1);
 }
+
+// Screenshots: shrunk to Claude's sweet spot, never upscaled.
+import { fitSize } from "./screenshot.ts";
+{
+  let f = 0;
+  const a = fitSize(2880, 1800), b = fitSize(800, 600), c = fitSize(1000, 6000);
+  if (Math.max(a.w, a.h) > 1568 || a.w * a.h > 1_150_000 * 1.01 || Math.abs(a.w / a.h - 1.6) > 0.01) { f++; console.log("FAIL retina", a); }
+  if (b.w !== 800 || b.h !== 600) { f++; console.log("FAIL small kept", b); }
+  if (c.h > 1568) { f++; console.log("FAIL tall", c); }
+  console.log(`${f ? "FAILED" : "PASS"}: screenshot sizing`);
+  if (f) process.exit(1);
+}

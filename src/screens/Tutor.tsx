@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type ClipboardEvent, type DragEvent, type FormEvent, type KeyboardEvent } from "react";
 import { useOnline } from "../lib/online.ts";
-import { ArrowUp, Baby, Calculator, LoaderCircle, Plus, Square } from "lucide-react";
+import { ArrowUp, Baby, Calculator, ImagePlus, LoaderCircle, Plus, Square, X } from "lucide-react";
 import type { BetaMessageParam } from "@anthropic-ai/sdk/resources/beta/messages/messages";
 import { useSession } from "../session.tsx";
 import { KEY_IN_TEXT } from "../lib/vault.ts";
@@ -9,6 +9,7 @@ import { money, balanceView } from "../lib/spend.ts";
 import Markdown from "../components/Markdown.tsx";
 import TutorGraphic from "../components/TutorGraphic.tsx";
 import type { GraphicSpec } from "../lib/graphic.ts";
+import { toShot, MAX_SHOTS, type Shot } from "../lib/screenshot.ts";
 import { fmt } from "../components/ui.tsx";
 import { KeyForm } from "./Gate.tsx";
 import Thinka from "../components/Thinka.tsx";
@@ -16,7 +17,7 @@ import "./screens.css";
 import "./tutor.css";
 
 type Part = { type: "text"; text: string } | { type: "tool"; runs: ToolRun[] } | { type: "graphic"; spec: GraphicSpec };
-type Turn = { role: "user"; text: string } | { role: "assistant"; parts: Part[]; error?: string; note?: string };
+type Turn = { role: "user"; text: string; shots?: string[] } | { role: "assistant"; parts: Part[]; error?: string; note?: string };
 
 // Kept at module level so the conversation survives switching screens (not page reloads).
 const store: { history: BetaMessageParam[]; turns: Turn[] } = { history: [], turns: [] };
@@ -74,17 +75,52 @@ export default function Tutor() {
   const [simple, setSimpleState] = useState(readSimple);
   const setSimple = (v: boolean) => { setSimpleState(v); try { localStorage.setItem(SIMPLE_KEY, v ? "on" : "off"); } catch { /* ignore */ } };
   const [keyWarn, setKeyWarn] = useState(false);
+  const [shots, setShots] = useState<Shot[]>([]);
+  const [shotError, setShotError] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  async function addShots(files: Iterable<File>) {
+    setShotError(null);
+    const imgs = [...files].filter((f) => f.type.startsWith("image/"));
+    if (!imgs.length) { setShotError("Only images can be attached (PNG, JPG, GIF or WebP screenshots)."); return; }
+    const room = MAX_SHOTS - shots.length;
+    if (room <= 0 || imgs.length > room) setShotError(`Up to ${MAX_SHOTS} screenshots per message.`);
+    try {
+      const made = await Promise.all(imgs.slice(0, Math.max(0, room)).map(toShot));
+      setShots((prev) => [...prev, ...made].slice(0, MAX_SHOTS));
+    } catch (e) {
+      setShotError(e instanceof Error ? e.message : String(e));
+    }
+  }
+  function onPaste(e: ClipboardEvent<HTMLTextAreaElement>) {
+    const files = [...e.clipboardData.files].filter((f) => f.type.startsWith("image/"));
+    if (files.length) { e.preventDefault(); addShots(files); }
+  }
+  function onDrop(e: DragEvent<HTMLDivElement>) {
+    e.preventDefault(); setDragging(false);
+    if (e.dataTransfer.files?.length) addShots(e.dataTransfer.files);
+  }
+
   async function send(text: string) {
     const t = text.trim();
-    if (!t || busy || !apiKey || !fp) return;
+    const attached = shots;
+    if ((!t && !attached.length) || busy || !apiKey || !fp) return;
     // Never send an API key as chat text: it would end up in the conversation history.
     if (KEY_IN_TEXT.test(t)) { setKeyWarn(true); return; }
     setKeyWarn(false);
     if (startSpent.current === null) startSpent.current = spend?.spent ?? 0;
     setDraft("");
-    store.history.push({ role: "user", content: t });
+    setShots([]); setShotError(null);
+    const ask = t || `Here's a screenshot. What is it asking, and how do I do it in Excel?`;
+    store.history.push({
+      role: "user",
+      content: attached.length
+        ? [...attached.map((s) => ({ type: "image" as const, source: { type: "base64" as const, media_type: s.mediaType, data: s.data } })), { type: "text" as const, text: ask }]
+        : ask,
+    });
     const assistant: Turn = { role: "assistant", parts: [] };
-    setTurns((ts) => [...ts, { role: "user", text: t }, assistant]);
+    setTurns((ts) => [...ts, { role: "user", text: t, ...(attached.length ? { shots: attached.map((s) => s.url) } : {}) }, assistant]);
     const update = (fn: (a: Extract<Turn, { role: "assistant" }>) => void) =>
       setTurns((ts) => {
         const copy = ts.slice();
@@ -179,7 +215,10 @@ export default function Tutor() {
           )}
           {turns.map((t, i) =>
             t.role === "user" ? (
-              <div key={i} className="msg msg-user"><p>{t.text}</p></div>
+              <div key={i} className="msg msg-user">
+                {t.shots && <div className="msg-shots">{t.shots.map((u, k) => <img key={k} src={u} alt={`Screenshot ${k + 1}`} />)}</div>}
+                {t.text && <p>{t.text}</p>}
+              </div>
             ) : (
               <div key={i} className="msg msg-ai">
                 {t.parts.map((p, j) => (p.type === "text" ? <Markdown key={j} text={p.text} /> : p.type === "graphic" ? <TutorGraphic key={j} spec={p.spec} /> : <ToolLedger key={j} runs={p.runs} />))}
@@ -196,17 +235,30 @@ export default function Tutor() {
       </div>
 
       {keyWarn && <p className="notice" role="alert">That message has an API key in it, so it wasn't sent. Remove the key: the tutor never needs it in the chat.</p>}
+      {shotError && <p className="notice" role="alert">{shotError}</p>}
       <form className="composer" onSubmit={submit}>
-        <div className="composer-box">
+        {shots.length > 0 && (
+          <div className="composer-shots">
+            {shots.map((s, k) => (
+              <div key={k} className="composer-shot">
+                <img src={s.url} alt={`Screenshot ${k + 1} to send`} />
+                <button type="button" className="composer-shot-x" onClick={() => setShots((prev) => prev.filter((_, j) => j !== k))} aria-label={`Remove screenshot ${k + 1}`}><X size={12} aria-hidden="true" /></button>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className={`composer-box${dragging ? " dragging" : ""}`} onDragOver={(e) => { if ([...e.dataTransfer.types].includes("Files")) { e.preventDefault(); setDragging(true); } }} onDragLeave={() => setDragging(false)} onDrop={onDrop}>
+          <input ref={fileRef} type="file" accept="image/*" multiple className="sr-only" tabIndex={-1} onChange={(e) => { if (e.target.files) addShots(e.target.files); e.target.value = ""; }} />
+          <button type="button" className="btn btn-ghost btn-icon composer-attach" onClick={() => fileRef.current?.click()} disabled={shots.length >= MAX_SHOTS} aria-label="Attach a screenshot" title="Attach a screenshot (or paste one)"><ImagePlus size={17} aria-hidden="true" /></button>
           <label htmlFor="composer" className="sr-only">Message the tutor</label>
-          <textarea id="composer" rows={1} placeholder="Ask about any Midterm 2 topic, or paste a question" value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={onKey} />
+          <textarea id="composer" rows={1} placeholder="Ask about any Midterm 2 topic, or paste a screenshot" value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={onKey} onPaste={onPaste} />
           {busy ? (
             <button type="button" className="btn btn-primary btn-icon" onClick={() => abortRef.current?.abort()} aria-label="Stop"><Square size={14} aria-hidden="true" /></button>
           ) : (
-            <button type="submit" className="btn btn-primary btn-icon" disabled={!draft.trim() || !online} aria-label={online ? "Send" : "Send (needs internet)"}><ArrowUp size={16} aria-hidden="true" /></button>
+            <button type="submit" className="btn btn-primary btn-icon" disabled={(!draft.trim() && !shots.length) || !online} aria-label={online ? "Send" : "Send (needs internet)"}><ArrowUp size={16} aria-hidden="true" /></button>
           )}
         </div>
-        <p className="hint composer-hint">Enter to send, Shift+Enter for a new line. Claude can be wrong; the formulas show how each number was made.</p>
+        <p className="hint composer-hint">Enter to send, Shift+Enter for a new line. Paste, drop or attach screenshots of a question or your Excel sheet. Claude can be wrong; the formulas show how each number was made.</p>
       </form>
     </div>
   );
