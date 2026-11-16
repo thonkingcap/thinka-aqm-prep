@@ -1,5 +1,4 @@
 import { useState } from "react";
-import KeyHelp from "../components/KeyHelp.tsx";
 import { ExternalLink, RefreshCw, Trash2 } from "lucide-react";
 import { useSession } from "../session.tsx";
 import { mask, isShared, IDLE_DAYS } from "../lib/vault.ts";
@@ -39,7 +38,6 @@ export default function KeySettings() {
       <section className="set-row">
         <div className="set-label">
           <h2>Your key</h2>
-          <KeyHelp />
           {provider?.id === "code"
             ? <p>You're using an access code from Daniel. Dr Phil runs on {provider.modelLabel} through this site's own server, which uses Daniel's key; the code is the only thing your browser sends.</p>
             : <p>The tutor runs on {provider?.modelLabel ?? "Claude Sonnet"} with your own key, and the page sends it only to {babson ? "Babson's Claude gateway" : provider ? "api.anthropic.com" : "Babson's Claude gateway (or Anthropic, for keys made at platform.claude.com)"}. The site's security policy blocks every other destination.</p>}

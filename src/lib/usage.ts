@@ -1,6 +1,8 @@
 // Usage logs, so the site's author can see how many students it helps.
-// Logged: a random visitor id, the name the student types, active minutes on the site, and a count of
-// Claude requests (which feature, nothing else). Never the API key, anything derived from it, or answers.
+// Logged: a random visitor id, the name the student types, active minutes on the site, a count of Claude
+// requests (which feature), each request's estimated cost and token counts, and a short key tag (part of
+// a one-way hash of the key, or "code" for access codes) so unique keys can be counted. Never the key
+// itself or anything it could be rebuilt from, and never answers or messages.
 // Rows go to a Supabase function that can only append (log_event); this key can't read anything back.
 // Everything here is fire-and-forget: it never throws and never blocks the page.
 import { useEffect, useState } from "react";
@@ -11,8 +13,13 @@ const VISITOR_KEY = "aqm.visitor";
 const NAME_KEY = "aqm.name";
 
 export type ClaudeFeature = "tutor" | "mark" | "design" | "plan" | "verify";
-type Kind = "hello" | "time" | "claude" | "key";
-export type UsagePayload = { p_visitor: string; p_kind: Kind; p_name?: string; p_seconds?: number; p_feature?: ClaudeFeature; p_page?: string };
+type Kind = "hello" | "time" | "claude" | "key" | "cost";
+export type UsagePayload = { p_visitor: string; p_kind: Kind; p_name?: string; p_seconds?: number; p_feature?: ClaudeFeature; p_page?: string; p_key_tag?: string; p_cost?: number; p_tokens_in?: number; p_tokens_out?: number };
+
+/** The current key's tag: the first 10 characters of its one-way fingerprint, or "code". */
+let keyTag: string | null = null;
+export function setUsageKey(tag: string | null) { keyTag = tag && /^[A-Za-z0-9_-]{1,16}$/.test(tag) ? tag : null; }
+const withKey = () => (keyTag ? { p_key_tag: keyTag } : {});
 
 const store = {
   get(k: string): string | null { try { return localStorage.getItem(k); } catch { return null; } },
@@ -88,8 +95,13 @@ export function useNeedsName(): boolean {
 
 // ---------- events ----------
 /** One row per request sent to Claude (the tutor's tool-loop follow-ups count as requests too). */
-export function logClaude(feature: ClaudeFeature) { send(payload("claude", { p_feature: feature })); }
-export function logKeyAdded() { send(payload("key")); }
+export function logClaude(feature: ClaudeFeature) { send(payload("claude", { p_feature: feature, ...withKey() })); }
+export function logKeyAdded() { send(payload("key", withKey())); }
+/** One row per Claude reply: its estimated cost in dollars and its tokens. */
+export function logCost(cost: number, tokensIn: number, tokensOut: number) {
+  if (!(cost >= 0) || !Number.isFinite(cost)) return;
+  send(payload("cost", { p_cost: Math.round(cost * 1e6) / 1e6, p_tokens_in: Math.round(tokensIn), p_tokens_out: Math.round(tokensOut), ...withKey() }));
+}
 
 // ---------- time on site ----------
 const TICK = 15_000;          // sample every 15 s

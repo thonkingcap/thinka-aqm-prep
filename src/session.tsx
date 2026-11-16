@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import * as vault from "./lib/vault.ts";
-import { logKeyAdded } from "./lib/usage.ts";
+import { logKeyAdded, setUsageKey } from "./lib/usage.ts";
+import { isCodeKey } from "./lib/provider.ts";
 import { readSpend, type SpendState } from "./lib/spend.ts";
 import { fetchRemoteBalance, providerFor, type Provider, type RemoteBalance } from "./lib/provider.ts";
 
@@ -50,8 +51,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let live = true;
-    if (!apiKey) { setFp(null); setSpend(null); return; }
-    vault.fingerprint(apiKey).then((f) => { if (live) { setFp(f); setSpend(readSpend(f)); } });
+    if (!apiKey) { setFp(null); setSpend(null); setUsageKey(null); return; }
+    vault.fingerprint(apiKey).then((f) => { if (live) { setFp(f); setSpend(readSpend(f)); setUsageKey(isCodeKey(apiKey) ? "code" : f.slice(0, 10)); } });
     return () => { live = false; };
   }, [apiKey]);
 
@@ -70,6 +71,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const useKey = useCallback(async (key: string, opts: { shared: boolean }) => {
     await vault.storeKey(key, opts);
+    setUsageKey(isCodeKey(key) ? "code" : (await vault.fingerprint(key)).slice(0, 10));
     setApiKey(key);
     logKeyAdded();
   }, []);

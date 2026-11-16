@@ -203,3 +203,17 @@
 .name-form .problem-head { padding-right: 0; }
 .name-field .input { width: 100%; font-size: 16px; }
 .name-form .btn { align-self: flex-start; }
+
+/* Where to find the key: big, readable steps */
+.key-find { padding: 14px 16px; border: 2px solid var(--text); border-radius: 12px; background: var(--surface); color: var(--text); }
+.key-find-title { font-size: 16px; font-weight: 700; margin: 0 0 10px !important; }
+.key-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; counter-reset: step; }
+.key-steps li { display: grid; grid-template-columns: 26px 22px minmax(0, 1fr); gap: 8px; align-items: center; font-size: 15px; line-height: 1.4; color: var(--text); counter-increment: step; }
+.key-steps li::before { content: counter(step); display: grid; place-items: center; width: 24px; height: 24px; border-radius: 12px; background: var(--text); color: #fff; font-size: 13px; font-weight: 700; }
+.key-steps li svg { color: var(--muted); }
+.key-steps b { font-weight: 700; }
+.key-search { display: inline-block; padding: 1px 8px; border-radius: 6px; background: #fff4b8; box-shadow: inset 0 0 0 1px #e6d27a; }
+.key-help .key-steps code { font-size: 13px; }
+.key-code-line { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; color: var(--text) !important; margin: 4px 0 0 !important; }
+.key-code-line svg { flex: none; margin-top: 2px; color: var(--muted); }
+.key-help { max-width: 64ch; gap: 10px; }

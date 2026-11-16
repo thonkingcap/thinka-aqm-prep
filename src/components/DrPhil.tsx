@@ -1,11 +1,12 @@
 // The tutor's avatar: a cartoon of Dr Phil (made at his request): short dark swept hair, dark
-// rectangular glasses, a short beard and a denim jacket. Plain SVG, so it's crisp at any size.
+// rectangular glasses, a short beard and a denim jacket. He's British, so `tea` adds a cup of tea (with
+// a wisp of steam) held up under his chin. Plain SVG, so it's crisp at any size.
 import { useId } from "react";
 
-export default function DrPhil({ size = 40, title }: { size?: number; title?: string; strokeWidth?: number }) {
+export default function DrPhil({ size = 40, title, tea = false, className }: { size?: number; title?: string; strokeWidth?: number; tea?: boolean; className?: string }) {
   const clip = useId();
   return (
-    <svg width={size} height={size} viewBox="0 0 64 64" role={title ? "img" : undefined} aria-label={title} aria-hidden={title ? undefined : true} className="drphil">
+    <svg width={size} height={size} viewBox="0 0 64 64" role={title ? "img" : undefined} aria-label={title} aria-hidden={title ? undefined : true} className={`drphil${tea ? " drphil-tea" : ""}${className ? ` ${className}` : ""}`}>
       <defs>
         <clipPath id={clip}><circle cx="32" cy="32" r="32" /></clipPath>
       </defs>
@@ -38,6 +39,21 @@ export default function DrPhil({ size = 40, title }: { size?: number; title?: st
         <rect x="32.6" y="27.4" width="9" height="6.6" rx="1.8" fill="#ffffff" fillOpacity="0.18" stroke="#121212" strokeWidth="1.7" />
         <path d="M31.4 29.6 L32.6 29.6 M22.4 29 L19.8 28.2 M41.6 29 L44.2 28.2" stroke="#121212" strokeWidth="1.5" strokeLinecap="round" />
         </g>
+        {tea && (
+          <g className="drphil-cup">
+            {/* steam */}
+            <path className="drphil-steam" d="M37.5 44.5 C36 42.6 39 41.4 37.6 39.4 M41.6 44.5 C40.1 42.6 43.1 41.4 41.7 39.4" stroke="#9aa7b4" strokeWidth="1" fill="none" strokeLinecap="round" opacity="0.85" />
+            {/* saucer, cup with a blue band, handle */}
+            <ellipse cx="40" cy="57.6" rx="9.4" ry="1.9" fill="#f4f4f2" stroke="#c9c9c4" strokeWidth="0.7" />
+            <path d="M33 46.6 L47 46.6 L45.6 54.6 C45.3 56.3 43.9 57 42.4 57 L37.6 57 C36.1 57 34.7 56.3 34.4 54.6 Z" fill="#ffffff" stroke="#c9c9c4" strokeWidth="0.7" />
+            <path d="M33.4 49 L46.6 49 L46.3 50.6 L33.7 50.6 Z" fill="#1d5fbf" />
+            <path d="M46.6 48.4 C50.6 48.2 50.8 53.4 46 53.6" stroke="#c9c9c4" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+            <ellipse cx="40" cy="46.7" rx="7" ry="1" fill="#a5714e" />
+            {/* fingers holding the cup */}
+            <ellipse cx="32.6" cy="51.4" rx="2.6" ry="2.1" fill="#d6a37e" />
+            <ellipse cx="32.8" cy="54.4" rx="2.4" ry="1.9" fill="#d6a37e" />
+          </g>
+        )}
       </g>
     </svg>
   );

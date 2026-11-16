@@ -8,6 +8,7 @@ import { UploadBox, GradeReport, readScores, DownloadNote } from "../components/
 import type { WorkbookGrade } from "../lib/grade.ts";
 import { useSession } from "../session.tsx";
 import PageHint from "../components/PageHint.tsx";
+import PhilCorner from "../components/PhilCorner.tsx";
 import "./screens.css";
 import "./area.css";
 
@@ -45,6 +46,7 @@ export default function Area({ id, route = [] }: { id?: string; route?: string[]
   return (
     <div className="page area">
       <header className="area-head stagger">
+        <PhilCorner line="Grab a cuppa and give set 1 a go." />
         <p className="area-eyebrow"><span className="area-badge" aria-hidden="true">{a.n}</span>Section {a.n} of {AREAS.length} · Exam 3 {qRange(a)}</p>
         <h1>{a.title}</h1>
         <p className="area-blurb">{a.blurb}</p>

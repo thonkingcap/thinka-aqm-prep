@@ -11,6 +11,7 @@ import Tutor from "./screens/Tutor.tsx";
 import KeySettings from "./screens/KeySettings.tsx";
 import Area from "./screens/Area.tsx";
 import Exam3 from "./screens/Exam3.tsx";
+import Admin from "./screens/Admin.tsx";
 import Walkthrough, { openHowTo } from "./components/Walkthrough.tsx";
 import { AREAS } from "./lib/areas.ts";
 import DrPhil from "./components/DrPhil.tsx";
@@ -50,11 +51,13 @@ export default function App() {
   }, [screen, route[1]]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!ready) return <div className="boot" aria-busy="true" />;
+  if (screen === "admin") return <main className="main" id="main"><Admin /></main>;
   if (!apiKey && !browsing && screen !== "key") return <>{needsName && <NamePrompt />}<Gate /></>;
 
   let body: ReactNode;
   switch (screen) {
     case "exam3": body = <Exam3 />; break;
+    case "admin": body = <Admin />; break;
     case "area": body = <Area id={route[1]} route={route.slice(2)} />; break;
     case "learn": body = <Learn topicId={route[1]} />; break;
     case "lab": body = <Lab />; break;

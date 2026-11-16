@@ -3,6 +3,7 @@
 
 // Claude Sonnet 5 and 5.5 share this price, USD per million tokens (Anthropic first-party pricing).
 // Only used when the real balance isn't available (keys made at platform.claude.com).
+import { logCost } from "./usage.ts";
 export const PRICE = { input: 2.0, output: 10.0, cacheWrite: 2.5, cacheRead: 0.2 };
 export const BILLING_URL = "https://platform.claude.com/settings/billing";
 export const KEYS_URL = "https://platform.claude.com/settings/keys";
@@ -43,6 +44,7 @@ export function writeSpend(fp: string, s: SpendState) {
 
 export function addUsage(fp: string, u: Usage): SpendState {
   const s = readSpend(fp);
+  logCost(costOf(u), u.input_tokens + (u.cache_creation_input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0), u.output_tokens);
   s.spent += costOf(u);
   s.calls += 1;
   s.inTok += u.input_tokens + (u.cache_creation_input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0);

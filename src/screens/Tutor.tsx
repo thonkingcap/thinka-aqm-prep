@@ -211,8 +211,8 @@ export default function Tutor() {
         <div className="tutor-col">
           {turns.length === 0 && (
             <div className="starters">
-              <span className="thinka-hop starters-thinka"><DrPhil size={72} title="Dr Phil" /></span>
-              <h2>Ask Dr Phil anything, or start with one of these</h2>
+              <span className="thinka-hop starters-thinka"><DrPhil size={88} tea title="Dr Phil with a cup of tea" /></span>
+              <h2>Right then, ask me anything, or start with one of these</h2>
               <div className="starter-list">
                 {STARTERS.map((s) => <button key={s} className="starter" onClick={() => send(s)}>{s}</button>)}
               </div>

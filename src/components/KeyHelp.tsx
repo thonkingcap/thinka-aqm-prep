@@ -1,10 +1,19 @@
-// What an API key is and where a Babson student finds theirs. Shown wherever the key is pasted.
+// Where a student finds their key, as three big steps people actually read. Shown wherever the key is pasted.
+import { Mail, Search, ClipboardPaste, Ticket } from "lucide-react";
+
 export default function KeyHelp({ id }: { id?: string }) {
   return (
     <div id={id} className="key-help">
-      <p><strong>What's an API key?</strong> Every Babson freshman gets $100 of Claude credit. To find yours, search <strong>"Claude API"</strong> in Outlook: there's an email from Ian Cox with a key that starts with <code>sk-</code>.</p>
-      <p>Paste that key here to chat with Dr Phil, an AI tutor built on Claude that knows his class notes. It also marks your written answers and builds custom practice sets. Everything else on the site works without a key.</p>
-      <p><strong>No key?</strong> If Daniel gave you an access code, type it in the same box instead.</p>
+      <div className="key-find">
+        <p className="key-find-title">Freshman? Get your key in 30 seconds</p>
+        <ol className="key-steps">
+          <li><Mail size={18} aria-hidden="true" /><span>Open your <b>Babson email</b> (Outlook)</span></li>
+          <li><Search size={18} aria-hidden="true" /><span>Search <b className="key-search">Ian Cox</b></span></li>
+          <li><ClipboardPaste size={18} aria-hidden="true" /><span>Copy the key that starts with <code>sk-</code> and <b>paste it below</b></span></li>
+        </ol>
+      </div>
+      <p className="key-code-line"><Ticket size={16} aria-hidden="true" /><span><b>Sophomore, or no key?</b> Type the <b>access code</b> Daniel gave you in the same box.</span></p>
+      <p className="hint">The key lets you chat with Dr Phil, an AI tutor that knows the class notes, and have Claude mark written answers. Every Babson freshman gets $100 of Claude credit. Everything else on the site works without a key.</p>
     </div>
   );
 }

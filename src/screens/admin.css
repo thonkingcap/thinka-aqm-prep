@@ -1,0 +1,13 @@
+/* #/admin */
+.admin-gate { display: grid; place-items: center; min-height: 60vh; }
+.admin-lock { display: grid; gap: 12px; justify-items: start; width: min(360px, 100%); padding: 24px; }
+.admin-lock .input { width: 100%; }
+.admin-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin: 16px 0; }
+.admin-tile { display: flex; flex-direction: column; gap: 2px; padding: 14px 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.admin-tile b { font-size: 26px; font-weight: 700; line-height: 1.2; }
+.admin-scroll { overflow-x: auto; }
+.admin-table { min-width: 640px; }
+.admin-table td, .admin-table th { white-space: nowrap; }
+.admin-split { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; margin-top: 16px; }
+@media (max-width: 760px) { .admin-split { grid-template-columns: minmax(0, 1fr); } }
+.admin-table td + td, .admin-table th + th { padding-left: 18px; }

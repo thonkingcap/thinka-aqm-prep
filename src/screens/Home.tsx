@@ -10,6 +10,7 @@ import { readScores } from "../components/UploadGrade.tsx";
 import { DayRow } from "../components/PlanDays.tsx";
 import PageHint from "../components/PageHint.tsx";
 import { areaProgress } from "./Area.tsx";
+import PhilCorner from "../components/PhilCorner.tsx";
 import "./screens.css";
 import "./home.css";
 
@@ -47,6 +48,7 @@ export default function Home() {
   return (
     <div className="page home">
       <header className="home-head stagger">
+        <PhilCorner line="Kettle's on. Let's get you sorted for Wednesday." />
         <p className="home-count">
           <span className="home-count-n num">{Math.max(0, days)}</span>
           <span>{days > 0 ? `day${days === 1 ? "" : "s"} until Midterm 2 · ${longDate(exam)}` : days === 0 ? "Midterm 2 is today. You've got this." : "Midterm 2 has passed"}</span>

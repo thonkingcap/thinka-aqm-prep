@@ -44,9 +44,11 @@ So the author can see how many students the site helps, it logs a little usage t
 
 - the name you type on your first visit, and a random visitor id kept in your browser;
 - active minutes on the site (only while the tab is visible and you've used it in the last 10 minutes), sent every 5 minutes and when you leave;
-- one row per request sent to Claude, labelled only with the feature (tutor, marking, custom set, plan, key check), and a row when you add a key.
+- one row per request sent to Claude, labelled only with the feature (tutor, marking, custom set, plan, key check), and a row when you add a key;
+- each Claude reply's estimated cost and token counts;
+- a key tag: the first 10 characters of a one-way SHA-256 fingerprint of your key (or "code" for an access code), so the author can count unique keys. It can't be turned back into the key.
 
-It never logs your API key, anything derived from it, your answers or your messages. Your key still goes only to Claude (Babson's gateway or Anthropic). The site calls a single database function, `log_event`, that can only append a validated row; the public key in the code can't read, change or delete anything. The CSP adds `https://kxtdmgpecxlzyepshryw.supabase.co` to `connect-src` for this. Logging is skipped while you're offline.
+It never logs your API key itself, your answers or your messages. Your key still goes only to Claude (Babson's gateway or Anthropic). The site calls a single database function, `log_event`, that can only append a validated row; the public key in the code can't read, change or delete anything. The author reads the stats on a hidden page through `admin_stats`, which only answers to the right admin code: the database stores only a bcrypt hash of it, and wrong codes lock it for 10 minutes after 20 tries. The CSP adds `https://kxtdmgpecxlzyepshryw.supabase.co` to `connect-src` for this. Logging is skipped while you're offline.
 
 ## Access codes
 

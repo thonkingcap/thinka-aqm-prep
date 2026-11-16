@@ -49,8 +49,9 @@ export function KeyForm({ onDone }: { onDone?: () => void; compact?: boolean }) 
 
   return (
     <form className="key-form" onSubmit={submit} autoComplete="off" noValidate>
+      <KeyHelp id="key-help" />
       <div className="field">
-        <label htmlFor="api-key">Your Claude API key or access code</label>
+        <label htmlFor="api-key">Paste your key or access code here</label>
         <div className="key-input">
           <input
             id="api-key"
@@ -70,7 +71,6 @@ export function KeyForm({ onDone }: { onDone?: () => void; compact?: boolean }) 
             {show ? <EyeOff size={16} strokeWidth={1.6} /> : <Eye size={16} strokeWidth={1.6} />}
           </button>
         </div>
-        <KeyHelp id="key-help" />
         <span className="hint">A key made at <a href={KEYS_URL} target="_blank" rel="noopener noreferrer">platform.claude.com</a> works too.</span>
       </div>
 
