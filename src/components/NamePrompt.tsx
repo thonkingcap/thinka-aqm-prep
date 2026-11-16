@@ -27,7 +27,7 @@ export default function NamePrompt({ onDone }: { onDone?: () => void }) {
   }
 
   return (
-    <dialog ref={ref} className="problem name-prompt" aria-labelledby="name-title" aria-describedby="name-note" onCancel={(e) => e.preventDefault()}>
+    <dialog ref={ref} className="problem name-prompt" aria-labelledby="name-title" onCancel={(e) => e.preventDefault()}>
       <form className="problem-inner name-form" onSubmit={submit} noValidate>
         <div className="problem-head">
           <Thinka size={44} />
@@ -40,7 +40,6 @@ export default function NamePrompt({ onDone }: { onDone?: () => void }) {
             aria-invalid={!!error} aria-describedby={error ? "name-error" : undefined} placeholder="Your name" />
         </label>
         {error && <p id="name-error" className="notice upload-error" role="alert">{error}</p>}
-        <p id="name-note" className="hint">So Daniel can see who this site is helping. The site logs your name, time on the site and how many Claude requests you make. Never your key or your answers.</p>
         <button type="submit" className="btn btn-primary" disabled={!name.trim()}>Continue</button>
       </form>
     </dialog>
