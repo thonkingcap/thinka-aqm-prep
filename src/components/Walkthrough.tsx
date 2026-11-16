@@ -100,7 +100,7 @@ export default function Walkthrough() {
           <p id="howto-body">{s.body}</p>
           <a className="howto-cta" href={s.cta.href} onClick={close}>{s.cta.label}<ArrowRight size={14} aria-hidden="true" /></a>
         </div>
-        <p className="howto-note">Got a Babson Claude API key? Add it with the key button for the tutor and for Claude's feedback on your written answers. Everything else works without one.</p>
+        <p className="howto-note">Got a Babson Claude API key? Add it with the key button for Dr Phil (the AI tutor) and for Claude's feedback on your written answers. Everything else works without one.</p>
         <div className="howto-foot">
           <div className="howto-dots" aria-hidden="true">
             {STEPS.map((_, i) => <span key={i} className={i === step ? "on" : i < step ? "done" : ""} />)}

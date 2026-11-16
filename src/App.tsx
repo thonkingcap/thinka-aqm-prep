@@ -1,5 +1,5 @@
-import { useEffect, useState, type ReactNode } from "react";
-import { CircleHelp, FileSpreadsheet, House, KeyRound, LifeBuoy, MessageSquare } from "lucide-react";
+import { useEffect, useState, type JSX, type ReactNode } from "react";
+import { CircleHelp, FileSpreadsheet, House, KeyRound, LifeBuoy } from "lucide-react";
 import ProblemDialog from "./components/ProblemDialog.tsx";
 import { useSession, useRoute } from "./session.tsx";
 import Gate from "./screens/Gate.tsx";
@@ -13,6 +13,8 @@ import Area from "./screens/Area.tsx";
 import Exam3 from "./screens/Exam3.tsx";
 import Walkthrough, { openHowTo } from "./components/Walkthrough.tsx";
 import { AREAS } from "./lib/areas.ts";
+import DrPhil from "./components/DrPhil.tsx";
+const DrPhilIcon = ({ size = 18 }: { size?: number; strokeWidth?: number }) => <DrPhil size={size + 6} />;
 import { ThinkaMark } from "./components/Thinka.tsx";
 import { useOnline } from "./lib/online.ts";
 import NamePrompt, { useNeedsName } from "./components/NamePrompt.tsx";
@@ -22,11 +24,11 @@ startUsageClock();
 
 /** Nav: Home, Exam 3, the exam's four areas (numbered), the tutor. `tiny` is the phone label. */
 const MOBILE: Record<string, string> = { ci: "CIs", ht1: "Tests I", ht2: "Tests II", two: "Two-sam." };
-const NAV: { href: string; label: string; tiny: string; match: (r: string[]) => boolean; icon?: typeof House; n?: number }[] = [
+const NAV: { href: string; label: string; tiny: string; match: (r: string[]) => boolean; icon?: typeof House | ((p: { size?: number; strokeWidth?: number }) => JSX.Element); n?: number }[] = [
   { href: "#/home", label: "Home", tiny: "Home", icon: House, match: (r) => !r[0] || r[0] === "home" },
   { href: "#/exam3", label: "Exam 3: start here", tiny: "Exam 3", icon: FileSpreadsheet, match: (r) => r[0] === "exam3" },
   ...AREAS.map((a) => ({ href: `#/area/${a.id}`, label: `${a.n}. ${a.title}`, tiny: MOBILE[a.id] ?? a.short, n: a.n, match: (r: string[]) => r[0] === "area" && r[1] === a.id })),
-  { href: "#/tutor", label: "Tutor", tiny: "Tutor", icon: MessageSquare, match: (r) => r[0] === "tutor" },
+  { href: "#/tutor", label: "Dr Phil (AI tutor)", tiny: "Dr Phil", icon: DrPhilIcon, match: (r) => r[0] === "tutor" },
 ];
 
 export function Mark({ size = 32 }: { size?: number }) {
@@ -95,7 +97,7 @@ export default function App() {
         </div>
       </nav>
       <main className="main" id="main">
-        {!online && <p className="offline-bar" role="status">You're offline. Notes, workbook downloads and marking all still work; the tutor and the Claude features come back when you reconnect.</p>}
+        {!online && <p className="offline-bar" role="status">You're offline. Notes, workbook downloads and marking all still work; Dr Phil and the Claude features come back when you reconnect.</p>}
         <div className="route" key={route.join("/")}>{body}</div>
       </main>
       <ProblemDialog open={problem} onClose={() => setProblem(false)} />

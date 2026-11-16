@@ -99,7 +99,7 @@ export default function Gate() {
         <div className="gate-copy">
           <span className="thinka-hop gate-thinka"><Thinka size={88} mood="happy" title="Thinka, a bell curve with a face" /></span>
           <h1>Thinka's AQM Prep</h1>
-          <p className="gate-lede">Study for AQM 1000 Midterm 2: class notes, Excel practice sets that mark themselves, and a Claude tutor that runs on the free Claude credit Babson gives every freshman.</p>
+          <p className="gate-lede">Study for AQM 1000 Midterm 2: class notes, Excel practice sets that mark themselves, and Dr Phil, an AI tutor that runs on the free Claude credit Babson gives every freshman.</p>
         </div>
 
         <KeyForm />

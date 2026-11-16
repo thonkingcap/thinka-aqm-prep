@@ -227,3 +227,4 @@ code, pre, .mono { font-family: var(--mono); }
 .problem-sent h2 { font-size: 20px; }
 .boot { min-height: 100vh; background: var(--ground); }
 .offline-bar { margin: 0 0 16px; padding: 8px 12px; border-radius: 8px; font-size: 13px; background: var(--pill-warning-bg); color: var(--pill-warning-ink); }
+.rail-link .drphil { border-radius: 50%; box-shadow: 0 0 0 1px var(--border); }

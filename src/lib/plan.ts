@@ -245,7 +245,7 @@ export function buildPlan(result: DiagnosticResult, today = new Date(), exam = e
       skills: ids,
       tasks: [
         ...skillTasks(ids, versions),
-        ...(isWarm ? [] : [{ kind: "tutor" as const, label: "Stuck? Ask the tutor to quiz you on it", href: "#/tutor", tutorPrompt: `Quiz me on ${ids.map((id) => lcFirst(skillById(id).name)).join(" and ")}, one question at a time, exam style, using the class's Excel functions.` }]),
+        ...(isWarm ? [] : [{ kind: "tutor" as const, label: "Stuck? Ask Dr Phil to quiz you on it", href: "#/tutor", tutorPrompt: `Quiz me on ${ids.map((id) => lcFirst(skillById(id).name)).join(" and ")}, one question at a time, exam style, using the class's Excel functions.` }]),
       ],
     });
   });

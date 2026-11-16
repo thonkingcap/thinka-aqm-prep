@@ -12,7 +12,7 @@ import type { GraphicSpec } from "../lib/graphic.ts";
 import { toShot, MAX_SHOTS, type Shot } from "../lib/screenshot.ts";
 import { fmt } from "../components/ui.tsx";
 import { KeyForm } from "./Gate.tsx";
-import Thinka from "../components/Thinka.tsx";
+import DrPhil from "../components/DrPhil.tsx";
 import "./screens.css";
 import "./tutor.css";
 
@@ -180,7 +180,7 @@ export default function Tutor() {
   if (!apiKey) {
     return (
       <div className="page tutor-nokey">
-        <div className="title-row"><div><h1>Tutor</h1><p className="sub">The tutor is Claude Sonnet, running on your own API key. Paste the key from Babson's email to start. This device remembers it, so you only do this once.</p></div></div>
+        <div className="title-row"><div><h1>Dr Phil</h1><p className="sub">Dr Phil is an AI tutor (Claude Sonnet) running on your own API key. Paste the key from Babson's email to start. This device remembers it, so you only do this once.</p></div></div>
         <div className="panel tutor-key"><KeyForm compact /></div>
       </div>
     );
@@ -190,8 +190,13 @@ export default function Tutor() {
     <div className="tutor">
       <header className="tutor-head">
         <div>
-          <h1>Tutor</h1>
-          <p className="hint">{provider?.modelLabel ?? "Claude Sonnet"} · every number is computed with the class's Excel functions</p>
+          <div className="tutor-who">
+            <DrPhil size={40} title="Dr Phil" />
+            <div>
+              <h1>Dr Phil</h1>
+              <p className="hint">AI tutor · {provider?.modelLabel ?? "Claude Sonnet"} · every number is computed with the class's Excel functions</p>
+            </div>
+          </div>
         </div>
         <div className="row">
           <button type="button" className={`eli5${simple ? " on" : ""}`} role="switch" aria-checked={simple} onClick={() => setSimple(!simple)} title="Plain words, everyday examples and simple pictures">
@@ -206,8 +211,8 @@ export default function Tutor() {
         <div className="tutor-col">
           {turns.length === 0 && (
             <div className="starters">
-              <span className="thinka-hop starters-thinka"><Thinka size={64} mood="thinking" /></span>
-              <h2>Start with one of these</h2>
+              <span className="thinka-hop starters-thinka"><DrPhil size={72} title="Dr Phil" /></span>
+              <h2>Ask Dr Phil anything, or start with one of these</h2>
               <div className="starter-list">
                 {STARTERS.map((s) => <button key={s} className="starter" onClick={() => send(s)}>{s}</button>)}
               </div>
@@ -221,9 +226,10 @@ export default function Tutor() {
               </div>
             ) : (
               <div key={i} className="msg msg-ai">
+                <div className="msg-who"><DrPhil size={22} /><span>Dr Phil</span></div>
                 {t.parts.map((p, j) => (p.type === "text" ? <Markdown key={j} text={p.text} /> : p.type === "graphic" ? <TutorGraphic key={j} spec={p.spec} /> : <ToolLedger key={j} runs={p.runs} />))}
                 {i === turns.length - 1 && busy && (
-                  <p className="tutor-status"><LoaderCircle size={14} className="spin" aria-hidden="true" /> {status === "calculating" ? "Working it out in Excel" : status === "thinking" ? "Thinking" : "Writing"}</p>
+                  <p className="tutor-status"><LoaderCircle size={14} className="spin" aria-hidden="true" /> {status === "calculating" ? "Working it out in Excel" : status === "thinking" ? "Dr Phil is thinking" : "Writing"}</p>
                 )}
                 {t.note && <p className="notice neutral">{t.note}</p>}
                 {t.error && <p className="notice" role="alert">{t.error}</p>}
@@ -234,7 +240,7 @@ export default function Tutor() {
         </div>
       </div>
 
-      {keyWarn && <p className="notice" role="alert">That message has an API key in it, so it wasn't sent. Remove the key: the tutor never needs it in the chat.</p>}
+      {keyWarn && <p className="notice" role="alert">That message has an API key in it, so it wasn't sent. Remove the key: Dr Phil never needs it in the chat.</p>}
       {shotError && <p className="notice" role="alert">{shotError}</p>}
       <form className="composer" onSubmit={submit}>
         {shots.length > 0 && (
@@ -250,8 +256,8 @@ export default function Tutor() {
         <div className={`composer-box${dragging ? " dragging" : ""}`} onDragOver={(e) => { if ([...e.dataTransfer.types].includes("Files")) { e.preventDefault(); setDragging(true); } }} onDragLeave={() => setDragging(false)} onDrop={onDrop}>
           <input ref={fileRef} type="file" accept="image/*" multiple className="sr-only" tabIndex={-1} onChange={(e) => { if (e.target.files) addShots(e.target.files); e.target.value = ""; }} />
           <button type="button" className="btn btn-ghost btn-icon composer-attach" onClick={() => fileRef.current?.click()} disabled={shots.length >= MAX_SHOTS} aria-label="Attach a screenshot" title="Attach a screenshot (or paste one)"><ImagePlus size={17} aria-hidden="true" /></button>
-          <label htmlFor="composer" className="sr-only">Message the tutor</label>
-          <textarea id="composer" rows={1} placeholder="Ask about any Midterm 2 topic, or paste a screenshot" value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={onKey} onPaste={onPaste} />
+          <label htmlFor="composer" className="sr-only">Message Dr Phil</label>
+          <textarea id="composer" rows={1} placeholder="Ask Dr Phil about any Midterm 2 topic, or paste a screenshot" value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={onKey} onPaste={onPaste} />
           {busy ? (
             <button type="button" className="btn btn-primary btn-icon" onClick={() => abortRef.current?.abort()} aria-label="Stop"><Square size={14} aria-hidden="true" /></button>
           ) : (

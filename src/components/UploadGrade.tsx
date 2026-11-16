@@ -285,7 +285,7 @@ export function GradeReport({ g, onClose, onMarks }: { g: WorkbookGrade; onClose
       </ol>
       {wrong.length > 0 && (
         <div className="row">
-          <button className="btn btn-secondary" onClick={explain}><MessageSquare size={16} aria-hidden="true" />Ask the tutor about my mistakes</button>
+          <button className="btn btn-secondary" onClick={explain}><MessageSquare size={16} aria-hidden="true" />Ask Dr Phil about my mistakes</button>
         </div>
       )}
     </section>

@@ -63,3 +63,10 @@
 .composer-box.dragging { border-color: var(--chart-3); border-style: dashed; background: var(--ground); }
 .msg-shots { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; margin-bottom: 6px; }
 .msg-shots img { max-width: min(260px, 100%); max-height: 200px; border-radius: 8px; border: 1px solid var(--border); background: #fff; display: block; }
+
+/* Dr Phil */
+.tutor-who { display: flex; align-items: center; gap: 12px; }
+.tutor-who .drphil { flex: none; border-radius: 50%; box-shadow: 0 0 0 1px var(--border); }
+.msg-who { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--text); }
+.msg-who .drphil { border-radius: 50%; box-shadow: 0 0 0 1px var(--border); }
+.starters-thinka .drphil { border-radius: 50%; box-shadow: 0 0 0 1px var(--border); }

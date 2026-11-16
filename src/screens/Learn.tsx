@@ -92,7 +92,7 @@ function TopicBody({ t }: { t: Topic }) {
             onClick={() => askTutor(`Teach me "${t.title}" (${t.lesson}) in a few short steps, then give me one exam-style question to try.`)}
             title={apiKey ? undefined : "Needs your API key"}
           >
-            <MessageSquare size={16} aria-hidden="true" />Ask the tutor
+            <MessageSquare size={16} aria-hidden="true" />Ask Dr Phil
           </button>
         </div>
       </header>
