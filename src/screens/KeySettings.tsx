@@ -40,16 +40,18 @@ export default function KeySettings() {
         <div className="set-label">
           <h2>Your key</h2>
           <KeyHelp />
-          <p>The tutor runs on {provider?.modelLabel ?? "Claude Sonnet"} with your own key, and the page sends it only to {babson ? "Babson's Claude gateway" : provider ? "api.anthropic.com" : "Babson's Claude gateway (or Anthropic, for keys made at platform.claude.com)"}. The site's security policy blocks every other destination.</p>
+          {provider?.id === "code"
+            ? <p>You're using an access code from Daniel. Dr Phil runs on {provider.modelLabel} through this site's own server, which uses Daniel's key; the code is the only thing your browser sends.</p>
+            : <p>The tutor runs on {provider?.modelLabel ?? "Claude Sonnet"} with your own key, and the page sends it only to {babson ? "Babson's Claude gateway" : provider ? "api.anthropic.com" : "Babson's Claude gateway (or Anthropic, for keys made at platform.claude.com)"}. The site's security policy blocks every other destination.</p>}
         </div>
         <div className="set-panel">
           {apiKey ? (
             <div className="stack">
-              <div className="kv"><span>Key in use</span><code className="formula">{mask(apiKey)}</code></div>
+              <div className="kv"><span>{provider?.id === "code" ? "Signed in with" : "Key in use"}</span><code className="formula">{mask(apiKey)}</code></div>
               <div className="kv"><span>Goes to</span><span>{provider?.label} · {provider?.model}</span></div>
               <div className="kv"><span>Stored</span><span>{isShared() ? "Encrypted, in this tab only: closing the tab forgets it" : `Encrypted on this device; forgotten after ${IDLE_DAYS} days without a visit`}</span></div>
               <div className="row">
-                <button className="btn btn-secondary" onClick={forget}><Trash2 size={16} aria-hidden="true" />Remove key from this device</button>
+                <button className="btn btn-secondary" onClick={forget}><Trash2 size={16} aria-hidden="true" />{provider?.id === "code" ? "Remove code from this device" : "Remove key from this device"}</button>
               </div>
               <p className="hint">Using a shared or library computer? Remove your key when you're done.</p>
               <p className="hint">
@@ -74,7 +76,9 @@ export default function KeySettings() {
           )}
         </div>
         <div className="set-panel">
-          {!apiKey || !view ? (
+          {provider?.id === "code" ? (
+            <p className="hint">Requests on an access code use Daniel's credit, so there's no balance to show here.</p>
+          ) : !apiKey || !view ? (
             <p className="muted">Add your key to see it.</p>
           ) : view.real ? (
             <div className="stack">

@@ -1,8 +1,8 @@
 // One-shot Claude calls on the student's key: marking written answers, and designing a custom practice set.
 // Both force a single tool call so the output is structured; the parsing lives in aiParse.ts (tested offline).
 import type Anthropic from "@anthropic-ai/sdk";
-import { makeClient, explainError } from "./claude.ts";
-import { providerFor } from "./provider.ts";
+import { makeClient, explainError, isModelError } from "./claude.ts";
+import { providerFor, resolveModel } from "./provider.ts";
 import { addUsage } from "./spend.ts";
 import { logClaude, type ClaudeFeature } from "./usage.ts";
 import type { CustomSpec } from "./sets.ts";
@@ -19,22 +19,31 @@ type Tool = { name: string; description: string; input_schema: Anthropic.Message
 
 /** One request that must answer with `tool`; returns the tool's input object. */
 async function forcedToolCall(feature: ClaudeFeature, apiKey: string, keyFp: string, system: string, user: string, tool: Tool, maxTokens: number, signal?: AbortSignal): Promise<unknown> {
-  const p = providerFor(apiKey);
+  let p = providerFor(apiKey);
   logClaude(feature);
   const client = makeClient(apiKey);
   let msg: Anthropic.Messages.Message;
+  const send = () => client.messages.create(
+    {
+      model: p.model,
+      max_tokens: maxTokens,
+      system,
+      tools: [tool],
+      tool_choice: { type: "tool", name: tool.name },
+      messages: [{ role: "user", content: user }],
+    },
+    { signal },
+  );
   try {
-    msg = await client.messages.create(
-      {
-        model: p.model,
-        max_tokens: maxTokens,
-        system,
-        tools: [tool],
-        tool_choice: { type: "tool", name: tool.name },
-        messages: [{ role: "user", content: user }],
-      },
-      { signal },
-    );
+    try {
+      msg = await send();
+    } catch (e) {
+      // The key can't use this model: pick one it can and try once more.
+      if (signal?.aborted || !isModelError(e)) throw e;
+      await resolveModel(apiKey);
+      p = providerFor(apiKey);
+      msg = await send();
+    }
   } catch (e) {
     if (signal?.aborted) throw new Error("Stopped.");
     throw new Error(explainError(e, p));

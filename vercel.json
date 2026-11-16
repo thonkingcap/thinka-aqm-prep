@@ -3,8 +3,14 @@
     {
       "source": "/sw.js",
       "headers": [
-        { "key": "Cache-Control", "value": "no-cache" },
-        { "key": "Service-Worker-Allowed", "value": "/" }
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        },
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/"
+        }
       ]
     },
     {
@@ -48,5 +54,16 @@
         }
       ]
     }
-  ]
+  ],
+  "rewrites": [
+    {
+      "source": "/api/claude/:path*",
+      "destination": "/api/claude?path=:path*"
+    }
+  ],
+  "functions": {
+    "api/claude.ts": {
+      "maxDuration": 300
+    }
+  }
 }

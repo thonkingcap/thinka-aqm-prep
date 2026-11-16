@@ -157,7 +157,9 @@ export const KEY_IN_TEXT = /\bsk-(ant-)?[A-Za-z0-9_-]{16,}/;
 
 export function looksLikeKey(k: string): string | null {
   const key = k.trim();
-  if (!key) return "Paste your API key";
+  if (!key) return "Paste your API key, or type your access code";
+  // An access code from Daniel: letters, numbers and dashes, no "sk-".
+  if (!key.startsWith("sk-") && /^[A-Za-z0-9-]{4,40}$/.test(key)) return null;
   if (key.length > 300) return "That's too long to be an API key. Copy just the key";
   if (/\s/.test(key)) return "The key has a space or line break in it. Copy just the key";
   if (key.startsWith("sk-ant-admin")) return "That is an Admin key. Use a regular API key: it can only make requests, not manage your account";
@@ -168,6 +170,7 @@ export function looksLikeKey(k: string): string | null {
 }
 
 export function mask(key: string): string {
+  if (key.startsWith("aqmcode:")) return `Access code ${key.slice(8, 12)}…`;
   return `${key.slice(0, 6)}…${key.slice(-4)}`;
 }
 

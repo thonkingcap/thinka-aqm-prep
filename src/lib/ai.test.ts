@@ -125,3 +125,4 @@ import { fitSize } from "./screenshot.ts";
   console.log(`${f ? "FAILED" : "PASS"}: screenshot sizing`);
   if (f) process.exit(1);
 }
+

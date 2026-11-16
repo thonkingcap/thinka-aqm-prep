@@ -202,7 +202,7 @@ export default function Tutor() {
           <button type="button" className={`eli5${simple ? " on" : ""}`} role="switch" aria-checked={simple} onClick={() => setSimple(!simple)} title="Plain words, everyday examples and simple pictures">
             <Baby size={14} aria-hidden="true" /><span>Explain like I'm 5</span><span className="eli5-track" aria-hidden="true"><span className="eli5-knob" /></span>
           </button>
-          {bal && <span className="hint num" title={bal.real ? "Balance from Babson's gateway" : "Estimated from token usage"}>This chat about {money(chatCost, chatCost < 1 ? 3 : 2)} · {bal.left !== null ? `${money(bal.left)} left` : `${money(bal.spent)} spent`}{bal.real ? "" : " (estimate)"}</span>}
+          {bal && provider?.id !== "code" && <span className="hint num" title={bal.real ? "Balance from Babson's gateway" : "Estimated from token usage"}>This chat about {money(chatCost, chatCost < 1 ? 3 : 2)} · {bal.left !== null ? `${money(bal.left)} left` : `${money(bal.spent)} spent`}{bal.real ? "" : " (estimate)"}</span>}
           <button className="btn btn-ghost btn-small" onClick={newChat} disabled={turns.length === 0}><Plus size={14} aria-hidden="true" />New chat</button>
         </div>
       </header>

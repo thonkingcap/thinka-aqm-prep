@@ -6,7 +6,7 @@ import type { BetaMessageParam, BetaContentBlock, BetaToolUnion, BetaToolResultB
 import { addUsage } from "./spend.ts";
 import { evaluateSafe } from "./excel.ts";
 import { courseNotesText } from "./course.ts";
-import { providerFor, type Provider } from "./provider.ts";
+import { providerFor, resolveModel, type Provider } from "./provider.ts";
 import { logClaude } from "./usage.ts";
 import { cleanGraphic, DRAW_SCHEMA, DRAW_TOOL_DESCRIPTION, type GraphicSpec } from "./graphic.ts";
 
@@ -15,32 +15,38 @@ export function makeClient(apiKey: string) {
   // their own browser, so there is no shared secret to leak. The CSP limits where the key can go.
   // Babson's gateway authenticates with x-api-key, which is what apiKey sends.
   const p = providerFor(apiKey);
-  return new Anthropic({ apiKey, baseURL: p.baseURL, dangerouslyAllowBrowser: true, maxRetries: 2 });
+  // Access codes go to this site's own /api/claude, which needs an absolute URL.
+  const baseURL = p.baseURL?.startsWith("/") ? `${typeof location === "undefined" ? "" : location.origin}${p.baseURL}` : p.baseURL;
+  return new Anthropic({ apiKey, baseURL, dangerouslyAllowBrowser: true, maxRetries: 2 });
 }
 
-/** Checks the key against its service and that the model is available. Costs nothing. */
+/** A request refused because of the model (not the key): worth picking another model and retrying once. */
+export function isModelError(e: unknown): boolean {
+  if (!(e instanceof Anthropic.APIError)) return false;
+  if (e instanceof Anthropic.AuthenticationError || e instanceof Anthropic.RateLimitError) return false;
+  if (e instanceof Anthropic.NotFoundError || e instanceof Anthropic.PermissionDeniedError) return true;
+  return e instanceof Anthropic.BadRequestError && /model/i.test(e.message) && /(not|invalid|access|allowed|support|exist)/i.test(e.message);
+}
+
+/** Checks the key against its service and picks the best model it can use. Costs nothing. */
 export async function verifyKey(apiKey: string): Promise<void> {
   const p = providerFor(apiKey);
   logClaude("verify");
-  if (p.id === "babson") {
-    let res: Response;
-    try {
-      res = await fetch(`${p.baseURL}/v1/models`, { headers: { "x-api-key": apiKey } });
-    } catch {
-      throw new Error("Couldn't reach Babson's Claude gateway. Check your internet connection and try again.");
-    }
-    if (res.status === 401 || res.status === 403) throw new Error("Babson's gateway didn't accept this key. Copy it again from Babson's email, the whole thing.");
-    if (!res.ok) throw new Error(`Babson's gateway returned an error (${res.status}). Try again in a minute.`);
-    const data = (await res.json().catch(() => ({}))) as { data?: { id: string }[] };
-    const ids = (data.data ?? []).map((m) => m.id);
-    if (ids.length && !ids.includes(p.model)) throw new Error(`This key works, but it can't use ${p.modelLabel}. It can use: ${ids.join(", ")}.`);
-    return;
-  }
-  const client = makeClient(apiKey);
   try {
-    await client.models.retrieve(p.model);
+    await resolveModel(apiKey);
   } catch (e) {
-    throw new Error(explainError(e, p));
+    const status = (e as { status?: number }).status;
+    if (p.id === "code") {
+      if (status === 401 || status === 403) throw new Error("That access code isn't valid. Check it with Daniel and type it again.");
+      if (status === 503) throw new Error("Shared access isn't switched on right now. Ask Daniel.");
+      if (status === 429) throw new Error("Too many requests on this code right now. Wait a minute and try again.");
+    }
+    if (status === 401 || status === 403) {
+      throw new Error(p.id === "babson" ? "Babson's gateway didn't accept this key. Copy it again from Babson's email, the whole thing." : "Anthropic didn't accept this key. Check that you copied the whole key.");
+    }
+    if (status === 404 && e instanceof Error) throw e;
+    if (status) throw new Error(`${p.id === "anthropic" ? "Anthropic" : p.id === "code" ? "The site's server" : "Babson's gateway"} returned an error (${status}). Try again in a minute.`);
+    throw new Error(p.id === "babson" ? "Couldn't reach Babson's Claude gateway. Check your internet connection and try again." : "Couldn't reach Claude. Check your internet connection and try again.");
   }
 }
 
@@ -149,7 +155,7 @@ const PLAIN_TOOLS = TOOLS.map((t) => {
   const { strict: _s, eager_input_streaming: _e, ...rest } = t as BetaToolUnion & { strict?: boolean; eager_input_streaming?: boolean };
   return rest as BetaToolUnion;
 });
-const levelFor: Record<string, number> = { anthropic: 0, babson: 1 };
+const levelFor: Record<string, number> = { anthropic: 0, babson: 1, code: 1 };
 
 function paramsAt(level: number, model: string, history: BetaMessageParam[], simple: boolean) {
   const base = { model, max_tokens: 16000, messages: history };
@@ -178,7 +184,8 @@ function paramsAt(level: number, model: string, history: BetaMessageParam[], sim
  */
 export async function runTutorTurn(apiKey: string, keyFp: string, history: BetaMessageParam[], ev: TutorEvents, signal: AbortSignal, opts: { simple?: boolean } = {}): Promise<{ stop: string }> {
   const client = makeClient(apiKey);
-  const p = providerFor(apiKey);
+  let p = providerFor(apiKey);
+  let modelRetried = false;
   for (let round = 0; round < 10; round++) {
     ev.onStatus("thinking");
     const level = levelFor[p.id];
@@ -196,6 +203,11 @@ export async function runTutorTurn(apiKey: string, keyFp: string, history: BetaM
         : client.messages.stream(params as unknown as Parameters<typeof client.messages.stream>[0], { signal }).on("text", onText);
       final = (await stream.finalMessage()) as Awaited<ReturnType<ReturnType<typeof client.beta.messages.stream>["finalMessage"]>>;
     } catch (e) {
+      // The key can't use this model: find one it can, once, and try again.
+      if (!modelRetried && isModelError(e)) {
+        modelRetried = true;
+        try { await resolveModel(apiKey); p = providerFor(apiKey); round--; continue; } catch { /* fall through to the error */ }
+      }
       const budget = e instanceof Anthropic.APIError && /budget/i.test(e.message);
       if (!budget && e instanceof Anthropic.BadRequestError && level < 3) {
         levelFor[p.id] = level + 1;

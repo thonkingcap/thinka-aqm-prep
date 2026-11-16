@@ -47,3 +47,20 @@ So the author can see how many students the site helps, it logs a little usage t
 - one row per request sent to Claude, labelled only with the feature (tutor, marking, custom set, plan, key check), and a row when you add a key.
 
 It never logs your API key, anything derived from it, your answers or your messages. Your key still goes only to Claude (Babson's gateway or Anthropic). The site calls a single database function, `log_event`, that can only append a validated row; the public key in the code can't read, change or delete anything. The CSP adds `https://kxtdmgpecxlzyepshryw.supabase.co` to `connect-src` for this. Logging is skipped while you're offline.
+
+## Access codes
+
+Some students don't have a Babson Claude key. Daniel can give them an access code instead. The code is
+typed where a key would go, stored like a key (as `aqmcode:<CODE>`), and sent only to this site's own
+function at `/api/claude` (`api/claude.ts`, logic in `api/_proxy.ts`). That function:
+
+- accepts only `GET /v1/models` and `POST /v1/messages`, from this site's origin (or localhost);
+- checks the code against `ACCESS_CODES` (comma-separated, case-insensitive) in Vercel's environment;
+- forwards the request with Daniel's key from `OWNER_API_KEY` in Vercel's environment. The key never
+  reaches a browser, the repository or any response, and the student's code is not forwarded;
+- allows Claude models only, caps `max_tokens` at 16,000 and request bodies at 4 MB, and limits each
+  IP address to 60 requests per 10 minutes (per server instance);
+- never caches anything (the offline service worker skips `/api/`).
+
+To revoke a code, remove it from `ACCESS_CODES` in Vercel and redeploy. Removing `OWNER_API_KEY` or
+`ACCESS_CODES` switches shared access off entirely.

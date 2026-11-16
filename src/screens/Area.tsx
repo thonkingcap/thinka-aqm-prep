@@ -1,6 +1,6 @@
 // One of the exam's four areas: its notes, its Excel practice sets, and an upload box to mark them.
 import { useEffect, useState } from "react";
-import { ArrowLeft, ArrowRight, BookOpen, Download, MessageSquare } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, Download, MessageSquare, PlayCircle } from "lucide-react";
 import { AREAS, AREA_VERSIONS, areaById, type Area as AreaT } from "../lib/areas.ts";
 import { topicById } from "../lib/course.ts";
 import { downloadById } from "../lib/download.ts";
@@ -74,6 +74,7 @@ export default function Area({ id, route = [] }: { id?: string; route?: string[]
           </button>
         </section>
 
+
         <section className="panel area-practice" aria-labelledby="practice-h">
           <div className="panel-head"><h2 id="practice-h">Practice in Excel</h2><span className="hint">{AREA_VERSIONS} sets</span></div>
           <p className="hint area-lead">Each set is laid out like this section of the exam. The answer key is the last tab: try the set first.</p>
@@ -98,6 +99,22 @@ export default function Area({ id, route = [] }: { id?: string; route?: string[]
           <div className="area-note"><DownloadNote /></div>
           <p className="hint area-exam3">This section is <a href="#/exam3">Exam 3 {qRange(a)}</a>. Full timed practice exams are on <a href="#/home">Home</a>.</p>
         </section>
+        {a.videos && a.videos.length > 0 && (
+          <section className="panel area-videos" aria-labelledby="videos-h">
+            <div className="panel-head"><h2 id="videos-h"><PlayCircle size={15} aria-hidden="true" /> Still confused? Watch this</h2></div>
+            <ul className="area-video-list">
+              {a.videos.map((v) => (
+                <li key={v.id}>
+                  <a className="area-video lift" href={`https://www.youtube.com/watch?v=${v.id}`} target="_blank" rel="noopener noreferrer">
+                    <span className="area-video-play" aria-hidden="true"><PlayCircle size={22} /></span>
+                    <span><b>{v.title}</b><span className="hint">{v.by} · YouTube, opens in a new tab</span></span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+            <p className="hint">These work the examples by hand. On the exam do the same steps with the Excel functions from the notes.</p>
+          </section>
+        )}
       </div>
 
       <section className="panel area-upload" aria-label="Upload a finished workbook">

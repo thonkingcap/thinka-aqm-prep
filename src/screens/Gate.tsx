@@ -4,6 +4,7 @@ import { ArrowRight, Eye, EyeOff, LoaderCircle } from "lucide-react";
 import { useSession } from "../session.tsx";
 import { verifyKey } from "../lib/claude.ts";
 import { looksLikeKey, IDLE_DAYS } from "../lib/vault.ts";
+import { isCode, CODE_PREFIX } from "../lib/provider.ts";
 import { KEYS_URL } from "../lib/spend.ts";
 import { runTest } from "../lib/tests12.ts";
 import { mean } from "../lib/stats.ts";
@@ -27,8 +28,10 @@ export function KeyForm({ onDone }: { onDone?: () => void; compact?: boolean }) 
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    const k = key.trim();
-    const bad = looksLikeKey(k);
+    const raw = key.trim();
+    const bad = looksLikeKey(raw);
+    // An access code is stored as "aqmcode:<CODE>" and only ever sent to this site's own server.
+    const k = isCode(raw) ? CODE_PREFIX + raw.toUpperCase() : raw;
     if (bad) return setError(bad);
     setBusy(true);
     setError(null);
@@ -47,13 +50,13 @@ export function KeyForm({ onDone }: { onDone?: () => void; compact?: boolean }) 
   return (
     <form className="key-form" onSubmit={submit} autoComplete="off" noValidate>
       <div className="field">
-        <label htmlFor="api-key">Your Claude API key</label>
+        <label htmlFor="api-key">Your Claude API key or access code</label>
         <div className="key-input">
           <input
             id="api-key"
             className="input mono-input"
             type={show ? "text" : "password"}
-            placeholder="sk-…"
+            placeholder="sk-… or your access code"
             value={key}
             onChange={(e) => { setKey(e.target.value); setError(null); }}
             autoComplete="off"
@@ -79,7 +82,7 @@ export function KeyForm({ onDone }: { onDone?: () => void; compact?: boolean }) 
       <div className="row">
         <button className="btn btn-primary" type="submit" disabled={busy}>
           {busy ? <LoaderCircle size={16} className="spin" aria-hidden="true" /> : null}
-          {busy ? "Checking your key" : "Start studying"}
+          {busy ? "Checking" : "Start studying"}
           {!busy && <ArrowRight size={16} aria-hidden="true" />}
         </button>
       </div>

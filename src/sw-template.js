@@ -1,6 +1,6 @@
 // Offline support. Generated into dist/sw.js at build time with the list of every file in the build,
 // so after one visit the whole site (notes, workbooks, marking) works with no internet.
-// Only same-origin GETs are handled: Claude API calls and the feedback form always go to the network.
+// Only same-origin GETs are handled: Claude API calls (including /api/) and the feedback form always go to the network.
 const VERSION = "__VERSION__";
 const FILES = __FILES__;
 const CACHE = `aqm-prep-${VERSION}`;
@@ -22,6 +22,8 @@ self.addEventListener("fetch", (event) => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
+  // The access-code proxy (/api/claude) is live data: never cache it.
+  if (url.pathname.startsWith("/api/")) return;
   // Pages: try the network briefly so updates arrive, fall back to the saved copy offline.
   if (req.mode === "navigate") {
     event.respondWith((async () => {
