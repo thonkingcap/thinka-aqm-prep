@@ -97,6 +97,18 @@ function TopicBody({ t }: { t: Topic }) {
         </div>
       </header>
 
+      {t.plain && (
+        <section className="plain-box" aria-label="In plain English">
+          <p className="plain-tag">In plain English</p>
+          <p className="plain-idea">{t.plain.idea}</p>
+          <p className="plain-like"><b>Think of it like this:</b> {t.plain.like}</p>
+          <div className="plain-do">
+            <b>What you actually do in Excel</b>
+            <ol>{t.plain.doThis.map((d) => <li key={d}><Markdown text={d} /></li>)}</ol>
+          </div>
+        </section>
+      )}
+
       {t.id === "twelve" && (
         <section className="panel topic-twelve">
           <TwelveGrid stats={statsByCase(readAttempts())} />

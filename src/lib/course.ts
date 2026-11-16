@@ -9,6 +9,8 @@ export type Topic = {
   title: string;
   lesson: string;
   summary: string;
+  /** The lesson in plain English: the idea, an everyday comparison, and what you actually do in Excel. */
+  plain?: { idea: string; like: string; doThis: string[] };
   notes: { heading: string; body: string }[];
   formulas: Formula[];
   example?: Example;
@@ -33,23 +35,28 @@ export const TOPICS: Topic[] = [
     id: "normal",
     title: "The normal curve and Z-scores",
     lesson: "Lesson 12",
-    summary: "Turn any less-than, more-than or between question into NORM.DIST, and any top-or-bottom percent into NORM.INV.",
+    summary: "Most things (heights, times, scores) bunch up around an average and thin out on both sides. Excel tells you the chance of landing in a range, or which value cuts off the top or bottom slice.",
+    plain: {
+      idea: "The bell curve shows how likely each value is. The area under the curve over a stretch is the chance of landing in that stretch.",
+      like: "Picture a pile of sand shaped like a bell. The share of sand sitting over part of the ground is the chance a value lands there.",
+      doThis: ["Chance of LESS than a number: `NORM.DIST(number, mean, sd, TRUE)`", "Chance of MORE than it: `1 - NORM.DIST(…)`", "The value that cuts off the top 10%: `NORM.INV(0.9, mean, sd)`"],
+    },
     notes: [
       {
-        heading: "Area is probability",
-        body: "X ~ N(μ, σ²) is a bell curve centred on μ, with σ setting the spread. The total area under it is 1, and the area over an interval is the probability X lands there. Because the curve is continuous, P(X < a) and P(X ≤ a) are the same number.",
+        heading: "Area = chance",
+        body: "The curve is centred on the average, μ (\"mu\"). How wide it is depends on the standard deviation, σ (\"sigma\"): how spread out the values are. All the area under the curve adds up to 1 (100%). The area over a stretch is the chance of landing there. Here, \"less than\" and \"less than or equal to\" give the same answer.",
       },
       {
-        heading: "Two machines, two directions",
-        body: "The whiteboard rule: a value goes into a .DIST function and a probability comes out; a probability goes into a .INV function and a value comes out. Every .DIST gives the area to the LEFT of the value, and every .INV expects the area to the LEFT of the answer.",
+        heading: "Two Excel tools, opposite jobs",
+        body: "Have a value and want a chance? Use `NORM.DIST`. Have a chance and want a value? Use `NORM.INV`. Both always talk about the area to the LEFT of the value.",
       },
       {
-        heading: "Reading the question",
-        body: "Less than a: `NORM.DIST(a, μ, σ, TRUE)`. More than a: `1 - NORM.DIST(a, μ, σ, TRUE)`. Between a and b: `NORM.DIST(b, …) - NORM.DIST(a, …)`. Top 10%: the value with 90% to its left, `NORM.INV(0.9, μ, σ)`. Bottom 10%: `NORM.INV(0.1, μ, σ)`. Middle 50%: `NORM.INV(0.25, …)` and `NORM.INV(0.75, …)`. Q1 is the 25th percentile.",
+        heading: "Turning the words into Excel",
+        body: "Less than a: `NORM.DIST(a, μ, σ, TRUE)`. More than a: `1 - NORM.DIST(a, μ, σ, TRUE)`. Between a and b: `NORM.DIST(b, …) - NORM.DIST(a, …)`. Top 10%: the value with 90% below it, `NORM.INV(0.9, μ, σ)`. Bottom 10%: `NORM.INV(0.1, μ, σ)`. Middle 50%: `NORM.INV(0.25, …)` to `NORM.INV(0.75, …)`.",
       },
       {
         heading: "Z-scores",
-        body: "z = (x − μ) / σ counts how many standard deviations x sits from the mean; a negative z is below the mean. Going back: x = μ + z·σ. The standard normal Z ~ N(0, 1) has its own functions, `NORM.S.DIST(z, TRUE)` and `NORM.S.INV(p)`. About 68% of values fall within 1σ, 95% within 2σ and 99.7% within 3σ.",
+        body: "A z-score says how many standard deviations a value is above (positive) or below (negative) the average: z = (x − μ) / σ. So z = 2 means \"two spreads above average\". For z-scores Excel has `NORM.S.DIST(z, TRUE)` and `NORM.S.INV(p)` (the S means a curve with average 0 and spread 1). Rule of thumb: about 68% of values are within 1 sd of the average, 95% within 2 and 99.7% within 3.",
       },
     ],
     formulas: [
@@ -74,7 +81,7 @@ export const TOPICS: Topic[] = [
       conclusion: "90% of images download within about 24.4 seconds; the fastest 10% take under about 11.6 seconds.",
     },
     pitfalls: [
-      "Using FALSE as the last argument returns the height of the curve, not a probability. Exam answers need TRUE.",
+      "The last argument must be TRUE. FALSE gives the curve's height, not a chance.",
       "\"Top 10%\" means 0.9 goes into NORM.INV, not 0.1.",
       "For \"more than\", don't forget the 1 − ….",
     ],
@@ -83,22 +90,27 @@ export const TOPICS: Topic[] = [
     id: "clt",
     title: "Sampling distributions and the CLT",
     lesson: "Lessons 12–14",
-    summary: "The sample mean is itself a random variable, with mean μ and standard error σ/√n.",
+    summary: "An average of several values bounces around much less than a single value does. How much less? Divide the spread by √n.",
+    plain: {
+      idea: "If you average n values, that average changes from sample to sample, but much less than one value does. Its spread is σ/√n, called the standard error.",
+      like: "One student's height varies a lot. The average height of a class of 30 barely changes from one class to the next.",
+      doThis: ["Question about ONE item: use σ", "Question about the AVERAGE of n items: use `σ/SQRT(n)` instead", "Everything else is the same NORM.DIST or NORM.INV"],
+    },
     notes: [
       {
-        heading: "Parameters and statistics",
-        body: "A population is all the data you care about; a parameter is a true number about it (μ, σ), which you almost never know. A sample is what you collect; a statistic is a number computed from it (x̄, s). An estimate is a statistic meant to approximate a parameter. A point estimate is one number; a confidence interval is a range that contains the parameter with a stated probability.",
+        heading: "Everyone vs the few you measured",
+        body: "The population is everyone (or everything) you care about. Its true average μ and spread σ are usually unknown. A sample is the few you actually measure. From it you get the sample average x̄ (\"x-bar\") and the sample spread s. Numbers about the whole population are called parameters; numbers worked out from your sample are called statistics.",
       },
       {
-        heading: "X̄ has its own distribution",
-        body: "Take a sample of n values and average them: X̄ changes from sample to sample, so it is a random variable. If each X is N(μ, σ²) then X̄ ~ N(μ, (σ/√n)²). Its spread, σ/√n, is the standard error (SE). Bigger samples give a smaller SE, so x̄ lands closer to μ.",
+        heading: "The average moves around, but less",
+        body: "Take another sample and you'll get a slightly different x̄. Those averages bunch up around the true μ, with a spread of σ/√n. That spread has a name: the standard error (SE). A bigger sample means a smaller SE, so x̄ lands closer to μ.",
       },
       {
-        heading: "Central Limit Theorem",
-        body: "Even when X is not normal (dice sums, trivia scores), for large n the sample mean is approximately normal with mean μ and SE σ/√n, and its Z-score is approximately N(0, 1). The Lesson 12 simulation showed this: histograms of averages turn into a bell.",
+        heading: "Why bell curves show up everywhere (the CLT)",
+        body: "Even when single values aren't bell-shaped (dice, quiz scores), the averages of big enough samples are close to bell-shaped. That's the Central Limit Theorem (CLT), and it's why NORM.DIST works for averages.",
       },
       {
-        heading: "One box versus five boxes",
+        heading: "One box vs the average of five",
         body: "P(X < 10.5) is about one box: use σ. P(X̄ < 10.5) is about the average of n boxes: use SE = σ/√n in the same NORM.DIST.",
       },
     ],
@@ -121,31 +133,36 @@ export const TOPICS: Topic[] = [
       conclusion: "One light box is common (about 16%), but an average of five boxes under 10.5 oz is rare (about 1.3%).",
     },
     pitfalls: [
-      "Using σ instead of σ/√n for a question about a sample mean.",
-      "Calling x̄ a parameter: it comes from the sample, so it is a statistic.",
+      "Using σ instead of σ/√n when the question is about an average.",
+      "Calling x̄ a parameter. It comes from your sample, so it's a statistic.",
     ],
   },
   {
     id: "ci-z",
     title: "Confidence intervals with σ known",
     lesson: "Lessons 13–15",
-    summary: "Two different questions share one formula: where will x̄ land, and where is μ.",
+    summary: "A confidence interval is a range that probably holds the true average: your best guess, plus or minus a margin of error.",
+    plain: {
+      idea: "You can't know the true average for sure, so you give a range: best guess ± a margin. \"95% confident\" means this method catches the true value 95 times out of 100.",
+      like: "A weather forecast: \"70°F, give or take 3\". The \"give or take\" is the margin of error.",
+      doThis: ["Margin = `NORM.S.INV(1-α/2) * σ/SQRT(n)`", "Lower = centre − margin, upper = centre + margin", "Centre on μ if it's given (where will x̄ land?), or on x̄ if it isn't (where is μ?)"],
+    },
     notes: [
       {
-        heading: "Two questions, don't mix them up",
-        body: "Question A, μ is known: inside what range will the sample mean land? μ ± Z_α/2 · σ/√n (Lesson 14 heights, Lesson 15 IQ). Question B, μ is unknown: inside what range is the true mean? x̄ ± Z_α/2 · σ/√n (Lesson 14 orders, Lesson 15 mortar). Same width, different centre.",
+        heading: "Two different questions, don't mix them up",
+        body: "A) The true average μ is known: where will a sample average land? Centre on μ: μ ± Z × σ/√n. B) μ is unknown (the usual case): where is the true average? Centre on your sample average x̄: x̄ ± Z × σ/√n. Same width, different centre.",
       },
       {
         heading: "The three levels on the syllabus",
-        body: "Level 1: μ and σ both known, so find where x̄ will land, μ ± Z_α/2 · σ/√n. Level 2: σ known, μ unknown, so x̄ ± Z_α/2 · σ/√n. Level 3: both unknown, so replace σ with s and Z with T on n − 1 degrees of freedom (next topic).",
+        body: "Level 1: μ and σ are both given, so find where x̄ will land (centre on μ). Level 2: σ is given but μ isn't, so build a range for μ (centre on x̄). Level 3: neither is given, so estimate σ from the data and use T instead of Z (next topic).",
       },
       {
-        heading: "α and the critical value",
-        body: "α is the small probability you find suspicious; confidence is 1 − α. The critical value Z_α/2 = `NORM.S.INV(1-α/2)` leaves α/2 in each tail: 1.645 for 90%, 1.960 for 95%, 2.576 for 99%. More confidence means a wider interval; a larger n means a narrower one.",
+        heading: "How wide? α and the confidence level",
+        body: "α (\"alpha\") is the small chance of missing that you accept, and confidence = 1 − α (α = 0.05 gives 95%). The miss is split between the two ends, which is why the formula uses `NORM.S.INV(1-α/2)`: 1.645 for 90%, 1.960 for 95%, 2.576 for 99%. More confidence makes the range wider; a bigger sample makes it narrower.",
       },
       {
         heading: "Saying what it means",
-        body: "\"We are 95% confident the true mean is between L and U.\" The procedure captures μ in 95% of samples. It is not proof: in Lesson 15 the bumped mortar's interval was 1.784 to 1.900 miles, yet the true mean could still be 2.",
+        body: "Say: \"We are 95% confident the true average is between L and U.\" It's not a guarantee. In Lesson 15 the mortar's range was 1.784 to 1.900 miles, and the true average could still have been 2.",
       },
     ],
     formulas: [
@@ -168,27 +185,32 @@ export const TOPICS: Topic[] = [
       conclusion: "Point estimate 692 orders; we are 95% confident the true daily average is between about 595 and 789 orders.",
     },
     pitfalls: [
-      "Using NORM.S.INV(1-α) for a two-sided interval. Intervals split α into two tails.",
-      "Centering on μ when the question says μ is unknown.",
+      "Using NORM.S.INV(1-α) for an interval. Intervals have two ends, so use 1-α/2.",
+      "Centring on μ when the question says μ is unknown.",
     ],
   },
   {
     id: "t",
     title: "Unknown σ: s, n − 1 and the t-distribution",
     lesson: "Lesson 15",
-    summary: "Replace σ with the sample standard deviation s, and Z with T on n − 1 degrees of freedom.",
+    summary: "Don't know σ? Estimate it from your data with STDEV.S, and swap Z for T, which leaves a bit more room for error.",
+    plain: {
+      idea: "When you don't know how spread out the population is, you estimate the spread from your sample. That adds a little uncertainty, so you use the t-curve: a slightly wider bell.",
+      like: "You're guessing with less information, so you give yourself a bigger margin.",
+      doThis: ["s = `STDEV.S(data)`", "Use `T.INV(1-α/2, n-1)` instead of NORM.S.INV", "Interval: x̄ ± T × s/√n"],
+    },
     notes: [
       {
-        heading: "Why σ is a problem",
-        body: "In practice you rarely know σ. Without it you can't compute the standard error, so you can't compute the Z-score. Estimate σ with the sample standard deviation s = `STDEV.S(data)`.",
+        heading: "Why not knowing σ is a problem",
+        body: "The margin of error needs σ, and in real life you rarely know it. So estimate it from your data: s = `STDEV.S(data)`.",
       },
       {
         heading: "Why divide by n − 1",
-        body: "The \"dumb variance\" divides by n and is biased: on average it comes out smaller than the true variance (Lesson 15 simulation, n = 2). The sample variance `VAR.S` divides by n − 1 and is unbiased: its average matches σ².",
+        body: "Dividing by n makes the spread come out a little too small on average (statisticians call that \"biased\"). Dividing by n − 1 fixes it. `STDEV.S` and `VAR.S` already divide by n − 1, so just use them.",
       },
       {
-        heading: "The t-distribution",
-        body: "T = (x̄ − μ) / (s/√n) follows a t-distribution with ν = n − 1 degrees of freedom (ν is \"nu\"). It is symmetric and bell-shaped with mean 0, but has fatter tails than N(0, 1); as ν grows it approaches N(0, 1). `T.DIST(t, ν, TRUE)` and `T.INV(p, ν)` work exactly like NORM.S.DIST and NORM.S.INV, with the degrees of freedom added.",
+        heading: "The t-curve",
+        body: "T looks like the normal bell but with fatter tails: it leaves more room for extreme values. How fat depends on the degrees of freedom, ν (\"nu\") = n − 1. The bigger the sample, the closer T gets to the normal curve. `T.DIST(t, ν, TRUE)` and `T.INV(p, ν)` work just like NORM.S.DIST and NORM.S.INV, with ν added.",
       },
     ],
     formulas: [
@@ -212,7 +234,7 @@ export const TOPICS: Topic[] = [
       conclusion: "T_α/2 = 1.943 is larger than Z's 1.645, so the interval is wider: the price of not knowing σ.",
     },
     pitfalls: [
-      "Using STDEV.P or the divide-by-n variance instead of STDEV.S.",
+      "Using STDEV.P (or dividing by n) instead of STDEV.S.",
       "Using n instead of n − 1 for the degrees of freedom.",
     ],
   },
@@ -220,31 +242,36 @@ export const TOPICS: Topic[] = [
     id: "ht-logic",
     title: "Hypothesis testing: the logic and the four steps",
     lesson: "Lesson 16",
-    summary: "Assume H₀ is true, ask how surprising your sample is, and reject only if that probability is below α.",
+    summary: "A hypothesis test asks: if nothing special were going on, how surprising would my data be? Very surprising means you stop believing \"nothing special\".",
+    plain: {
+      idea: "Start by assuming nothing special is going on: that's H₀, the null hypothesis. Work out how likely data like yours would be if H₀ were true: that's the p-value. If it's tiny (below α), you reject H₀.",
+      like: "A courtroom: assume innocent (H₀) until the evidence makes that hard to believe. \"Not guilty\" isn't the same as \"proven innocent\", which is why we say \"do not reject\", never \"accept\".",
+      doThis: ["Write H₀ (it always has =, ≤ or ≥) and H_A (the claim you want to show)", "Work out the test statistic and the p-value in Excel", "p-value < α → reject H₀ (R); otherwise do not reject (DR)"],
+    },
     notes: [
       {
         heading: "The big idea",
-        body: "Assume the claim you doubt (H₀) is true. Compute the probability of getting a sample result this extreme or worse. That probability is the p-value. If it is smaller than α, the result is too surprising to believe H₀, so you reject it.",
+        body: "Assume the boring explanation (H₀) is true. Ask: how likely is a result this extreme or more? That chance is the p-value. If it's smaller than α, the result is too surprising to keep believing H₀, so you reject it.",
       },
       {
         heading: "The four steps from class",
-        body: "Step 0: choose the significance α (often 5% or 1%). Step 1: write H₀ and H_A; H₀ always holds the equality. Step 2: compute the test statistic and its p-value. Step 3: if p-value < α, reject H₀; otherwise do not reject H₀.",
+        body: "Step 0: pick α (usually 5% or 1%). Step 1: write H₀ and H_A; H₀ always holds the equals sign. Step 2: work out the test statistic and its p-value. Step 3: if p-value < α, reject H₀; otherwise, do not reject H₀.",
       },
       {
         heading: "Which tail? Read the wording",
-        body: "\"Different from, not equal to, has it changed\": two-tailed, H₀: μ = μ₀, H_A: μ ≠ μ₀. \"More than, exceeds, increased\": right tail, H₀: μ ≤ μ₀, H_A: μ > μ₀. \"Less than, below, decreased\": left tail, H₀: μ ≥ μ₀, H_A: μ < μ₀. The claim you want evidence for goes in H_A.",
+        body: "\"Different from\", \"changed\": two tails. H₀: μ = μ₀, H_A: μ ≠ μ₀. \"More than\", \"increased\": right tail. H₀: μ ≤ μ₀, H_A: μ > μ₀. \"Less than\", \"decreased\": left tail. H₀: μ ≥ μ₀, H_A: μ < μ₀. The claim you want evidence for goes in H_A. (μ₀, \"mu-nought\", is the number being claimed.)",
       },
       {
-        heading: "Z-test or t-test?",
-        body: "If the population σ is given, use Z = (x̄ − μ₀)/(σ/√n) and the normal. If you only have the sample, compute s and use T = (x̄ − μ₀)/(s/√n) with ν = n − 1.",
+        heading: "Z or T?",
+        body: "σ given in the question? Use Z = (x̄ − μ₀)/(σ/√n) and the NORM.S functions. Only the data? Work out s and use T = (x̄ − μ₀)/(s/√n) with ν = n − 1 and the T functions.",
       },
       {
         heading: "Saying the decision",
-        body: "Say \"reject H₀\" or \"do not reject (fail to reject) H₀\", never \"accept H₀\" or \"prove\". Then translate: \"At the 5% significance level, there is enough evidence that the average cost is less than $50.\" Rejecting does not prove H₀ false: extremely unlikely samples do happen.",
+        body: "Say \"reject H₀\" or \"do not reject H₀\", never \"accept H₀\" or \"prove\". Then say it in plain words: \"At the 5% level, there is enough evidence that the average cost is less than $50.\"",
       },
       {
-        heading: "No calculators on Exam 2",
-        body: "Every number must come from Excel. Type formulas that point at the data cells (`=AVERAGE(B2:B11)`), and chain later steps off earlier cells, never off rounded numbers you copied by hand.",
+        heading: "No calculators on the exam",
+        body: "Every number has to come from Excel. Type formulas that point at the data cells (`=AVERAGE(B2:B11)`), and build later steps from earlier cells, never from rounded numbers you copied by hand.",
       },
     ],
     formulas: [
@@ -266,28 +293,33 @@ export const TOPICS: Topic[] = [
       conclusion: "p ≈ 0.0002 < 0.01, so we reject H₀. If the student were telling the truth, a sample this extreme would happen about 0.02% of the time.",
     },
     pitfalls: [
-      "Forgetting to double the tail for a two-tailed test.",
-      "Writing the claim you want to show as H₀. It belongs in H_A.",
-      "Concluding \"we accept H₀\".",
+      "Forgetting to double the tail on a two-tailed test.",
+      "Putting the claim you want to show in H₀. It belongs in H_A.",
+      "Writing \"we accept H₀\". Say \"do not reject H₀\".",
     ],
   },
   {
     id: "twelve",
     title: "The 12 hypothesis test questions",
     lesson: "Lessons 16–17 · whiteboard",
-    summary: "Three null hypotheses × σ known or unknown × p-value or critical value: every test on the exam is one of these twelve.",
+    summary: "Every test on the exam is one of 12 combinations: which direction × Z or T × p-value or cut-off. Learn the pattern, not 12 formulas.",
+    plain: {
+      idea: "Three questions decide the formula. Which direction is the claim (more, less, different)? Is σ given (Z) or not (T)? Do they want a p-value or a critical value (the cut-off)?",
+      like: "A menu with three columns: pick one from each and the grid below gives you the exact Excel formula.",
+      doThis: ["Direction from the wording: more → right tail, less → left tail, different → two tails", "σ given → NORM.S functions; not given → T functions with n − 1", "Reject when the statistic is past the cut-off, or when p < α: both give the same answer"],
+    },
     notes: [
       {
-        heading: "How the twelve come about",
-        body: "Pick the null (μ ≤ μ₀ right tail, μ = μ₀ two tails, μ ≥ μ₀ left tail), pick the distribution (σ known: Z; σ unknown: T with ν = n − 1), then answer with either a p-value or a critical value. The grid below gives the exact Excel formula for each.",
+        heading: "Where the twelve come from",
+        body: "Pick the null (μ ≤ μ₀ for a right tail, μ = μ₀ for two tails, μ ≥ μ₀ for a left tail). Pick the curve (σ given: Z; not given: T with ν = n − 1). Then answer with either a p-value or a critical value. 3 × 2 × 2 = 12, and the grid gives the formula for each.",
       },
       {
-        heading: "The critical-value method",
-        body: "Instead of a p-value, find the cut-off where the rejection region starts and compare the test statistic to it. Right tail: reject if stat > Z_α (`NORM.S.INV(1-α)`) or T_α (`T.INV(1-α, ν)`). Left tail: reject if stat < `NORM.S.INV(α)` or `T.INV(α, ν)`, both negative. Two tails: reject if |stat| > Z_α/2 or T_α/2. The two methods always agree.",
+        heading: "The cut-off (critical value) method",
+        body: "Instead of a p-value, find where the \"reject\" zone starts and check whether your statistic is past it. Right tail: reject if the statistic is above `NORM.S.INV(1-α)` (or `T.INV(1-α, ν)`). Left tail: reject if it's below `NORM.S.INV(α)` (or `T.INV(α, ν)`), a negative number. Two tails: reject if it's beyond ± `NORM.S.INV(1-α/2)` (or the T version). This always agrees with the p-value method.",
       },
       {
-        heading: "The p-value formula depends on the sign of the statistic",
-        body: "Class uses only the one-tail functions (.DIST with TRUE gives the area to the left), so look at the sign first. Left tail: p = .DIST(stat). Right tail: p = 1 − .DIST(stat). Two tails: if the statistic is negative, p = 2 × .DIST(stat); if it is positive, p = 2 × (1 − .DIST(stat)). Either way you are doubling the smaller tail, so a two-tailed p-value can never be above 1.",
+        heading: "The two-tailed p-value depends on the sign",
+        body: "The class only uses the left-area functions, so look at the statistic's sign first. Left tail: p = .DIST(stat). Right tail: p = 1 − .DIST(stat). Two tails: if the statistic is negative, p = 2 × .DIST(stat); if positive, p = 2 × (1 − .DIST(stat)). You're doubling the smaller tail, so the answer can never be above 1.",
       },
     ],
     formulas: [
@@ -310,21 +342,26 @@ export const TOPICS: Topic[] = [
     },
     pitfalls: [
       "Using α/2 on a one-tailed test, or α on a two-tailed one.",
-      "Comparing a negative statistic to a positive critical value on a left-tailed test.",
+      "Comparing a negative statistic to a positive cut-off on a left-tailed test.",
     ],
   },
   {
     id: "sigma-n",
     title: "What σ and n do to a test",
     lesson: "Lesson 17",
-    summary: "The same sample can be shocking or ordinary depending on how much spread you expect.",
+    summary: "How surprising a result is depends on how much variation you expected. Less spread, or more data, makes the same gap look more surprising.",
+    plain: {
+      idea: "A gap of 0.2 is huge if things usually vary by 0.1, and nothing if they usually vary by 5. The test judges this by dividing the gap by the standard error.",
+      like: "A train 2 minutes late is news where trains are always on time, and normal where they never are.",
+      doThis: ["Smaller σ or bigger n → smaller standard error", "→ bigger test statistic → smaller p-value", "Cut-offs depend only on α, the tail and n − 1"],
+    },
     notes: [
       {
-        heading: "The standard error drives everything",
-        body: "The test statistic divides the gap x̄ − μ₀ by the standard error. A smaller σ (or a bigger n) means a smaller SE, a larger |statistic| and a smaller p-value. A larger σ makes the same gap look like ordinary noise.",
+        heading: "The standard error decides everything",
+        body: "The test statistic is the gap (x̄ − μ₀) divided by the standard error. A smaller σ, or a bigger sample, makes the standard error smaller, so the statistic gets bigger and the p-value smaller. A bigger σ makes the same gap look like ordinary noise.",
       },
       {
-        heading: "Critical values for a t-test before you see the data",
+        heading: "You can find the cut-offs before seeing the data",
         body: "Critical values depend only on α, the tail and ν = n − 1. For a two-tailed test at α = 1% with n = 10 boxes: ±T.INV(1 − 0.01/2, 9) = ±3.250.",
       },
     ],
@@ -347,29 +384,36 @@ export const TOPICS: Topic[] = [
       ],
       conclusion: "None of the three p-values is below 5%, so H₀ stands each time, but σ = 0.3 gives p ≈ 0.10 while σ = 2 gives p ≈ 0.81: the smaller the expected spread, the more surprising the same 0.22 oz shortfall.",
     },
-    pitfalls: ["Thinking a bigger σ makes a result more significant. It does the opposite."],
+    pitfalls: [
+      "Thinking a bigger σ makes a result more significant. It does the opposite.",
+    ],
   },
   {
     id: "variance",
     title: "Testing a variance (chi-squared)",
     lesson: "Lesson 18",
-    summary: "To test a claim about σ², scale the sample variance into a chi-squared statistic with n − 1 degrees of freedom.",
+    summary: "Testing a claim about spread instead of the average: use VAR.S and the chi-squared curve.",
+    plain: {
+      idea: "Sometimes the question is \"is it too variable?\", not \"is the average off?\". You turn your sample's variance into a chi-squared (χ²) number and test it the usual way.",
+      like: "A coffee machine that's right on average but sometimes overfills and sometimes underfills. The average is fine; the spread isn't.",
+      doThis: ["S² = `VAR.S(data)`; if they give a standard deviation σ₀, square it", "χ² = (n − 1) × S² / σ₀²", "Right tail: p = `1-CHISQ.DIST(χ², n-1, TRUE)`; left tail: p = `CHISQ.DIST(χ², n-1, TRUE)`"],
+    },
     notes: [
       {
-        heading: "S² estimates σ² without bias",
-        body: "The sample variance S² = `VAR.S(data)` divides by n − 1 and is an unbiased estimate of σ². The \"dumb variance\" that divides by n is biased. An estimate is biased if, on average, it isn't equal to the true parameter.",
+        heading: "Variance is spread, squared",
+        body: "The variance is the standard deviation squared. Your sample's variance S² = `VAR.S(data)` divides by n − 1, which makes it right on average (\"unbiased\"). Dividing by n would make it come out too small on average.",
       },
       {
-        heading: "The FACT from class",
-        body: "If X₁, …, Xₙ are iid normal, then (n − 1)S²/σ² follows a chi-squared distribution (χ²) with n − 1 degrees of freedom. Chi-squared is only positive, right-skewed and not symmetric, so the left and right critical values are two different numbers, not ± the same one.",
+        heading: "The fact from class",
+        body: "If the data come from a normal curve, (n − 1) × S² / σ² follows a chi-squared (χ²) curve with n − 1 degrees of freedom. Unlike the bell, chi-squared is lopsided and never negative, so its two cut-offs are two different numbers, not ± the same one.",
       },
       {
         heading: "The steps",
-        body: "Step 0: choose α. Step 1: H₀: σ² ≤ σ₀² (right tail), H₀: σ² ≥ σ₀² (left tail) or H₀: σ² = σ₀² (two tails). Step 2: χ² = (n − 1)S²/σ₀². Step 3: reject H₀ if p-value < α, or if the statistic is beyond the critical value. If the question gives a standard deviation σ₀, square it first.",
+        body: "Step 0: pick α. Step 1: H₀: σ² ≤ σ₀² (right tail), H₀: σ² ≥ σ₀² (left tail) or H₀: σ² = σ₀² (two tails). Step 2: χ² = (n − 1)S²/σ₀². Step 3: reject H₀ if p-value < α, or if χ² is past the cut-off. If the question gives a standard deviation, square it first.",
       },
       {
-        heading: "p-values and critical values",
-        body: "Same one-tail rule as before: `CHISQ.DIST(stat, n-1, TRUE)` is the area to the left. Right tail: p = `1-CHISQ.DIST(stat, n-1, TRUE)`, critical value `CHISQ.INV(1-α, n-1)`. Left tail: p = `CHISQ.DIST(stat, n-1, TRUE)`, critical value `CHISQ.INV(α, n-1)`. Two tails: double the smaller side (2 × DIST if the stat is in the left tail, 2 × (1 − DIST) if in the right); critical values `CHISQ.INV(α/2, n-1)` and `CHISQ.INV(1-α/2, n-1)`.",
+        heading: "p-values and cut-offs",
+        body: "Same left-area rule as before: `CHISQ.DIST(stat, n-1, TRUE)` is the area to the left. Right tail: p = `1-CHISQ.DIST(stat, n-1, TRUE)`, cut-off `CHISQ.INV(1-α, n-1)`. Left tail: p = `CHISQ.DIST(stat, n-1, TRUE)`, cut-off `CHISQ.INV(α, n-1)`. Two tails: double the smaller side; cut-offs `CHISQ.INV(α/2, n-1)` and `CHISQ.INV(1-α/2, n-1)`.",
       },
     ],
     formulas: [
@@ -393,8 +437,8 @@ export const TOPICS: Topic[] = [
       conclusion: "p ≈ 0.646 > 0.2 and χ² ≈ 6.92 is left of the critical value 12.242, so we do not reject H₀: no evidence the variance is above 1.",
     },
     pitfalls: [
-      "Plugging in σ₀ when the formula needs σ₀². Square a given standard deviation.",
-      "Using ± one critical value on a two-tailed test. Chi-squared isn't symmetric: compute CHISQ.INV(α/2, …) and CHISQ.INV(1-α/2, …) separately.",
+      "Using σ₀ where the formula needs σ₀². Square a given standard deviation.",
+      "Using ± one cut-off on a two-tailed test. Chi-squared is lopsided: work out CHISQ.INV(α/2, …) and CHISQ.INV(1-α/2, …) separately.",
       "Using n instead of n − 1 for the degrees of freedom.",
     ],
   },
@@ -402,23 +446,28 @@ export const TOPICS: Topic[] = [
     id: "two-sample",
     title: "Comparing two means (Toolpak)",
     lesson: "Lesson 18",
-    summary: "Test whether two populations have the same mean with the Analysis Toolpak, then read its p-value correctly.",
+    summary: "Are two groups' averages really different? Excel's Toolpak runs the test; you pick the right one and read the output.",
+    plain: {
+      idea: "You compare two separate groups (two classes, two machines). The test checks whether the gap between their averages is bigger than luck alone would explain.",
+      like: "Two classes take the same exam. Is one really better, or is the gap just luck?",
+      doThis: ["σ's given → Toolpak \"z-Test: Two Sample for Means\" (type the variances, σ²)", "Not given → \"t-Test: Two-Sample Assuming Equal Variances\"", "Read the p-value line and reject H₀ if p < α"],
+    },
     notes: [
       {
         heading: "The hypotheses",
-        body: "H₀: μ₁ = μ₂ (two tails), or H₀: μ₁ − μ₂ ≤ 0 (right tail) / H₀: μ₁ − μ₂ ≥ 0 (left tail). The statistic measures how far apart the two sample means are, in standard errors.",
+        body: "Two tails: H₀: μ₁ = μ₂ (\"the averages are the same\"). Right tail: H₀: μ₁ − μ₂ ≤ 0. Left tail: H₀: μ₁ − μ₂ ≥ 0. The statistic measures how far apart the two sample averages are, in standard errors.",
       },
       {
-        heading: "Two cases on the syllabus",
-        body: "σ's known: Toolpak \"z-Test: Two Sample for Means\", Z = (x̄₁ − x̄₂)/√(σ₁²/n₁ + σ₂²/n₂). Enter variances, not standard deviations, in \"Variable 1 Variance (known)\" and \"Variable 2 Variance (known)\". σ's unknown but assumed equal: Toolpak \"t-Test: Two-Sample Assuming Equal Variances\", which pools the two sample variances and uses T with ν = n₁ + n₂ − 2.",
+        heading: "Which Toolpak test",
+        body: "σ's given: \"z-Test: Two Sample for Means\". Enter the variances (σ², the sd squared), not the standard deviations. σ's not given but assumed equal: \"t-Test: Two-Sample Assuming Equal Variances\", which combines (\"pools\") the two samples' spreads and uses ν = n₁ + n₂ − 2.",
       },
       {
         heading: "Turning on the Toolpak",
-        body: "Windows: File › Options › Add-ins › Manage Excel Add-ins › Go › tick Analysis ToolPak. Mac: Tools › Excel Add-ins › tick Analysis ToolPak. Then Data › Data Analysis. Set Hypothesized Mean Difference to 0 and Alpha to α; tick Labels if your ranges include the header cells.",
+        body: "Windows: File › Options › Add-ins › Manage Excel Add-ins › Go › tick Analysis ToolPak. Mac: Tools › Excel Add-ins › tick Analysis ToolPak. Then Data › Data Analysis. Set Hypothesized Mean Difference to 0 and Alpha to α. Tick Labels only if your ranges include the header cells.",
       },
       {
         heading: "Reading the output",
-        body: "The Toolpak's \"P(Z<=z) one-tail\" or \"P(T<=t) one-tail\" is always the SMALLER tail, whatever your H_A says. For a one-tail test, check the statistic's sign points the way H_A says; if it doesn't, the p-value is 1 − that number. The two-tail line is fine for H₀: μ₁ = μ₂. You can also recompute it the class way: for a positive z, `=(1-NORM.S.DIST(z,TRUE))*2`.",
+        body: "The Toolpak's \"one-tail\" p-value is always the SMALLER tail, whatever your H_A says. For a one-tailed test, check that the statistic points the way H_A does; if it doesn't, the p-value is 1 − that number. The \"two-tail\" line is right for H₀: μ₁ = μ₂.",
       },
     ],
     formulas: [
@@ -442,7 +491,7 @@ export const TOPICS: Topic[] = [
     },
     pitfalls: [
       "Typing σ instead of σ² into \"Variable 1 Variance (known)\".",
-      "Copying the Toolpak's one-tail p without checking the sign of the statistic against H_A.",
+      "Copying the one-tail p without checking the statistic points the way H_A does.",
       "Forgetting Hypothesized Mean Difference = 0, or ticking Labels when you didn't select the headers.",
     ],
   },
@@ -450,19 +499,24 @@ export const TOPICS: Topic[] = [
     id: "paired",
     title: "Paired data (before/after)",
     lesson: "Lesson 18",
-    summary: "Two measurements on the same subjects become one column of differences, tested with an ordinary one-sample t-test.",
+    summary: "Same people measured twice (before and after)? Subtract to get one column of differences, then do an ordinary one-sample t-test on it.",
+    plain: {
+      idea: "When each person has two scores, look at each person's change. Then ask: is the average change really different from 0?",
+      like: "Instead of comparing two classes, you track how much each student improved on their own.",
+      doThis: ["New column: D = second − first (after − before)", "T = `AVERAGE(D) / (STDEV.S(D)/SQRT(n))`, with n = the number of pairs", "p-value from `T.DIST` with n − 1; pick the tail from H₀"],
+    },
     notes: [
       {
         heading: "When data are paired",
-        body: "Each subject is measured twice: Exam 1 and Exam 2 for the same student, before and after for the same patient. The two columns aren't independent samples, so don't use the two-sample test. Make a column of differences D = second − first.",
+        body: "Each person is measured twice: Exam 1 and Exam 2 for the same student, or before and after for the same patient. The two columns belong together, so don't use the two-group test. Make one column of differences, D = second − first.",
       },
       {
-        heading: "Run a one-sample t-test on D",
-        body: "Test μ_D against μ₀ = 0. σ_D is unknown, so T = (d̄ − 0)/(s_D/√n) with ν = n − 1, where n is the number of pairs. Then use T.DIST / T.INV exactly as in the twelve questions.",
+        heading: "Then it's a one-sample t-test",
+        body: "Test whether the average difference is 0: T = (average of D − 0) / (s_D/√n), with ν = n − 1, where n is the number of pairs and s_D = `STDEV.S` of the D column. Then use T.DIST and T.INV exactly as in the twelve questions.",
       },
       {
         heading: "Pick the tail from H₀",
-        body: "\"Scores have improved\" means D > 0 is the claim, so H₀: μ_D ≤ 0 (right tail). If the question writes H₀: μ_D ≥ 0, it's a left-tail test. If you define D the other way (first − second), every sign flips, so stick with second − first.",
+        body: "\"Scores have improved\" means the claim is D > 0, so H₀: μ_D ≤ 0 (right tail). If the question writes H₀: μ_D ≥ 0, it's a left-tail test. Flipping D (first − second) flips every sign, so stick with second − first.",
       },
     ],
     formulas: [
@@ -485,7 +539,7 @@ export const TOPICS: Topic[] = [
       conclusion: "T ≈ 3.87 is beyond 1.943 and p ≈ 0.004 < 0.05, so we reject H₀: at the 5% level, scores improved.",
     },
     pitfalls: [
-      "Running a two-sample test on paired data.",
+      "Running a two-group test on paired data.",
       "Using 2n − 2 degrees of freedom. There are n pairs, so ν = n − 1.",
       "Mixing up D = second − first with first − second, which flips the tail.",
     ],
@@ -494,26 +548,33 @@ export const TOPICS: Topic[] = [
     id: "dictionary",
     title: "Dictionary: symbols, functions and definitions",
     lesson: "Whiteboard",
-    summary: "Every symbol from the board, said out loud, with the Excel function it goes with, and the words the written parts ask you to define.",
+    summary: "Every symbol from the board in plain words, the Excel functions the class uses, and the words the written questions ask you to define.",
+    plain: {
+      idea: "Most of the confusion in stats is vocabulary. Here's every symbol and word, said the way you'd explain it to a friend.",
+      like: "A phrasebook for the exam.",
+      doThis: ["Greek letters (μ, σ) are about the whole population; plain letters (x̄, s) come from your sample", "\"0\" after a letter (μ₀) means the value being claimed", "If a definition question comes up, use the plain-words versions below"],
+    },
     notes: [
       {
         heading: "Symbols",
-        body: "H₀: the null hypothesis. H_A: the alternative. μ (\"mu\"): the true population mean. μ₀ (\"mu-nought\"): the value H₀ claims. σ (\"sigma\"): the population standard deviation. x̄ (\"x-bar\"): the sample mean. s: the sample standard deviation. n: the sample size. SE: the standard error, σ/√n or s/√n. N(μ, σ²): normal with mean μ and variance σ². α (\"alpha\"): significance, the tail probability you call too unlikely. Z_α/2: the Z value with α/2 to its right. ν (\"nu\"): degrees of freedom, n − 1.",
+        body: "H₀: the null hypothesis, \"nothing special is going on\". H_A: the alternative, the claim you want to show. μ (\"mu\"): the true average of everyone. μ₀ (\"mu-nought\"): the average H₀ claims. σ (\"sigma\"): the true spread of everyone. x̄ (\"x-bar\"): your sample's average. s: your sample's spread. n: how many you measured. SE: standard error, how much a sample average wobbles, σ/√n or s/√n. N(μ, σ²): a normal curve with average μ and variance σ². α (\"alpha\"): how small a chance counts as \"too surprising\". ν (\"nu\"): degrees of freedom, usually n − 1.",
       },
       {
         heading: "Excel functions",
-        body: "Class keeps the list short. `NORM.DIST(x, μ, σ, TRUE)`: area left of x. `NORM.INV(p, μ, σ)`: value with p to its left. `NORM.S.DIST(z, TRUE)` and `NORM.S.INV(p)`: the same for N(0, 1). `T.DIST(t, ν, TRUE)`: area left of t. `T.INV(p, ν)`: t with p to its left. For variances: `VAR.S(range)`, `CHISQ.DIST(x, ν, TRUE)` and `CHISQ.INV(p, ν)`. Plus `AVERAGE`, `STDEV.S`, `COUNT` and `SQRT`. Every right-tail or two-tail answer is built from these with 1 − … and 2 × ….",
+        body: "`NORM.DIST(x, μ, σ, TRUE)`: chance of being below x. `NORM.INV(p, μ, σ)`: the value with p below it. `NORM.S.DIST(z, TRUE)` and `NORM.S.INV(p)`: the same for z-scores. `T.DIST(t, ν, TRUE)` and `T.INV(p, ν)`: the same for the t-curve. For spread: `VAR.S(range)`, `CHISQ.DIST(x, ν, TRUE)` and `CHISQ.INV(p, ν)`. Plus `AVERAGE`, `STDEV.S`, `COUNT` and `SQRT`. Every right-tail or two-tail answer is built from these with 1 − … and 2 × ….",
       },
       {
-        heading: "Words the written parts ask you to define",
-        body: "Type I error: rejecting H₀ when H₀ is true; its probability is α. Type II error: not rejecting H₀ when H₀ is false. For a fixed n, a smaller α means more Type II errors. p-value: the probability, if H₀ were true, of a sample result at least as extreme as the one you got; it is not the probability that H₀ is true. α (significance level): the Type I error rate you decide to accept before looking at the data. Unbiased: an estimator whose average over many samples equals the parameter; x̄ is unbiased for μ and S² (dividing by n − 1) for σ², while dividing by n is biased low. Shapes: the normal is a symmetric bell; t is symmetric with heavier tails than Z and gets closer to Z as ν grows; χ² is only positive, skewed right, and gets more symmetric as ν grows.",
+        heading: "Words the written questions ask you to define",
+        body: "Type I error: rejecting H₀ when it's actually true (a false alarm); its chance is α. Type II error: not rejecting H₀ when it's actually false (a missed alarm). With the same sample size, a smaller α means more Type II errors. p-value: if H₀ were true, the chance of a result at least as extreme as yours; it is NOT the chance that H₀ is true. Significance level α: the false-alarm rate you decide to accept before looking at the data. Unbiased: right on average over many samples; x̄ is unbiased for μ, and S² (dividing by n − 1) is unbiased for σ², while dividing by n comes out too small. Shapes: the normal is a symmetric bell; t is a bell with fatter tails that gets closer to the normal as ν grows; χ² is never negative and lopsided to the right, getting more symmetric as ν grows.",
       },
     ],
     formulas: [
       { label: "value → probability", math: ".DIST", excel: "NORM.DIST · NORM.S.DIST · T.DIST · CHISQ.DIST" },
       { label: "probability → value", math: ".INV", excel: "NORM.INV · NORM.S.INV · T.INV · CHISQ.INV" },
     ],
-    pitfalls: ["σ and s are different: σ is the population's (given), s is computed from your sample."],
+    pitfalls: [
+      "σ and s are different: σ is the whole population's spread (given to you), s is worked out from your sample.",
+    ],
   },
 ];
 
@@ -522,7 +583,8 @@ export const topicById = (id: string) => TOPICS.find((t) => t.id === id);
 /** Plain-text course notes for the tutor's system prompt. Stable text: it is prompt-cached. */
 export function courseNotesText(): string {
   return TOPICS.map((t) => {
-    const notes = t.notes.map((n) => `${n.heading}: ${n.body}`).join("\n");
+    const plain = t.plain ? `In plain English: ${t.plain.idea} Like: ${t.plain.like} What you do: ${t.plain.doThis.join("; ")}.\n` : "";
+    const notes = plain + t.notes.map((n) => `${n.heading}: ${n.body}`).join("\n");
     const f = t.formulas.map((x) => `- ${x.label}: ${x.math} | Excel ${x.excel}`).join("\n");
     const ex = t.example
       ? `Class example (${t.example.source}), ${t.example.title}: ${t.example.setup}${t.example.data ? ` Data: ${t.example.data.join(", ")}.` : ""} Steps: ${t.example.steps.map((s) => `${s.label} ${s.formula}`).join("; ")}. ${t.example.conclusion}`
