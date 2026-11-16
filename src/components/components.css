@@ -189,3 +189,17 @@
 .key-help p { margin: 0; }
 .key-help strong { color: var(--text); font-weight: 500; }
 .key-help code { font-family: var(--mono); font-size: 12px; background: var(--raised); padding: 0 4px; border-radius: 4px; color: var(--text); }
+
+/* One-line "how this works" at the top of a page. */
+.page-hint { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; line-height: 1.5; color: var(--muted); padding: 10px 12px; border: 1px dashed var(--control); border-radius: 8px; max-width: 80ch; }
+.page-hint svg { flex: none; margin-top: 3px; }
+.page-hint b { font-weight: 500; color: var(--text); }
+.page-hint span { flex: 1; }
+.page-hint-more { flex: none; border: 0; background: none; padding: 0; font: inherit; font-size: 13px; color: var(--text); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+
+/* ---------- name prompt (first visit) ---------- */
+.name-prompt { width: min(440px, calc(100vw - 32px)); }
+.name-form { display: flex; flex-direction: column; gap: 14px; }
+.name-form .problem-head { padding-right: 0; }
+.name-field .input { width: 100%; font-size: 16px; }
+.name-form .btn { align-self: flex-start; }

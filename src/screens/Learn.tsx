@@ -6,22 +6,14 @@ import Curve, { type CurveProps } from "../components/Curve.tsx";
 import Markdown from "../components/Markdown.tsx";
 import { readAttempts, statsByCase } from "../lib/progress.ts";
 import { normInv, tInv } from "../lib/stats.ts";
+import { AREAS } from "../lib/areas.ts";
+import PageHint from "../components/PageHint.tsx";
 import "./screens.css";
 
-/** The Excel topic set (sets.ts TOPIC_SETS id) that practises each Learn topic. */
-export const PRACTICE_FOR: Record<string, string> = {
-  normal: "normal",
-  clt: "sampling",
-  "ci-z": "intervals",
-  t: "intervals",
-  "ht-logic": "one-sample",
-  twelve: "one-sample",
-  "sigma-n": "one-sample",
-  variance: "variance",
-  "two-sample": "two-sample",
-  paired: "two-sample",
-  dictionary: "concepts",
-};
+/** The exam area (areas.ts) whose Excel sets practise each Learn topic. */
+export function areaFor(topicId: string) {
+  return AREAS.find((a) => a.learn.includes(topicId) && (topicId !== "t" || a.id === "ci")) ?? null;
+}
 
 function figureFor(id: string): (CurveProps & { caption: string }) | null {
   const z975 = normInv(0.975);
@@ -89,11 +81,12 @@ function TopicBody({ t }: { t: Topic }) {
   return (
     <article className="topic">
       <header className="topic-head">
-        <p className="muted">{t.lesson}</p>
+        <p className="muted">{areaFor(t.id) ? <><a href={`#/area/${areaFor(t.id)!.id}`}>Section {areaFor(t.id)!.n}: {areaFor(t.id)!.title}</a> · </> : null}{t.lesson}</p>
         <h1>{t.title}</h1>
         <p className="topic-summary">{t.summary}</p>
+        <PageHint>read the notes and the worked example, copy the formulas into Excel, then press “Practice this in Excel” for sets on it.</PageHint>
         <div className="row topic-actions">
-          <a className="btn btn-primary" href={PRACTICE_FOR[t.id] ? `#/practice/topic/${PRACTICE_FOR[t.id]}` : "#/practice"} title="Download the set, solve it in Excel, upload it to be marked"><PencilLine size={16} aria-hidden="true" />Practice this in Excel</a>
+          <a className="btn btn-primary" href={areaFor(t.id) ? `#/area/${areaFor(t.id)!.id}` : "#/home"} title="Download a set, solve it in Excel, upload it to be marked"><PencilLine size={16} aria-hidden="true" />Practice this in Excel</a>
           <button
             className="btn btn-secondary"
             onClick={() => askTutor(`Teach me "${t.title}" (${t.lesson}) in a few short steps, then give me one exam-style question to try.`)}
@@ -174,17 +167,25 @@ export default function Learn({ topicId }: { topicId?: string }) {
   return (
     <div className="page wide learn">
       <nav className="learn-nav" aria-label="Topics">
-        <h2 className="learn-nav-title">Midterm 2 topics</h2>
-        <ol>
-          {TOPICS.map((x) => (
-            <li key={x.id}>
-              <a href={`#/learn/${x.id}`} aria-current={x.id === t.id ? "page" : undefined}>
-                <span>{x.title}</span>
-                <span className="hint">{x.lesson}</span>
-              </a>
-            </li>
-          ))}
-        </ol>
+        {[...AREAS.map((a) => ({ key: a.id, title: `${a.n}. ${a.title}`, href: `#/area/${a.id}`, ids: TOPICS.filter((x) => areaFor(x.id)?.id === a.id).map((x) => x.id) })),
+          { key: "ref", title: "Reference", href: "", ids: TOPICS.filter((x) => !areaFor(x.id)).map((x) => x.id) }].map((g) => (
+          <div key={g.key} className="learn-nav-group">
+            <h2 className="learn-nav-title">{g.href ? <a href={g.href}>{g.title}</a> : g.title}</h2>
+            <ol>
+              {g.ids.map((id) => {
+                const x = topicById(id)!;
+                return (
+                  <li key={x.id}>
+                    <a href={`#/learn/${x.id}`} aria-current={x.id === t.id ? "page" : undefined}>
+                      <span>{x.title}</span>
+                      <span className="hint">{x.lesson}</span>
+                    </a>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+        ))}
       </nav>
       <TopicBody t={t} key={t.id} />
     </div>

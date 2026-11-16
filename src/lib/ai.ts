@@ -4,20 +4,23 @@ import type Anthropic from "@anthropic-ai/sdk";
 import { makeClient, explainError } from "./claude.ts";
 import { providerFor } from "./provider.ts";
 import { addUsage } from "./spend.ts";
+import { logClaude, type ClaudeFeature } from "./usage.ts";
 import type { CustomSpec } from "./sets.ts";
 import {
   MARK_TOOL, MARK_SYSTEM, markPrompt, parseMarks, BLANK_MARK, isBlank,
   DESIGN_TOOL, DESIGN_SYSTEM, designPrompt, specFromDesign,
-  type WrittenItem, type WrittenMark,
+  COACH_TOOL, COACH_SYSTEM, coachPrompt, parseAdvice,
+  type WrittenItem, type WrittenMark, type CoachAdvice,
 } from "./aiParse.ts";
 
-export type { WrittenItem, WrittenMark };
+export type { WrittenItem, WrittenMark, CoachAdvice };
 
 type Tool = { name: string; description: string; input_schema: Anthropic.Messages.Tool.InputSchema };
 
 /** One request that must answer with `tool`; returns the tool's input object. */
-async function forcedToolCall(apiKey: string, keyFp: string, system: string, user: string, tool: Tool, maxTokens: number, signal?: AbortSignal): Promise<unknown> {
+async function forcedToolCall(feature: ClaudeFeature, apiKey: string, keyFp: string, system: string, user: string, tool: Tool, maxTokens: number, signal?: AbortSignal): Promise<unknown> {
   const p = providerFor(apiKey);
+  logClaude(feature);
   const client = makeClient(apiKey);
   let msg: Anthropic.Messages.Message;
   try {
@@ -54,7 +57,7 @@ export async function markWritten(apiKey: string, keyFp: string, items: WrittenI
   let marked: WrittenMark[] = [];
   if (toSend.length) {
     const maxTokens = Math.min(4000, 400 + 120 * toSend.length);
-    const input = await forcedToolCall(apiKey, keyFp, MARK_SYSTEM, markPrompt(toSend), MARK_TOOL, Math.max(1500, maxTokens), signal);
+    const input = await forcedToolCall("mark", apiKey, keyFp, MARK_SYSTEM, markPrompt(toSend), MARK_TOOL, Math.max(1500, maxTokens), signal);
     marked = parseMarks(input, toSend.map((it) => it.id));
   }
   const byId = new Map(marked.map((m) => [m.id, m]));
@@ -66,6 +69,12 @@ export async function markWritten(apiKey: string, keyFp: string, items: WrittenI
  * a custom-set spec from it. Claude chooses kinds and wording only; the site's engine makes every number.
  */
 export async function designCustomSet(apiKey: string, keyFp: string, request: string, signal?: AbortSignal): Promise<{ spec: CustomSpec; summary: string }> {
-  const input = await forcedToolCall(apiKey, keyFp, DESIGN_SYSTEM, designPrompt(request), DESIGN_TOOL, 1500, signal);
+  const input = await forcedToolCall("design", apiKey, keyFp, DESIGN_SYSTEM, designPrompt(request), DESIGN_TOOL, 1500, signal);
   return specFromDesign(input);
+}
+
+/** Study advice from a marked Exam 3: what to fix first, by area, and a request for one targeted set. */
+export async function coachExam3(apiKey: string, keyFp: string, lines: string[], score: string, signal?: AbortSignal): Promise<CoachAdvice> {
+  const input = await forcedToolCall("plan", apiKey, keyFp, COACH_SYSTEM, coachPrompt(lines, score), COACH_TOOL, 1200, signal);
+  return parseAdvice(input);
 }

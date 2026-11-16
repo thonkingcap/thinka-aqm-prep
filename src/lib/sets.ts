@@ -8,6 +8,7 @@
 //   set:<n> mock:<n> diag:<seed>   older downloads, still graded (see grade.ts)
 import { generate, generateCase, withScenarios, type Question, type QuestionKind, type Scenario } from "./practice.ts";
 import { questionSheet, answerKeySheet, type SheetModel } from "./workbook.ts";
+import { areaById, AREA_VERSIONS, type AreaId } from "./areas.ts";
 
 export type Slot = { kind: QuestionKind; seed: number; caseKey?: string };
 export type WorkbookDef = {
@@ -71,6 +72,60 @@ function topicSet(id: string, v: number): WorkbookDef | null {
     id: `topic:${id}:${v}`, title: `${t.title} · set ${v}`, file: `AQM-${id}-set-${v}`,
     questions: build(slots), sections: slots.map(() => t.title), pointsPerPart: 1,
     intro: [`Covers: ${t.covers}.`],
+  };
+}
+
+// ---------- area sets (the four Exam 3 sections; what the site lists) ----------
+type AreaSlot = { kind: QuestionKind; cases?: string[]; concept?: number[] };
+const AREA_SLOTS: Record<AreaId, AreaSlot[]> = {
+  ci: [
+    { kind: "xbar-range" },
+    { kind: "concept", concept: [C.outside, C.clt, C.se, C.outside] },
+    { kind: "ci-z" },
+    { kind: "ci-t" },
+    { kind: "sample-mean" },
+    { kind: "ci-z" },
+    { kind: "ci-t" },
+    { kind: "concept", concept: [C.tShape, C.outside, C.clt, C.se] },
+  ],
+  ht1: [
+    { kind: "ht-full", cases: ["eq-known-p", "ge-known-p", "le-known-p", "eq-known-p"] },
+    { kind: "ht-full", cases: ["ge-known-p", "le-known-p", "eq-known-p", "le-known-p"] },
+    { kind: "ht-full", cases: ["le-known-p", "eq-known-p", "ge-known-p", "ge-known-p"] },
+    { kind: "concept", concept: [C.pvalue, C.typeI, C.dontReject, C.tails] },
+    { kind: "ht-full", cases: ["eq-known-p", "le-known-p", "ge-known-p", "eq-known-p"] },
+    { kind: "concept", concept: [C.alpha, C.typeII, C.tails, C.pvalue] },
+  ],
+  ht2: [
+    { kind: "ht-full", cases: ["ge-unknown-p", "le-unknown-p", "eq-unknown-p", "ge-unknown-p"] },
+    { kind: "concept", concept: [C.agree, C.zOrT, C.agree, C.zOrT] },
+    { kind: "bernoulli" },
+    { kind: "ht-full", cases: ["eq-unknown-p", "ge-unknown-p", "le-unknown-p", "le-unknown-p"] },
+    { kind: "var-test" },
+    { kind: "concept", concept: [C.nMinus1, C.chiShape, C.biased, C.tShape] },
+  ],
+  two: [
+    { kind: "paired" },
+    { kind: "two-t" },
+    { kind: "two-z" },
+    { kind: "paired" },
+    { kind: "two-t" },
+    { kind: "concept", concept: [C.paired, C.paired, C.paired, C.paired] },
+  ],
+};
+function areaSet(id: string, v: number): WorkbookDef | null {
+  const a = areaById(id);
+  if (!a || !(v >= 1 && v <= AREA_VERSIONS)) return null;
+  const slots: Slot[] = AREA_SLOTS[a.id].map((s, i) => {
+    const seed = 900_007 * a.n + 52_361 * v + 3_571 * (i + 1);
+    if (s.cases) return { kind: s.kind, caseKey: s.cases[(v - 1) % s.cases.length], seed };
+    if (s.concept) return { kind: "concept", seed: s.concept[(v - 1) % s.concept.length] };
+    return { kind: s.kind, seed };
+  });
+  return {
+    id: `area:${id}:${v}`, title: `${a.n}. ${a.title} · set ${v}`, file: `AQM-${a.n}-${a.title.replace(/[^A-Za-z0-9]+/g, "-")}-set-${v}`,
+    questions: build(slots), sections: slots.map(() => a.title), pointsPerPart: 1,
+    intro: [`Section ${a.n} of the exam: ${a.title.toLowerCase()}. ${a.blurb}`],
   };
 }
 
@@ -188,6 +243,8 @@ export function cleanScenario(x: unknown): Scenario | null {
 
 // ---------- lookup ----------
 export function workbookById(id: string): WorkbookDef | null {
+  const ar = /^area:([a-z0-9]+):(\d+)$/.exec(id);
+  if (ar) return areaSet(ar[1], Number(ar[2]));
   const t = /^topic:([a-z-]+):(\d+)$/.exec(id);
   if (t) return topicSet(t[1], Number(t[2]));
   const m = /^(mix|exam):(\d+)$/.exec(id);

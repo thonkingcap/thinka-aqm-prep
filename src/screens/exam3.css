@@ -1,0 +1,40 @@
+/* Exam 3: the diagnostic page. */
+.exam3-head { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+.exam3-head .eyebrow { font-size: 13px; color: var(--muted); margin: 0; }
+.exam3-head .sub { max-width: 68ch; }
+
+.exam3-steps { list-style: none; padding: 0; margin: 0 0 16px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+.exam3-step { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; padding: 16px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); }
+.exam3-step b { display: block; margin-bottom: 4px; }
+.exam3-step .hint { margin: 0 0 10px; }
+.exam3-num { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 14px; background: var(--text); color: #fff; font-size: 13px; font-weight: 600; }
+.rot { transform: rotate(180deg); transition: transform 200ms var(--ease); }
+
+.exam3-qs { display: grid; gap: 12px; margin-bottom: 16px; }
+.exam3-qs[hidden] { display: none; }
+.exam3-qs.open { animation: rise 420ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.exam3-qlist { margin: 0; padding-left: 22px; display: grid; gap: 10px; }
+.exam3-qlist p { margin: 0; }
+.exam3-qlist .hint { margin-bottom: 2px; }
+
+.exam3-upload { margin-bottom: 16px; }
+.exam3-result { display: grid; gap: 16px; scroll-margin-top: 16px; }
+
+.exam3-bars { list-style: none; padding: 0; margin: 0 0 14px; display: grid; gap: 6px; }
+.exam3-bar-row { display: grid; grid-template-columns: minmax(0, 220px) minmax(0, 1fr) 56px; gap: 14px; align-items: center; padding: 8px; margin: 0 -8px; border-radius: 8px; text-decoration: none; color: var(--text); transition: background-color 180ms var(--ease); }
+.exam3-bar-row:hover { background: var(--ground); }
+.exam3-bar-row .num { text-align: right; }
+.exam3-bar-label { display: inline-flex; align-items: center; gap: 10px; min-width: 0; }
+.exam3-bar-label .area-badge { display: grid; place-items: center; flex: none; width: 22px; height: 22px; border-radius: 6px; background: var(--text); color: #fff; font-size: 12px; font-weight: 600; }
+
+.exam3-advice { border-left: 2px solid var(--chart-3); padding: 4px 0 4px 14px; margin: 0 0 14px; animation: rise 420ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.exam3-advice p { margin: 0 0 6px; }
+.exam3-advice ol { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.exam3-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+
+@media (max-width: 760px) {
+  .exam3-steps { grid-template-columns: minmax(0, 1fr); }
+  .exam3-bar-row { grid-template-columns: minmax(0, 1fr) 48px; }
+  .exam3-bar-row .bar { grid-column: 1 / -1; grid-row: 2; }
+  .exam3-actions .btn { width: 100%; justify-content: center; }
+}

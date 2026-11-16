@@ -7,6 +7,7 @@ import { addUsage } from "./spend.ts";
 import { evaluateSafe } from "./excel.ts";
 import { courseNotesText } from "./course.ts";
 import { providerFor, type Provider } from "./provider.ts";
+import { logClaude } from "./usage.ts";
 
 export function makeClient(apiKey: string) {
   // dangerouslyAllowBrowser: this app is "bring your own key": each student uses their own key in
@@ -19,6 +20,7 @@ export function makeClient(apiKey: string) {
 /** Checks the key against its service and that the model is available. Costs nothing. */
 export async function verifyKey(apiKey: string): Promise<void> {
   const p = providerFor(apiKey);
+  logClaude("verify");
   if (p.id === "babson") {
     let res: Response;
     try {
@@ -170,6 +172,7 @@ export async function runTutorTurn(apiKey: string, keyFp: string, history: BetaM
         ev.onStatus("writing");
         ev.onText(delta);
       };
+      logClaude("tutor");
       const stream = level === 0
         ? client.beta.messages.stream(params as Parameters<typeof client.beta.messages.stream>[0], { signal }).on("text", onText)
         : client.messages.stream(params as unknown as Parameters<typeof client.messages.stream>[0], { signal }).on("text", onText);

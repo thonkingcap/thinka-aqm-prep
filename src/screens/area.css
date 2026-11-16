@@ -1,0 +1,50 @@
+/* One exam area: notes on the left, Excel sets on the right, upload below. */
+.area { display: flex; flex-direction: column; gap: 16px; }
+.area-head { display: flex; flex-direction: column; gap: 10px; padding-top: 16px; margin-bottom: 12px; }
+.area-eyebrow { display: inline-flex; align-items: center; gap: 10px; font-size: 13px; color: var(--muted); }
+.area-badge { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 7px; background: var(--text); color: #fff; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.area-head h1 { font-size: 32px; letter-spacing: -0.02em; }
+.area-blurb { font-size: 16px; line-height: 1.55; max-width: 64ch; }
+.area-head .page-hint { margin-top: 6px; }
+
+.area-grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 16px; align-items: start; }
+.area-learn .panel-head h2, .area-practice .panel-head h2 { display: inline-flex; align-items: center; gap: 6px; }
+.area-topics { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.area-topic { display: grid; grid-template-columns: 28px minmax(0, 1fr) 16px; gap: 10px; align-items: center; padding: 12px 8px; margin: 0 -8px; border-radius: 8px; text-decoration: none; transition: background-color 180ms var(--ease); }
+.area-topics li + li .area-topic { border-top: 1px solid var(--rule); border-radius: 0; }
+.area-topic:hover { background: var(--ground); border-radius: 8px; }
+.area-topic-n { display: grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--control); border-radius: 12px; font-size: 12px; color: var(--muted); }
+.area-topic-text { display: flex; flex-direction: column; gap: 2px; }
+.area-topic-text b { font-weight: 500; font-size: 14px; }
+.area-go { color: var(--muted); transition: transform 200ms var(--ease), color 200ms var(--ease); }
+.area-topic:hover .area-go { transform: translateX(3px); color: var(--text); }
+.area-ask { margin-top: 14px; }
+
+.area-lead { margin: -6px 0 12px; }
+.area-sets { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.area-set { display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+.area-set-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.area-set-top b { font-weight: 500; }
+.area-set .btn { align-self: flex-start; }
+.area-exam3 { margin-top: 12px; }
+.area-exam3 a { color: var(--text); }
+
+.area-report .report { margin-top: 0; }
+.area-pager { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+.area-pager-link { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); text-decoration: none; }
+.area-pager-link > span { display: flex; flex-direction: column; gap: 2px; }
+.area-pager-link b { font-weight: 500; }
+.area-pager-link.next { justify-content: flex-end; text-align: right; grid-column: 2; }
+
+@media (max-width: 900px) {
+  .area-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 560px) {
+  .area-head { padding-top: 0; }
+  .area-head h1 { font-size: 26px; }
+  .area-sets { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+  .area-set { padding: 12px; }
+  .area-pager { grid-template-columns: minmax(0, 1fr); }
+  .area-pager-link.next { grid-column: 1; }
+}
+.area-note { margin-top: 12px; }

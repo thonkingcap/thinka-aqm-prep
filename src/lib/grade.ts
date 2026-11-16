@@ -8,6 +8,7 @@ import { mockExam, MOCK_COUNT, POINTS_PER_PART } from "./mock.ts";
 import { fmtNumber } from "./format.ts";
 import { DIAGNOSTIC, DIAG_SEED_MAX, diagnosticQuestions } from "./plan.ts";
 import { workbookById, workbookSheets } from "./sets.ts";
+import { isExam3, gradeExam3 } from "./exam3.ts";
 
 export type PartGrade = {
   part: Part;
@@ -23,7 +24,7 @@ export type PartGrade = {
   got: number;
 };
 export type QuestionGrade = { q: Question; index: number; section?: string; sheetFound: boolean; parts: PartGrade[]; got: number; total: number };
-export type WorkbookKind = "mock" | "set" | "diag" | "topic" | "mix" | "exam" | "spec";
+export type WorkbookKind = "mock" | "set" | "diag" | "topic" | "mix" | "exam" | "spec" | "area" | "exam3";
 export type WorkbookGrade = { kind: WorkbookKind; n: number; id: string; title: string; questions: QuestionGrade[]; got: number; total: number; notes: string[] };
 
 export function identify(id: string | null): { kind: WorkbookKind; n: number } | null {
@@ -43,7 +44,7 @@ export function identify(id: string | null): { kind: WorkbookKind; n: number } |
 
 const showAnswer = (p: Part) => (typeof p.answer === "string" ? p.answer : fmtNumber(p.answer, p.format));
 
-function gradeCell(v: CellVal | undefined, p: Part): Omit<PartGrade, "part" | "cell" | "points" | "got"> {
+export function gradeCell(v: CellVal | undefined, p: Part): Omit<PartGrade, "part" | "cell" | "points" | "got"> {
   const answer = showAnswer(p);
   if (v === undefined || v === "") return { ok: false, status: "blank", mine: "Blank", answer };
   if (v === null) return { ok: false, status: "nocache", mine: "A formula with no saved result", answer };
@@ -77,6 +78,7 @@ export function diagnose(value: number, p: Part): string | undefined {
 }
 
 export function gradeWorkbook(wb: ReadWorkbook): WorkbookGrade {
+  if (isExam3(wb)) return gradeExam3(wb);
   const who = identify(wb.thinkaId);
   if (!who) {
     throw new Error(wb.thinkaId

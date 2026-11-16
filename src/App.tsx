@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { BookOpen, FlaskConical, House, KeyRound, LifeBuoy, ListChecks, MessageSquare, PencilLine } from "lucide-react";
+import { useEffect, useState, type ReactNode } from "react";
+import { CircleHelp, FileSpreadsheet, House, KeyRound, LifeBuoy, MessageSquare } from "lucide-react";
 import ProblemDialog from "./components/ProblemDialog.tsx";
 import { useSession, useRoute } from "./session.tsx";
 import Gate from "./screens/Gate.tsx";
@@ -9,17 +9,24 @@ import Lab from "./screens/Lab.tsx";
 import Practice from "./screens/Practice.tsx";
 import Tutor from "./screens/Tutor.tsx";
 import KeySettings from "./screens/KeySettings.tsx";
-import Plan from "./screens/Plan.tsx";
+import Area from "./screens/Area.tsx";
+import Exam3 from "./screens/Exam3.tsx";
+import Walkthrough, { openHowTo } from "./components/Walkthrough.tsx";
+import { AREAS } from "./lib/areas.ts";
 import { ThinkaMark } from "./components/Thinka.tsx";
 import { useOnline } from "./lib/online.ts";
+import NamePrompt, { useNeedsName } from "./components/NamePrompt.tsx";
+import { startUsageClock } from "./lib/usage.ts";
 
-const NAV = [
-  { id: "home", label: "Home", icon: House },
-  { id: "plan", label: "Plan", icon: ListChecks },
-  { id: "learn", label: "Learn", icon: BookOpen },
-  { id: "lab", label: "Test lab", icon: FlaskConical },
-  { id: "practice", label: "Practice", icon: PencilLine },
-  { id: "tutor", label: "Tutor", icon: MessageSquare },
+startUsageClock();
+
+/** Nav: Home, Exam 3, the exam's four areas (numbered), the tutor. `tiny` is the phone label. */
+const MOBILE: Record<string, string> = { ci: "CIs", ht1: "Tests I", ht2: "Tests II", two: "Two-sam." };
+const NAV: { href: string; label: string; tiny: string; match: (r: string[]) => boolean; icon?: typeof House; n?: number }[] = [
+  { href: "#/home", label: "Home", tiny: "Home", icon: House, match: (r) => !r[0] || r[0] === "home" },
+  { href: "#/exam3", label: "Exam 3: start here", tiny: "Exam 3", icon: FileSpreadsheet, match: (r) => r[0] === "exam3" },
+  ...AREAS.map((a) => ({ href: `#/area/${a.id}`, label: `${a.n}. ${a.title}`, tiny: MOBILE[a.id] ?? a.short, n: a.n, match: (r: string[]) => r[0] === "area" && r[1] === a.id })),
+  { href: "#/tutor", label: "Tutor", tiny: "Tutor", icon: MessageSquare, match: (r) => r[0] === "tutor" },
 ];
 
 export function Mark({ size = 32 }: { size?: number }) {
@@ -32,35 +39,49 @@ export default function App() {
   const screen = route[0] ?? "home";
   const [problem, setProblem] = useState(false);
   const online = useOnline();
+  const needsName = useNeedsName();
+  // #/home/mocks and the like: scroll to that section of Home.
+  useEffect(() => {
+    if (screen !== "home" || !route[1]) return;
+    const t = window.setTimeout(() => document.getElementById(route[1])?.scrollIntoView({ behavior: "smooth", block: "start" }), 250);
+    return () => window.clearTimeout(t);
+  }, [screen, route[1]]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!ready) return <div className="boot" aria-busy="true" />;
-  if (!apiKey && !browsing && screen !== "key") return <Gate />;
+  if (!apiKey && !browsing && screen !== "key") return <>{needsName && <NamePrompt />}<Gate /></>;
 
-  let body;
+  let body: ReactNode;
   switch (screen) {
-    case "plan": body = <Plan sub={route[1]} />; break;
+    case "exam3": body = <Exam3 />; break;
+    case "area": body = <Area id={route[1]} route={route.slice(2)} />; break;
     case "learn": body = <Learn topicId={route[1]} />; break;
     case "lab": body = <Lab />; break;
-    case "practice": body = <Practice route={route.slice(1)} key={route.slice(1).join("/")} />; break;
+    case "plan": case "practice": body = <Practice route={route} />; break; // old links
+    case "home": break;
     case "tutor": body = <Tutor />; break;
     case "key": body = <KeySettings />; break;
-    default: body = <Home />;
   }
+  body ??= <Home />;
 
   return (
     <div className="app">
       <nav className="rail" aria-label="Main">
         <a className="rail-mark" href="#/home" aria-label="Thinka's AQM Prep home"><Mark /></a>
-        {NAV.map(({ id, label, icon: Icon }) => (
-          <a key={id} className="rail-link" href={`#/${id}`} aria-label={label} aria-current={screen === id ? "page" : undefined}>
-            <Icon size={18} strokeWidth={1.6} aria-hidden="true" />
-            <span className="rail-label" aria-hidden="true">{label}</span>
+        {NAV.map(({ href, label, tiny, match, icon: Icon, n }, i) => (
+          <a key={href} className={`rail-link${n ? " rail-area" : ""}${i === 2 ? " rail-first-area" : ""}`} href={href} aria-label={label} aria-current={match(route) ? "page" : undefined}>
+            {Icon ? <Icon size={18} strokeWidth={1.6} aria-hidden="true" /> : <span className="rail-num" aria-hidden="true">{n}</span>}
+            <span className="rail-label" aria-hidden="true">{tiny}</span>
             <span className="rail-tip" aria-hidden="true">{label}</span>
           </a>
         ))}
         <div className="rail-bottom">
           <span className="rail-sep" aria-hidden="true" />
-          <button type="button" className="rail-link rail-btn" onClick={() => setProblem(true)} aria-label="Have a problem? Message the developer">
+          <button type="button" className="rail-link rail-btn rail-desk" onClick={openHowTo} aria-label="How to use this site">
+            <CircleHelp size={18} strokeWidth={1.6} aria-hidden="true" />
+            <span className="rail-label" aria-hidden="true">How to</span>
+            <span className="rail-tip" aria-hidden="true">How to use this site</span>
+          </button>
+          <button type="button" className="rail-link rail-btn rail-desk" onClick={() => setProblem(true)} aria-label="Have a problem? Message the developer">
             <LifeBuoy size={18} strokeWidth={1.6} aria-hidden="true" />
             <span className="rail-label" aria-hidden="true">Help</span>
             <span className="rail-tip" aria-hidden="true">Have a problem?</span>
@@ -73,8 +94,12 @@ export default function App() {
           </a>
         </div>
       </nav>
-      <main className="main" id="main">{!online && <p className="offline-bar" role="status">You're offline. Notes, workbook downloads and marking all still work; the tutor and the Claude features come back when you reconnect.</p>}{body}</main>
+      <main className="main" id="main">
+        {!online && <p className="offline-bar" role="status">You're offline. Notes, workbook downloads and marking all still work; the tutor and the Claude features come back when you reconnect.</p>}
+        <div className="route" key={route.join("/")}>{body}</div>
+      </main>
       <ProblemDialog open={problem} onClose={() => setProblem(false)} />
+      {needsName ? <NamePrompt /> : <Walkthrough />}
     </div>
   );
 }

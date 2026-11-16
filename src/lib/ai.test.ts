@@ -84,3 +84,14 @@ ok(specFromDesign({ items: [{ kind: "normal-less", count: 0 }] }, rng).spec.q.le
 
 if (fails) { console.log(`ai.test: ${fails} failure(s)`); process.exit(1); }
 console.log("ai.test: all passed");
+
+// Exam 3 coaching: clipped, areas checked, empty summary refused.
+import { parseAdvice } from "./aiParse.ts";
+{
+  let f = 0;
+  const a = parseAdvice({ summary: "You know intervals.", focus: [{ area: "ht2", why: "T vs Z" }, { area: "nope", why: "x" }, { area: "two", why: "" }], practice: "4 t-tests" });
+  if (a.focus.length !== 1 || a.focus[0].area !== "ht2" || a.practice !== "4 t-tests") { f++; console.log("FAIL advice parse", a); }
+  try { parseAdvice({ summary: "", focus: [] }); f++; console.log("FAIL empty summary accepted"); } catch { /* expected */ }
+  console.log(`${f ? "FAILED" : "PASS"}: Exam 3 advice parsing`);
+  if (f) process.exit(1);
+}

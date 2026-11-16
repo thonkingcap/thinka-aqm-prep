@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import * as vault from "./lib/vault.ts";
+import { logKeyAdded } from "./lib/usage.ts";
 import { readSpend, type SpendState } from "./lib/spend.ts";
 import { fetchRemoteBalance, providerFor, type Provider, type RemoteBalance } from "./lib/provider.ts";
 
@@ -70,6 +71,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const useKey = useCallback(async (key: string, opts: { shared: boolean }) => {
     await vault.storeKey(key, opts);
     setApiKey(key);
+    logKeyAdded();
   }, []);
 
   const browse = useCallback(() => {

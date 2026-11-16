@@ -37,3 +37,13 @@ Please report security issues privately through GitHub's **"Report a vulnerabili
 ## Offline mode
 
 The site registers a service worker (`/sw.js`, generated at build time from `src/sw-template.js`) that saves the site's own files on the device so it works without internet. It only handles same-origin GET requests for those files: it never sees or stores your API key or any request to Claude, Babson's gateway or the feedback form. The Content-Security-Policy allows `worker-src 'self'` and `connect-src 'self'` for this, and Trusted Types allows a single policy, `sw`, that accepts exactly the URL `/sw.js`; any other script URL still throws.
+
+## Usage logs
+
+So the author can see how many students the site helps, it logs a little usage to a Supabase database (project `aqm-prep-logs`):
+
+- the name you type on your first visit, and a random visitor id kept in your browser;
+- active minutes on the site (only while the tab is visible and you've used it in the last 10 minutes), sent every 5 minutes and when you leave;
+- one row per request sent to Claude, labelled only with the feature (tutor, marking, custom set, plan, key check), and a row when you add a key.
+
+It never logs your API key, anything derived from it, your answers or your messages. Your key still goes only to Claude (Babson's gateway or Anthropic). The site calls a single database function, `log_event`, that can only append a validated row; the public key in the code can't read, change or delete anything. The CSP adds `https://kxtdmgpecxlzyepshryw.supabase.co` to `connect-src` for this. Logging is skipped while you're offline.

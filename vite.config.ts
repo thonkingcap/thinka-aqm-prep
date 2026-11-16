@@ -13,7 +13,7 @@ export const CSP = [
   "script-src 'self'",
   "style-src 'self' https://fonts.googleapis.com",
   "font-src https://fonts.gstatic.com",
-  "connect-src 'self' https://api.anthropic.com https://ca-litellm-mint-eus2.orangeflower-5d81efa8.eastus2.azurecontainerapps.io https://formsubmit.co",
+  "connect-src 'self' https://api.anthropic.com https://ca-litellm-mint-eus2.orangeflower-5d81efa8.eastus2.azurecontainerapps.io https://formsubmit.co https://kxtdmgpecxlzyepshryw.supabase.co",
   "img-src 'self' data:",
   "manifest-src 'self'",
   "base-uri 'none'",

@@ -1,13 +1,12 @@
 // Upload a filled-in workbook, grade it on this device, and show the review: what went well, what to
 // work on, every part with the formula that gets it, the likely slip behind each wrong number, and the
 // written answers (marked by Claude on the student's key, or self-marked against the model answer).
-import { useMemo, useRef, useState, type DragEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { Check, FileSpreadsheet, LoaderCircle, MessageSquare, Sparkles, Upload, X } from "lucide-react";
 import { readXlsx } from "../lib/xlsxRead.ts";
 import { gradeWorkbook, type PartGrade, type QuestionGrade, type WorkbookGrade } from "../lib/grade.ts";
 import { addAttempt } from "../lib/progress.ts";
-import { saveResult, scoreDiagnostic } from "../lib/plan.ts";
-import { topicForKind } from "../lib/sets.ts";
+import { saveResult, scoreDiagnostic, exam3Result } from "../lib/plan.ts";
 import { markWritten } from "../lib/ai.ts";
 import { useSession } from "../session.tsx";
 import { useOnline } from "../lib/online.ts";
@@ -49,7 +48,9 @@ export function UploadBox({ onGraded }: { onGraded: (g: WorkbookGrade) => void }
         addAttempt({ kind: qg.q.kind, topic: qg.q.topic, caseKey: qg.q.caseKey, correct: marked.filter((p) => p.ok).length, total: marked.length, ts: Date.now() });
       }
       // A diagnostic workbook becomes the diagnostic result, which rebuilds the study plan.
-      if (g.kind === "diag") saveResult(scoreDiagnostic(g.questions.map((qg) => ({ q: qg.q, slot: qg.index, ok: qg.parts.map((p) => p.ok) }))));
+      if (g.kind === "diag") saveResult({ ...scoreDiagnostic(g.questions.map((qg) => ({ q: qg.q, slot: qg.index, ok: qg.parts.map((p) => p.ok) }))), source: "diag" });
+      // So does Exam 3; written marks update it later (GradeReport).
+      if (g.kind === "exam3") saveResult(exam3Result(g));
       onGraded(g);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -83,20 +84,20 @@ export function UploadBox({ onGraded }: { onGraded: (g: WorkbookGrade) => void }
 }
 
 // Where to read up and practise for each question topic.
-const TOPIC_INFO: Record<string, { name: string; learn: string }> = {
-  normal: { name: "The normal distribution", learn: "normal" },
-  clt: { name: "Sample means and the CLT", learn: "clt" },
-  "ci-z": { name: "Confidence intervals, σ known", learn: "ci-z" },
-  t: { name: "Confidence intervals, σ unknown", learn: "t" },
-  ht: { name: "Hypothesis tests for a mean", learn: "ht-logic" },
-  var: { name: "Testing a variance (χ²)", learn: "variance" },
-  two: { name: "Two samples and paired data", learn: "two-sample" },
-  concept: { name: "Definitions and explanations", learn: "dictionary" },
+const TOPIC_INFO: Record<string, { name: string; learn: string; area: string }> = {
+  normal: { name: "The normal distribution", learn: "normal", area: "ci" },
+  clt: { name: "Sample means and the CLT", learn: "clt", area: "ci" },
+  "ci-z": { name: "Confidence intervals, σ known", learn: "ci-z", area: "ci" },
+  t: { name: "Confidence intervals, σ unknown", learn: "t", area: "ci" },
+  ht: { name: "Hypothesis tests for a mean", learn: "ht-logic", area: "ht1" },
+  var: { name: "Testing a variance (χ²)", learn: "variance", area: "ht2" },
+  two: { name: "Two samples and paired data", learn: "two-sample", area: "two" },
+  concept: { name: "Definitions and explanations", learn: "dictionary", area: "ci" },
 };
 
 const partKey = (q: QuestionGrade, p: PartGrade) => `${q.index}:${p.part.id}`;
 
-export function GradeReport({ g, onClose }: { g: WorkbookGrade; onClose?: () => void }) {
+export function GradeReport({ g, onClose, onMarks }: { g: WorkbookGrade; onClose?: () => void; onMarks?: (scores: Record<string, number>) => void }) {
   const { askTutor, apiKey, fp } = useSession();
   // Written parts: score 0, 0.5 or 1 each, from Claude or the student.
   const [marks, setMarks] = useState<Record<string, { score: number; feedback?: string; by: "claude" | "self" }>>({});
@@ -109,6 +110,11 @@ export function GradeReport({ g, onClose }: { g: WorkbookGrade; onClose?: () => 
   const got = g.got + writtenGot;
   const pct = g.total ? Math.round((100 * got) / g.total) : 0;
   const allMarked = written.every(({ q, p }) => marks[partKey(q, p)]);
+  useEffect(() => {
+    const scores = Object.fromEntries(Object.entries(marks).map(([k, m]) => [k, m.score]));
+    if (g.kind === "exam3" && Object.keys(scores).length) saveResult(exam3Result(g, scores));
+    onMarks?.(scores);
+  }, [marks]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function setMark(k: string, m: { score: number; feedback?: string; by: "claude" | "self" }) {
     setMarks((prev) => {
@@ -208,7 +214,7 @@ export function GradeReport({ g, onClose }: { g: WorkbookGrade; onClose?: () => 
                     {v.slips.slice(0, 3).map((s) => <div key={s} className="hint">• {s}</div>)}
                     <div className="row review-links">
                       <a className="linkish" href={`#/learn/${TOPIC_INFO[t]?.learn ?? ""}`}>Reread the notes</a>
-                      <a className="linkish" href={`#/practice/topic/${topicForKind(g.questions.find((q) => q.q.topic === t)?.q.kind ?? "")}`}>Download a set on it</a>
+                      <a className="linkish" href={`#/area/${TOPIC_INFO[t]?.area ?? "ci"}`}>Practise it in Excel</a>
                     </div>
                   </li>
                 ))}
@@ -250,7 +256,7 @@ export function GradeReport({ g, onClose }: { g: WorkbookGrade; onClose?: () => 
               <table className="ledger report-parts">
                 <thead><tr><th>Part</th><th>Cell</th><th>Yours</th><th>Answer</th><th aria-label="Result" /></tr></thead>
                 <tbody>
-                  {q.parts.map((p) => p.status === "written"
+                  {q.parts.map((p) => p.status === "written" || p.part.kind === "text"
                     ? <WrittenRow key={p.part.id} p={p} mark={marks[partKey(q, p)]} onMark={(score) => setMark(partKey(q, p), { score, by: "self" })} />
                     : (
                     <tr key={p.part.id} className={p.ok ? "" : "miss"}>
@@ -288,7 +294,7 @@ export function GradeReport({ g, onClose }: { g: WorkbookGrade; onClose?: () => 
 
 function WrittenRow({ p, mark, onMark }: { p: PartGrade; mark?: { score: number; feedback?: string; by: "claude" | "self" }; onMark: (score: number) => void }) {
   return (
-    <tr className={mark && mark.score === 1 ? "" : "miss"}>
+    <tr className={p.status === "written" && mark && mark.score === 1 ? "" : "miss"}>
       <td className="lbl" colSpan={4}>
         <div>{p.part.id}) {p.part.label}</div>
         <div className="written">
@@ -296,17 +302,17 @@ function WrittenRow({ p, mark, onMark }: { p: PartGrade; mark?: { score: number;
           <div><span className="hint">Model answer</span><p>{String(p.part.answer)}</p></div>
           {p.part.keyPoints && <div className="hint">Full marks needs: {p.part.keyPoints.join("; ")}.</div>}
           {mark?.feedback && <div className="slip-note"><b>Claude:</b> {mark.feedback}</div>}
-          <div className="row" role="group" aria-label="Mark this answer">
+          {p.status === "written" && <div className="row" role="group" aria-label="Mark this answer">
             <span className="hint">{mark ? (mark.by === "claude" ? "Claude's mark (change it if you disagree):" : "Your mark:") : "Mark it yourself:"}</span>
             {[1, 0.5, 0].map((s) => (
               <button key={s} className={`btn btn-small ${mark?.score === s ? "btn-primary" : "btn-ghost"}`} aria-pressed={mark?.score === s} onClick={() => onMark(s)}>
                 {s === 1 ? "Full" : s === 0.5 ? "Half" : "None"}
               </button>
             ))}
-          </div>
+          </div>}
         </div>
       </td>
-      <td className="val">{mark ? (mark.score === 1 ? <Check size={16} className="ok-mark" aria-label="Right" /> : <X size={16} className="no-mark" aria-label="Not full marks" />) : <span className="muted">?</span>}</td>
+      <td className="val">{p.status !== "written" ? <X size={16} className="no-mark" aria-label="Blank" /> : mark ? (mark.score === 1 ? <Check size={16} className="ok-mark" aria-label="Right" /> : <X size={16} className="no-mark" aria-label="Not full marks" />) : <span className="muted">?</span>}</td>
     </tr>
   );
 }

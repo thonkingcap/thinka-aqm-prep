@@ -1,0 +1,56 @@
+/* Motion: page enter, staggered cards, hover lift, growing bars. Quiet and quick; all of it
+   switches off for people who ask their system for reduced motion. */
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } }
+@keyframes fade { from { opacity: 0; } }
+@keyframes grow { from { transform: scaleX(0); } }
+@keyframes nav-mark { from { transform: scaleY(0); } }
+
+.route { animation: rise 440ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* Children of .stagger enter one after another. */
+.stagger > * { animation: rise 520ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.stagger > :nth-child(1) { animation-delay: 40ms; }
+.stagger > :nth-child(2) { animation-delay: 90ms; }
+.stagger > :nth-child(3) { animation-delay: 140ms; }
+.stagger > :nth-child(4) { animation-delay: 190ms; }
+.stagger > :nth-child(5) { animation-delay: 240ms; }
+.stagger > :nth-child(6) { animation-delay: 290ms; }
+.stagger > :nth-child(n + 7) { animation-delay: 330ms; }
+
+/* Cards that lift a little under the pointer. */
+.lift { transition: transform 220ms var(--ease), box-shadow 220ms var(--ease), border-color 220ms var(--ease); }
+.lift:hover { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(0, 0, 0, 0.07), 0 1px 3px rgba(0, 0, 0, 0.05); border-color: var(--control); }
+
+/* Buttons press in. */
+.btn { transition: background-color 140ms var(--ease), border-color 140ms var(--ease), color 140ms var(--ease), transform 140ms var(--ease), box-shadow 140ms var(--ease); }
+.btn:not(:disabled):active { transform: translateY(1px) scale(0.985); }
+.btn-primary:not(:disabled):hover { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16); }
+
+/* Progress bars grow in from the left. */
+.bar { height: 6px; background: var(--raised); border-radius: 3px; overflow: hidden; }
+.bar > span { display: block; height: 100%; background: var(--text); border-radius: 3px; transform-origin: left center; animation: grow 900ms cubic-bezier(0.16, 1, 0.3, 1) 200ms both; transition: width 600ms var(--ease); }
+.bar.blue > span { background: var(--chart-1); }
+
+/* The current nav item gets a small marker that grows in. */
+.rail-link[aria-current="page"]::before {
+  content: ""; position: absolute; left: -8px; top: 10px; bottom: 10px; width: 3px; border-radius: 2px;
+  background: var(--text); animation: nav-mark 300ms var(--ease) both;
+}
+@media (max-width: 760px) {
+  .rail-link[aria-current="page"]::before { left: 30%; right: 30%; top: -6px; bottom: auto; width: auto; height: 3px; animation-name: fade; }
+}
+
+/* A highlighted target (deep link) pulses once. */
+@keyframes hit { 0% { box-shadow: 0 0 0 0 rgba(20, 20, 20, 0.28); } 100% { box-shadow: 0 0 0 10px rgba(20, 20, 20, 0); } }
+.is-hit { animation: hit 1100ms var(--ease) 300ms 2; border-color: var(--text) !important; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .lift:hover { transform: none; }
+}

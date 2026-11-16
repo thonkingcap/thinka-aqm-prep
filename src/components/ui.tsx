@@ -99,7 +99,7 @@ export function TwelveGrid({ stats, compact = false }: { stats?: Map<string, { c
             const g2 = compact ? short(1) : full(1);
             const s = stats?.get(key);
             return (
-              <a role="cell" key={key} className="twelve-cell" href="#/practice/topic/one-sample" aria-label={`${n.h0}, ${c.label}: practise the hypothesis test set in Excel`}>
+              <a role="cell" key={key} className="twelve-cell" href="#/area/ht1" aria-label={`${n.h0}, ${c.label}: practise hypothesis tests in Excel`}>
                 <span className="twelve-sr">{c.label}</span>
                 {c.method === "p" ? (
                   n.id === "eq" ? (
