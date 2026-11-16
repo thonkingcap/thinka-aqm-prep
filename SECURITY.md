@@ -1,10 +1,10 @@
 # Security
 
-Thinka's AQM Prep asks students for a Claude API key (usually the one Babson emails them). This is how that key is protected, so anyone can check it against the code.
+AQM Prep asks students for a Claude API key (usually the one Babson emails them). This is how that key is protected, so anyone can check it against the code.
 
 ## Where the key goes
 
-- **Nowhere but the AI service.** There's no Thinka server. The page sends the key only to Babson's Claude gateway (or `api.anthropic.com` for keys made at platform.claude.com).
+- **Nowhere but the AI service.** Your own key never goes to a server of ours (the shared-access function at /api/claude only ever uses Daniel's key, never yours). The page sends the key only to Babson's Claude gateway (or `api.anthropic.com` for keys made at platform.claude.com).
 - **Enforced by the browser.** The Content-Security-Policy (`vite.config.ts`, `vercel.json`) lets the page connect only to those two services and to formsubmit.co, which handles the "Have a problem?" form and never receives the key. Any other destination is blocked by the browser itself.
 - **Never in other text.** The feedback form and the tutor chat both refuse to send a message that contains a key.
 
@@ -66,3 +66,11 @@ function at `/api/claude` (`api/claude.ts`, logic in `api/_proxy.ts`). That func
 
 To revoke a code, remove it from `ACCESS_CODES` in Vercel and redeploy. Removing `OWNER_API_KEY` or
 `ACCESS_CODES` switches shared access off entirely.
+
+## Shared access by email
+
+Students without a key can type their Babson email instead (no verification). The site sends it as `aqmemail:<email>` to the same `/api/claude` function, which only accepts addresses ending in `@babson.edu` and uses Daniel's key from Vercel's environment.
+
+- Each email gets at most $10 of estimated spend (`SHARED_LIMIT_USD` can change it). Before every request the function looks up that email's total; at or over the cap it refuses with HTTP 402 and asks the student to add their own key. After each reply it works out the cost from the reply's token usage (Sonnet prices) and adds it to the email's total. If the lookup fails, the request is refused rather than sent unmetered.
+- Totals live in the Supabase table `shared_spend`, which the public key can't read or change. The function reads and charges them through `proxy_spent` and `proxy_charge`, which only answer to `PROXY_SECRET`: the secret lives only in Vercel's environment, and the database stores just its SHA-256 hash.
+- There's no verification, so someone could use another student's email or invent addresses; the per-email cap and the per-device rate limit (60 requests per 10 minutes) bound what that can cost. To turn email access off, remove `PROXY_SECRET` from Vercel and redeploy.

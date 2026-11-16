@@ -129,6 +129,30 @@ function areaSet(id: string, v: number): WorkbookDef | null {
   };
 }
 
+// ---------- chi-squared practice (tests on a variance) ----------
+// Students find these hardest, so they get their own sets: five χ² tests each, always covering a right,
+// a left and a two-tailed test, plus one written question. Seeds are searched so each tail appears.
+export const CHI_VERSIONS = 4;
+const CHI_ORDER = ["Right", "Left", "Two", "Right", "Left"];
+function chiSet(v: number): WorkbookDef | null {
+  if (!(v >= 1 && v <= CHI_VERSIONS)) return null;
+  const slots: Slot[] = [];
+  let seed = 1_300_003 * v;
+  for (const want of CHI_ORDER) {
+    for (let tries = 0; tries < 500; tries++) {
+      seed += 7_919;
+      if (generate("var-test", seed).title.startsWith(want)) break;
+    }
+    slots.push({ kind: "var-test", seed });
+  }
+  slots.push({ kind: "concept", seed: [C.chiShape, C.nMinus1, C.biased, C.chiShape][(v - 1) % 4] });
+  return {
+    id: `chi:${v}`, title: `Chi-squared practice · set ${v}`, file: `AQM-chi-squared-set-${v}`,
+    questions: build(slots), sections: slots.map(() => "Chi-squared: tests on a variance"), pointsPerPart: 1,
+    intro: ["Five chi-squared tests on a variance (right, left and two-tailed), plus one written question.", "Steps: S² = VAR.S(data); χ² = (n − 1)·S²/σ₀² (square σ₀ if they give a standard deviation); p-value and cut-off from CHISQ.DIST and CHISQ.INV with n − 1."],
+  };
+}
+
 // ---------- mixed sets ----------
 export const MIX_COUNT = 10;
 const MIX: { kinds?: QuestionKind[]; cases?: string[] }[] = [
@@ -243,6 +267,8 @@ export function cleanScenario(x: unknown): Scenario | null {
 
 // ---------- lookup ----------
 export function workbookById(id: string): WorkbookDef | null {
+  const chi = /^chi:(\d+)$/.exec(id);
+  if (chi) return chiSet(Number(chi[1]));
   const ar = /^area:([a-z0-9]+):(\d+)$/.exec(id);
   if (ar) return areaSet(ar[1], Number(ar[2]));
   const t = /^topic:([a-z-]+):(\d+)$/.exec(id);

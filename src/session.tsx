@@ -1,7 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import * as vault from "./lib/vault.ts";
 import { logKeyAdded, setUsageKey } from "./lib/usage.ts";
-import { isCodeKey } from "./lib/provider.ts";
+import { isEmailKey, emailOf, CODE_PREFIX } from "./lib/provider.ts";
+import { setUsageEmail } from "./lib/usage.ts";
+/** Logged key tag: "email" for Babson-email access, "code" for an access code, else part of a one-way hash. */
+const tagFor = (key: string, fp: string) => (isEmailKey(key) ? "email" : key.startsWith(CODE_PREFIX) ? "code" : fp.slice(0, 10));
 import { readSpend, type SpendState } from "./lib/spend.ts";
 import { fetchRemoteBalance, providerFor, type Provider, type RemoteBalance } from "./lib/provider.ts";
 
@@ -52,7 +55,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let live = true;
     if (!apiKey) { setFp(null); setSpend(null); setUsageKey(null); return; }
-    vault.fingerprint(apiKey).then((f) => { if (live) { setFp(f); setSpend(readSpend(f)); setUsageKey(isCodeKey(apiKey) ? "code" : f.slice(0, 10)); } });
+    vault.fingerprint(apiKey).then((f) => { if (live) { setFp(f); setSpend(readSpend(f)); setUsageKey(tagFor(apiKey, f)); setUsageEmail(emailOf(apiKey)); } });
     return () => { live = false; };
   }, [apiKey]);
 
@@ -71,7 +74,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const useKey = useCallback(async (key: string, opts: { shared: boolean }) => {
     await vault.storeKey(key, opts);
-    setUsageKey(isCodeKey(key) ? "code" : (await vault.fingerprint(key)).slice(0, 10));
+    setUsageKey(tagFor(key, await vault.fingerprint(key)));
+    setUsageEmail(emailOf(key));
     setApiKey(key);
     logKeyAdded();
   }, []);

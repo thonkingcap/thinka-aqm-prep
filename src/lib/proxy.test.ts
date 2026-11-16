@@ -1,6 +1,6 @@
 // The access-code proxy (api/_proxy.ts): codes checked, the owner's key swapped in server-side and
 // never echoed, only the two Claude routes allowed, limits enforced. Uses a fake upstream and a fake key.
-import { handle, resetLimits } from "../../api/_proxy.ts";
+import { handle, resetLimits, CAP_MESSAGE, costOf } from "../../api/_proxy.ts";
 
 let fails = 0;
 const ok = (c: boolean, m: string) => { if (!c) { fails++; console.log("FAIL", m); } };
@@ -98,6 +98,82 @@ const run = async (r: Request, e = env) => { const res = await handle(r, e, fake
   const res = await handle(req("/api/claude/v1/messages", { key: "aqmcode:AQM-TEST1", body: msgBody, ip: "7.7.7.7" }), env, down);
   const t = await res.text(); bodies.push(t);
   ok(res.status === 502, "upstream down 502");
+}
+// Babson-email shared access: spend checked before, charged after, capped at $10.
+{
+  resetLimits();
+  const SECRET = "test-proxy-secret-0123456789abcdef0123456789ab";
+  const envE = { ...env, PROXY_SECRET: SECRET };
+  let spent = 3.2;
+  const rpcs: { fn: string; body: Record<string, unknown> }[] = [];
+  let upstreamCalls = 0;
+  const sse = [
+    'event: message_start\ndata: {"type":"message_start","message":{"usage":{"input_tokens":1000,"cache_creation_input_tokens":2000,"cache_read_input_tokens":40000,"output_tokens":1}}}\n\n',
+    'event: content_block_delta\ndata: {"type":"content_block_delta","delta":{"type":"text_delta","text":"Hi"}}\n\n',
+    'event: message_delta\ndata: {"type":"message_delta","usage":{"output_tokens":500}}\n\n',
+    'event: message_stop\ndata: {"type":"message_stop"}\n\n',
+  ];
+  const fake = (async (url: string | URL | Request, init?: RequestInit) => {
+    const u = String(url);
+    if (u.includes("/rpc/")) {
+      const fn = u.split("/rpc/")[1];
+      const body = JSON.parse(String(init?.body));
+      rpcs.push({ fn, body });
+      if (fn === "proxy_spent") return new Response(String(spent), { status: 200 });
+      spent += Number(body.p_cost); return new Response(String(spent), { status: 200 });
+    }
+    upstreamCalls++;
+    // Split the stream mid-line to check the parser stitches chunks back together.
+    const all = new TextEncoder().encode(sse.join(""));
+    const stream = new ReadableStream<Uint8Array>({ start(c) { c.enqueue(all.slice(0, 37)); c.enqueue(all.slice(37, 300)); c.enqueue(all.slice(300)); c.close(); } });
+    return new Response(stream, { status: 200, headers: { "content-type": "text/event-stream; charset=utf-8" } });
+  }) as typeof fetch;
+  const emailReq = (email: string, how: "x" | "bearer" = "x") => new Request(`${SITE}/api/claude/v1/messages`, {
+    method: "POST",
+    headers: { "content-type": "application/json", origin: SITE, "x-forwarded-for": "5.5.5.5", ...(how === "x" ? { "x-api-key": `aqmemail:${email}` } : { authorization: `Bearer aqmemail:${email}` }) },
+    body: JSON.stringify({ ...msgBody, stream: true }),
+  });
+
+  const res = await handle(emailReq("Student.One@Babson.edu", "bearer"), envE, fake);
+  const text = await res.text(); bodies.push(text);
+  ok(res.status === 200 && text === sse.join(""), `email user under the cap streams through unchanged (${res.status})`);
+  const charge = rpcs.find((r) => r.fn === "proxy_charge");
+  const want = costOf({ input_tokens: 1000, cache_creation_input_tokens: 2000, cache_read_input_tokens: 40000, output_tokens: 500 });
+  ok(rpcs[0]?.fn === "proxy_spent" && rpcs[0].body.p_email === "student.one@babson.edu", "spend checked first, email lowercased");
+  ok(!!charge && Math.abs(Number(charge.body.p_cost) - want) < 1e-9 && Math.abs(want - 0.02) < 1e-9, `charged the right cost (${charge?.body.p_cost} vs ${want})`);
+  ok(charge?.body.p_tokens_in === 43000 && charge?.body.p_tokens_out === 500 && charge?.body.p_secret === SECRET, "tokens and secret sent to the charge");
+
+  spent = 10; upstreamCalls = 0;
+  const capped = await handle(emailReq("student.one@babson.edu"), envE, fake);
+  const capText = await capped.text(); bodies.push(capText);
+  ok(capped.status === 402 && JSON.parse(capText).error.type === "billing_error" && JSON.parse(capText).error.message === CAP_MESSAGE && upstreamCalls === 0, `at the cap: 402, upstream never called (${capped.status})`);
+  ok((await handle(emailReq("student.one@babson.edu"), { ...envE, SHARED_LIMIT_USD: "25" }, fake)).status === 200, "SHARED_LIMIT_USD raises the cap");
+
+  const bad = await handle(emailReq("someone@gmail.com"), envE, fake);
+  bodies.push(await bad.text());
+  ok(bad.status === 401, `non-Babson email refused (${bad.status})`);
+  const noSecret = await handle(emailReq("student.one@babson.edu"), env, fake);
+  bodies.push(await noSecret.text());
+  ok(noSecret.status === 503, `no PROXY_SECRET: email access off (${noSecret.status})`);
+  const failing = (async (url: string | URL | Request) => { if (String(url).includes("/rpc/")) return new Response("nope", { status: 500 }); upstreamCalls++; return new Response("{}"); }) as typeof fetch;
+  upstreamCalls = 0;
+  const down = await handle(emailReq("student.one@babson.edu"), envE, failing);
+  bodies.push(await down.text());
+  ok(down.status === 503 && upstreamCalls === 0, `spend check down: refused, not forwarded (${down.status})`);
+  // Non-streamed replies are charged too; models list is free.
+  rpcs.length = 0; spent = 0;
+  const jsonFake = (async (url: string | URL | Request, init?: RequestInit) => {
+    if (String(url).includes("/rpc/")) { const b = JSON.parse(String(init?.body)); rpcs.push({ fn: String(url).split("/rpc/")[1], body: b }); return new Response("0"); }
+    return new Response(JSON.stringify({ content: [], usage: { input_tokens: 500000, output_tokens: 0 } }), { status: 200, headers: { "content-type": "application/json" } });
+  }) as typeof fetch;
+  const nr = await handle(new Request(`${SITE}/api/claude/v1/messages`, { method: "POST", headers: { "content-type": "application/json", "x-api-key": "aqmemail:student.two@babson.edu" }, body: JSON.stringify(msgBody) }), envE, jsonFake);
+  bodies.push(await nr.text());
+  ok(nr.status === 200 && Math.abs(Number(rpcs.find((r) => r.fn === "proxy_charge")?.body.p_cost) - 1) < 1e-9, "non-streamed reply charged ($1 for 500k input tokens)");
+  rpcs.length = 0;
+  const models = await handle(new Request(`${SITE}/api/claude/v1/models`, { method: "GET", headers: { "x-api-key": "aqmemail:student.two@babson.edu" } }), envE, jsonFake);
+  bodies.push(await models.text());
+  ok(models.status === 200 && rpcs.length === 0, "models list is free, no spend calls");
+  ok(bodies.every((b) => !b.includes(SECRET)), "the proxy secret never appears in a response");
 }
 ok(bodies.every((b) => !b.includes(OWNER) && !b.includes("TESTOWNERKEY")), "the owner key never appears in a response");
 console.log(`${fails === 0 ? "PASS" : "FAILED"}: access-code proxy, ${fails} failures`);

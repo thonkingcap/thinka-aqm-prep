@@ -14,12 +14,19 @@ const NAME_KEY = "aqm.name";
 
 export type ClaudeFeature = "tutor" | "mark" | "design" | "plan" | "verify";
 type Kind = "hello" | "time" | "claude" | "key" | "cost";
-export type UsagePayload = { p_visitor: string; p_kind: Kind; p_name?: string; p_seconds?: number; p_feature?: ClaudeFeature; p_page?: string; p_key_tag?: string; p_cost?: number; p_tokens_in?: number; p_tokens_out?: number };
+export type UsagePayload = { p_visitor: string; p_kind: Kind; p_name?: string; p_email?: string; p_seconds?: number; p_feature?: ClaudeFeature; p_page?: string; p_key_tag?: string; p_cost?: number; p_tokens_in?: number; p_tokens_out?: number };
 
 /** The current key's tag: the first 10 characters of its one-way fingerprint, or "code". */
 let keyTag: string | null = null;
 export function setUsageKey(tag: string | null) { keyTag = tag && /^[A-Za-z0-9_-]{1,16}$/.test(tag) ? tag : null; }
 const withKey = () => (keyTag ? { p_key_tag: keyTag } : {});
+/** The Babson email a student without a key signed in with (sent with their rows so the admin page can show it). */
+let email: string | null = null;
+export function setUsageEmail(e: string | null) {
+  const changed = e !== email;
+  email = e && /^[a-z0-9._%+-]+@babson\.edu$/i.test(e) ? e.toLowerCase() : null;
+  if (changed && email) send(payload("hello"));
+}
 
 const store = {
   get(k: string): string | null { try { return localStorage.getItem(k); } catch { return null; } },
@@ -53,7 +60,7 @@ const page = () => {
 /** Builds the row. Exported for the test. */
 export function payload(kind: Kind, extra: Omit<UsagePayload, "p_visitor" | "p_kind"> = {}): UsagePayload {
   const name = getName();
-  return { p_visitor: visitorId(), p_kind: kind, ...(name ? { p_name: name } : {}), p_page: page(), ...extra };
+  return { p_visitor: visitorId(), p_kind: kind, ...(name ? { p_name: name } : {}), ...(email ? { p_email: email } : {}), p_page: page(), ...extra };
 }
 
 function send(body: UsagePayload) {

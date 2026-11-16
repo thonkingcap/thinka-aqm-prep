@@ -71,7 +71,7 @@ export default function App() {
   return (
     <div className="app">
       <nav className="rail" aria-label="Main">
-        <a className="rail-mark" href="#/home" aria-label="Thinka's AQM Prep home"><Mark /></a>
+        <a className="rail-mark" href="#/home" aria-label="AQM Prep home"><Mark /></a>
         {NAV.map(({ href, label, tiny, match, icon: Icon, n }, i) => (
           <a key={href} className={`rail-link${n ? " rail-area" : ""}${i === 2 ? " rail-first-area" : ""}`} href={href} aria-label={label} aria-current={match(route) ? "page" : undefined}>
             {Icon ? <Icon size={18} strokeWidth={1.6} aria-hidden="true" /> : <span className="rail-num" aria-hidden="true">{n}</span>}

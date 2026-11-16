@@ -10,7 +10,13 @@ export const BABSON_GATEWAY = "https://ca-litellm-mint-eus2.orangeflower-5d81efa
 
 export type ProviderId = "babson" | "anthropic" | "code";
 export const CODE_PREFIX = "aqmcode:";
-export const isCodeKey = (k: string) => k.startsWith(CODE_PREFIX);
+/** Students without a key enter their Babson email instead; it is stored as "aqmemail:<email>". */
+export const EMAIL_PREFIX = "aqmemail:";
+export const BABSON_EMAIL = /^[a-z0-9._%+-]+@babson\.edu$/i;
+export const isEmailKey = (k: string) => k.startsWith(EMAIL_PREFIX);
+/** Both go through this site's /api/claude, which uses Daniel's key. */
+export const isCodeKey = (k: string) => k.startsWith(CODE_PREFIX) || k.startsWith(EMAIL_PREFIX);
+export const emailOf = (k: string) => (isEmailKey(k) ? k.slice(EMAIL_PREFIX.length) : null);
 export type Provider = {
   id: ProviderId;
   label: string;

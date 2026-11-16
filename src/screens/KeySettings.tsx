@@ -4,7 +4,7 @@ import { useSession } from "../session.tsx";
 import { mask, isShared, IDLE_DAYS } from "../lib/vault.ts";
 import { BILLING_URL, KEYS_URL, PRICE, money, readSpend, writeSpend, balanceView } from "../lib/spend.ts";
 import { examDate, setExamDate, clearAttempts, DEFAULT_EXAM } from "../lib/progress.ts";
-import { KeyForm } from "./Gate.tsx";
+import { KeyForm, KeyChoice } from "./Gate.tsx";
 import "./screens.css";
 import "./settings.css";
 
@@ -39,18 +39,24 @@ export default function KeySettings() {
         <div className="set-label">
           <h2>Your key</h2>
           {provider?.id === "code"
-            ? <p>You're using an access code from Daniel. Dr Phil runs on {provider.modelLabel} through this site's own server, which uses Daniel's key; the code is the only thing your browser sends.</p>
+            ? <p>{apiKey?.startsWith("aqmemail:") ? "You're using Daniel's shared credit with your Babson email, up to $10 of use." : "You're using an access code from Daniel."} Dr Phil runs on {provider.modelLabel} through this site's own server, which uses Daniel's key.</p>
             : <p>The tutor runs on {provider?.modelLabel ?? "Claude Sonnet"} with your own key, and the page sends it only to {babson ? "Babson's Claude gateway" : provider ? "api.anthropic.com" : "Babson's Claude gateway (or Anthropic, for keys made at platform.claude.com)"}. The site's security policy blocks every other destination.</p>}
         </div>
         <div className="set-panel">
           {apiKey ? (
             <div className="stack">
-              <div className="kv"><span>{provider?.id === "code" ? "Signed in with" : "Key in use"}</span><code className="formula">{mask(apiKey)}</code></div>
+              <div className="kv"><span>{provider?.id === "code" ? (apiKey.startsWith("aqmemail:") ? "Shared access for" : "Signed in with") : "Key in use"}</span><code className="formula">{mask(apiKey)}</code></div>
               <div className="kv"><span>Goes to</span><span>{provider?.label} · {provider?.model}</span></div>
               <div className="kv"><span>Stored</span><span>{isShared() ? "Encrypted, in this tab only: closing the tab forgets it" : `Encrypted on this device; forgotten after ${IDLE_DAYS} days without a visit`}</span></div>
               <div className="row">
                 <button className="btn btn-secondary" onClick={forget}><Trash2 size={16} aria-hidden="true" />{provider?.id === "code" ? "Remove code from this device" : "Remove key from this device"}</button>
               </div>
+              {provider?.id === "code" && (
+                <div className="stack">
+                  <p><b>Add your own key</b> to keep using Dr Phil after the shared $10, or any time you like. It replaces the shared access on this device.</p>
+                  <KeyForm compact />
+                </div>
+              )}
               <p className="hint">Using a shared or library computer? Remove your key when you're done.</p>
               <p className="hint">
                 {babson
@@ -59,7 +65,7 @@ export default function KeySettings() {
               </p>
             </div>
           ) : (
-            <KeyForm compact />
+            <KeyChoice />
           )}
         </div>
       </section>

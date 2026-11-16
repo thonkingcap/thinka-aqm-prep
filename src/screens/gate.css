@@ -37,3 +37,25 @@
   .gate-left { padding: 24px 16px 40px; gap: 24px; }
   .gate-ledger td:nth-child(2) { display: none; }
 }
+
+/* Key or email? */
+.key-choice { display: grid; gap: 14px; }
+.choice-q { font-size: 20px; font-weight: 600; margin: 0; }
+.choice-buttons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.choice-btn { display: flex; gap: 12px; align-items: flex-start; text-align: left; padding: 16px; border: 1.5px solid var(--control); border-radius: 12px; background: var(--surface); color: var(--text); font: inherit; cursor: pointer; }
+.choice-btn:hover { border-color: var(--text); }
+.choice-btn:focus-visible { outline: 2px solid var(--chart-3); outline-offset: 2px; }
+.choice-btn > span { display: grid; gap: 2px; }
+.choice-btn b { font-size: 16px; }
+.choice-back { display: inline-flex; align-items: center; gap: 6px; justify-self: start; }
+.choice-note { margin: 0; font-size: 15px; line-height: 1.5; color: var(--text); max-width: 60ch; }
+@media (max-width: 600px) { .choice-buttons { grid-template-columns: minmax(0, 1fr); } }
+
+/* Clean single-column welcome */
+.gate.gate-clean { display: grid; grid-template-columns: minmax(0, 1fr); justify-items: center; align-content: start; min-height: 100vh; padding: clamp(32px, 10vh, 120px) 20px 48px; background: var(--ground); }
+.gate-col { width: min(560px, 100%); display: flex; flex-direction: column; gap: 28px; }
+.gate-title { display: flex; flex-direction: column; gap: 10px; }
+.gate-title .rail-mark { margin: 0; display: grid; }
+.gate-clean h1 { font-size: clamp(36px, 6vw, 52px); line-height: 1.05; letter-spacing: -0.03em; font-weight: 600; }
+.gate-clean .gate-lede { font-size: 18px; color: var(--muted); max-width: none; }
+.gate-safe { margin: 0; font-size: 14px; color: var(--muted); }

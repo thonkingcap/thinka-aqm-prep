@@ -86,7 +86,7 @@ function TopicBody({ t }: { t: Topic }) {
         <p className="topic-summary">{t.summary}</p>
         <PageHint>read the notes and the worked example, copy the formulas into Excel, then press “Practice this in Excel” for sets on it.</PageHint>
         <div className="row topic-actions">
-          <a className="btn btn-primary" href={areaFor(t.id) ? `#/area/${areaFor(t.id)!.id}` : "#/home"} title="Download a set, solve it in Excel, upload it to be marked"><PencilLine size={16} aria-hidden="true" />Practice this in Excel</a>
+          <a className="btn btn-primary" href={t.id === "variance" ? "#/area/ht2/chi" : areaFor(t.id) ? `#/area/${areaFor(t.id)!.id}` : "#/home"} title="Download a set, solve it in Excel, upload it to be marked"><PencilLine size={16} aria-hidden="true" />Practice this in Excel</a>
           <button
             className="btn btn-secondary"
             onClick={() => askTutor(`Teach me "${t.title}" (${t.lesson}) in a few short steps, then give me one exam-style question to try.`)}

@@ -55,3 +55,12 @@
 .area-video { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 12px; align-items: center; padding: 12px 14px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); text-decoration: none; }
 .area-video b { display: block; font-weight: 600; }
 .area-video-play { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 18px; background: var(--text); color: #fff; }
+
+/* Chi-squared practice block (section 3) */
+.chi-panel { border: 2px solid var(--text); margin-bottom: 16px; display: grid; gap: 14px; scroll-margin-top: 16px; }
+.chi-head { display: flex; gap: 14px; align-items: flex-start; }
+.chi-head h2 { font-size: 20px; margin: 0 0 4px; }
+.chi-badge { display: grid; place-items: center; flex: none; width: 44px; height: 44px; border-radius: 12px; background: var(--chart-3); color: #fff; font-size: 20px; font-weight: 700; font-style: italic; }
+.chi-steps { margin: 0; padding-left: 22px; display: grid; gap: 4px; font-size: 14px; }
+.chi-steps code { font-family: var(--mono); font-size: 12.5px; background: var(--raised); padding: 1px 5px; border-radius: 4px; }
+.chi-sets { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }

@@ -11,7 +11,7 @@ export type Feedback = { topic: string; message: string; replyTo?: string };
 
 export async function sendFeedback(f: Feedback): Promise<void> {
   const body = {
-    _subject: `Thinka's AQM Prep: ${f.topic}`,
+    _subject: `AQM Prep: ${f.topic}`,
     _template: "table",
     _captcha: "false",
     _honey: "",
@@ -44,5 +44,5 @@ export async function sendFeedback(f: Feedback): Promise<void> {
 
 export function mailtoFallback(f: Feedback): string {
   const body = `${f.message}\n\n---\nPage: ${location.hash || "#/"}\nVersion: ${APP_VERSION}`;
-  return `mailto:${DEVELOPER_EMAIL}?subject=${encodeURIComponent(`Thinka's AQM Prep: ${f.topic}`)}&body=${encodeURIComponent(body)}`;
+  return `mailto:${DEVELOPER_EMAIL}?subject=${encodeURIComponent(`AQM Prep: ${f.topic}`)}&body=${encodeURIComponent(body)}`;
 }

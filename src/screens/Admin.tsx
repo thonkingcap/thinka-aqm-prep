@@ -11,10 +11,11 @@ const RPC = "https://kxtdmgpecxlzyepshryw.supabase.co/rest/v1/rpc/admin_stats";
 const PUBLISHABLE = "sb_publishable_fDz6DAgzrVmsxMp_THba5g_swF5jxXH";
 const SESSION = "aqm.admin";
 
-type Person = { visitor: string; name: string | null; first_seen: string; last_seen: string; minutes: number; requests: number; spend: number; keys: number; used_code: boolean | null; days: number };
+type Person = { visitor: string; name: string | null; email?: string | null; first_seen: string; last_seen: string; minutes: number; requests: number; spend: number; keys: number; used_code: boolean | null; days: number };
 type Stats = {
   generated_at: string;
-  totals: { people: number; named: number; minutes: number; claude_requests: number; unique_keys: number; code_users: number; spend: number; tokens_in: number; tokens_out: number; spend_since: string | null };
+  totals: { people: number; named: number; minutes: number; claude_requests: number; unique_keys: number; code_users: number; spend: number; tokens_in: number; tokens_out: number; spend_since: string | null; shared_spend?: number; shared_users?: number };
+  shared?: { email: string; spent: number; requests: number; first_at: string; last_at: string }[];
   people: Person[];
   days: { day: string; people: number; minutes: number; requests: number; spend: number }[];
   features: Record<string, number>;
@@ -82,7 +83,7 @@ export default function Admin() {
     ["Claude requests", String(t.claude_requests), "chat, marking, key checks"],
     ["Spent (estimate)", usd(t.spend), t.spend_since ? `since ${when(t.spend_since)}` : "counting from this update"],
     ["Unique API keys", String(t.unique_keys), t.spend_since ? "since key tags began" : "counting from this update"],
-    ["On the access code", String(t.code_users), "people using your key"],
+    ["On your shared credit", String((t.shared_users ?? 0) + t.code_users), `${usd(t.shared_spend ?? 0)} of your key, by email · ${t.code_users} by code`],
   ];
 
   return (
@@ -123,19 +124,35 @@ export default function Admin() {
             <tbody>
               {people.map((p) => (
                 <tr key={p.visitor}>
-                  <td className="lbl">{p.name ?? <span className="muted">No name</span>}{p.days > 1 && <span className="hint"> · {p.days} days</span>}</td>
+                  <td className="lbl">{p.name ?? <span className="muted">No name</span>}{p.days > 1 && <span className="hint"> · {p.days} days</span>}{p.email && <div className="hint">{p.email}</div>}</td>
                   <td className="num">{when(p.first_seen)}</td>
                   <td className="num">{when(p.last_seen)}</td>
                   <td className="val num">{hours(p.minutes)}</td>
                   <td className="val num">{p.requests}</td>
                   <td className="val num">{p.spend ? usd(p.spend) : "—"}</td>
-                  <td>{p.used_code ? "Access code" : p.keys ? `Own key${p.keys > 1 ? ` (${p.keys})` : ""}` : <span className="muted">—</span>}</td>
+                  <td>{p.email ? "Shared (email)" : p.used_code ? "Access code" : p.keys ? `Own key${p.keys > 1 ? ` (${p.keys})` : ""}` : <span className="muted">—</span>}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
       </section>
+
+      {stats.shared && stats.shared.length > 0 && (
+        <section className="panel" style={{ marginTop: 16 }}>
+          <div className="panel-head"><h2>Shared credit by email</h2><span className="hint">Each email is cut off at $10 and asked to add their own key</span></div>
+          <div className="admin-scroll">
+            <table className="ledger admin-table">
+              <thead><tr><th>Email</th><th className="val">Spent</th><th className="val">Requests</th><th>First</th><th>Last</th></tr></thead>
+              <tbody>
+                {stats.shared.map((x) => (
+                  <tr key={x.email}><td className="lbl">{x.email}</td><td className="val num">{usd(x.spent)}{x.spent >= 10 ? " · capped" : ""}</td><td className="val num">{x.requests}</td><td className="num">{when(x.first_at)}</td><td className="num">{when(x.last_at)}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
 
       <div className="admin-split">
         <section className="panel">

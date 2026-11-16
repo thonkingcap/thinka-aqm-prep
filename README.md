@@ -1,4 +1,4 @@
-# Thinka's AQM Prep
+# AQM Prep
 
 A study site for Babson AQM 1000 Midterm 2 (Lessons 12–18: the normal distribution, the CLT, confidence intervals, the 12 hypothesis-test cases, chi-squared tests for a variance, and two-sample and paired tests), built by a student for classmates. The exam is answered in Excel with no calculator, so all practice happens in Excel.
 
@@ -17,7 +17,7 @@ A study site for Babson AQM 1000 Midterm 2 (Lessons 12–18: the normal distribu
 
 ## Your API key
 
-Babson gives students Claude credit through an API key, so the tutor runs on that key with no download and no account. The key is encrypted on your device and only ever sent to Babson's Claude gateway; there's no Thinka server. The details, and how to check them in the code, are in [SECURITY.md](SECURITY.md).
+Babson gives students Claude credit through an API key, so the tutor runs on that key with no download and no account. The key is encrypted on your device and only ever sent to Babson's Claude gateway (students without a key use Daniel's key through the site's own /api/claude, with a $10 cap per Babson email). The details, and how to check them in the code, are in [SECURITY.md](SECURITY.md).
 
 Everything except the tutor works without a key.
 

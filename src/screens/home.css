@@ -60,3 +60,11 @@
   .home-areas { grid-template-columns: minmax(0, 1fr); }
   .home-mocks { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+/* Chi-squared callout */
+.chi-callout { display: grid; grid-template-columns: 44px minmax(0, 1fr) auto; gap: 14px; align-items: center; margin: 0 0 20px; padding: 16px 18px; border: 2px solid var(--chart-3); border-radius: 12px; background: var(--surface); color: var(--text); text-decoration: none; }
+.chi-callout > span:nth-child(2) { display: grid; gap: 2px; }
+.chi-callout b { font-size: 16px; }
+.chi-badge { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: var(--chart-3); color: #fff; font-size: 20px; font-weight: 700; font-style: italic; }
+.chi-go { font-weight: 600; color: var(--chart-3); white-space: nowrap; }
+@media (max-width: 600px) { .chi-callout { grid-template-columns: 44px minmax(0, 1fr); } .chi-go { grid-column: 2; } }

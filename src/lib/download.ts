@@ -3,7 +3,7 @@ import { buildXlsx, downloadXlsx } from "./xlsx.ts";
 import { workbookById, workbookSheets, workbookIntro, type WorkbookDef } from "./sets.ts";
 
 export function downloadWorkbook(def: WorkbookDef) {
-  const bytes = buildXlsx(workbookSheets(def), { title: `Thinka's AQM Prep · ${def.title}`, intro: workbookIntro(def), id: def.id });
+  const bytes = buildXlsx(workbookSheets(def), { title: `AQM Prep · ${def.title}`, intro: workbookIntro(def), id: def.id });
   downloadXlsx(bytes, `${def.file}.xlsx`);
 }
 

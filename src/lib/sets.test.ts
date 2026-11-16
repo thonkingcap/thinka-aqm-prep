@@ -6,6 +6,7 @@ import { execFileSync } from "node:child_process";
 import { buildXlsx } from "./xlsx.ts";
 import { readXlsx } from "./xlsxRead.ts";
 import { gradeWorkbook } from "./grade.ts";
+import { CHI_VERSIONS } from "./sets.ts";
 import { TOPIC_SETS, TOPIC_VERSIONS, MIX_COUNT, EXAM_COUNT, workbookById, workbookSheets, workbookIntro, specId, type WorkbookDef } from "./sets.ts";
 import { matchChoice } from "./workbook.ts";
 import { OUT as DIR, PY, HAS_OPENPYXL } from "./testEnv.ts";
@@ -18,6 +19,7 @@ const ids = [
   ...TOPIC_SETS.flatMap((t) => Array.from({ length: TOPIC_VERSIONS }, (_, v) => `topic:${t.id}:${v + 1}`)),
   ...Array.from({ length: MIX_COUNT }, (_, i) => `mix:${i + 1}`),
   ...Array.from({ length: EXAM_COUNT }, (_, i) => `exam:${i + 1}`),
+  ...Array.from({ length: CHI_VERSIONS }, (_, i) => `chi:${i + 1}`),
   specId({ t: "Custom: tests on a variance", q: [["var-test", 11], ["two-t", 12], ["concept", 3], ["ht-full", 99, "eq-unknown-p"]],
     sc: [{ pop: "The weight of espresso shots pulled at a campus café", quantity: "shot weight", item: "espresso shot", items: "espresso shots", unit: "g", owner: "The café manager", mu: [17, 19, 0.5], sd: [0.8, 1.4, 0.1], dp: 1 }] }),
 ];

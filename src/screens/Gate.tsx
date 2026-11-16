@@ -1,22 +1,14 @@
 import { useState, type FormEvent } from "react";
 import KeyHelp from "../components/KeyHelp.tsx";
-import { ArrowRight, Eye, EyeOff, LoaderCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight, Eye, EyeOff, KeyRound, LoaderCircle, Mail } from "lucide-react";
 import { useSession } from "../session.tsx";
 import { verifyKey } from "../lib/claude.ts";
-import { looksLikeKey, IDLE_DAYS } from "../lib/vault.ts";
-import { isCode, CODE_PREFIX } from "../lib/provider.ts";
-import { KEYS_URL } from "../lib/spend.ts";
-import { runTest } from "../lib/tests12.ts";
-import { mean } from "../lib/stats.ts";
-import Curve from "../components/Curve.tsx";
+import { looksLikeKey } from "../lib/vault.ts";
+import { isCode, CODE_PREFIX, EMAIL_PREFIX, BABSON_EMAIL } from "../lib/provider.ts";
 import { Mark } from "../App.tsx";
-import Thinka from "../components/Thinka.tsx";
 import ProblemDialog from "../components/ProblemDialog.tsx";
 import "./gate.css";
 
-// Lesson 17, question 2: five cereal boxes, σ = 0.3, H₀: μ = 10 at α = 5%.
-const BOXES = [10.1, 9.8, 9.7, 9.1, 10.2];
-const L17 = runTest({ h0: "eq", sigma: "known", xbar: mean(BOXES), mu0: 10, sd: 0.3, n: 5, alpha: 0.05 });
 
 export function KeyForm({ onDone }: { onDone?: () => void; compact?: boolean }) {
   const { useKey } = useSession();
@@ -71,12 +63,11 @@ export function KeyForm({ onDone }: { onDone?: () => void; compact?: boolean }) 
             {show ? <EyeOff size={16} strokeWidth={1.6} /> : <Eye size={16} strokeWidth={1.6} />}
           </button>
         </div>
-        <span className="hint">A key made at <a href={KEYS_URL} target="_blank" rel="noopener noreferrer">platform.claude.com</a> works too.</span>
       </div>
 
       <label className="check key-shared">
         <input type="checkbox" checked={shared} onChange={(e) => setShared(e.target.checked)} />
-        <span>This is a shared or library computer: forget my key when I close this tab</span>
+        <span>Shared computer? Forget my key when I close this tab</span>
       </label>
       {error && <p className="error-text" role="alert">{error}</p>}
       <div className="row">
@@ -90,66 +81,83 @@ export function KeyForm({ onDone }: { onDone?: () => void; compact?: boolean }) 
   );
 }
 
+/** No key handy: a Babson email gets full access on Daniel's shared key (capped on the server). */
+function EmailForm() {
+  const { useKey } = useSession();
+  const [email, setEmail] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    const v = email.trim().toLowerCase();
+    if (!BABSON_EMAIL.test(v)) return setError("Use your Babson email: it ends in @babson.edu.");
+    setBusy(true); setError(null);
+    try {
+      const k = EMAIL_PREFIX + v;
+      await verifyKey(k);
+      await useKey(k, { shared: false });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally { setBusy(false); }
+  }
+  return (
+    <form className="key-form" onSubmit={submit} autoComplete="off" noValidate>
+      <p className="choice-note">No problem. Enter your Babson email and you get the whole site, including Dr Phil, on Daniel's shared credit. If you use a lot (over $10), you'll be asked to add your own key to keep chatting.</p>
+      <div className="field">
+        <label htmlFor="babson-email">Your Babson email</label>
+        <input id="babson-email" className="input" type="email" inputMode="email" placeholder="you@babson.edu" value={email}
+          onChange={(e) => { setEmail(e.target.value); setError(null); }} autoComplete="email" autoCapitalize="off" spellCheck={false} aria-invalid={!!error} />
+      </div>
+      {error && <p className="error-text" role="alert">{error}</p>}
+      <div className="row">
+        <button className="btn btn-primary" type="submit" disabled={busy || !email.trim()}>
+          {busy ? <LoaderCircle size={16} className="spin" aria-hidden="true" /> : null}{busy ? "Checking" : "Start studying"}{!busy && <ArrowRight size={16} aria-hidden="true" />}
+        </button>
+      </div>
+    </form>
+  );
+}
+
+/** First question: is the key handy? Yes → paste it. No → Babson email. */
+export function KeyChoice() {
+  const [choice, setChoice] = useState<"key" | "email" | null>(null);
+  if (!choice) {
+    return (
+      <div className="key-choice">
+        <h2 className="choice-q">Do you have your Claude API key handy?</h2>
+        <div className="choice-buttons">
+          <button type="button" className="choice-btn lift" onClick={() => setChoice("key")}><KeyRound size={20} aria-hidden="true" /><span><b>Yes, I have it</b><span className="hint">Paste it in the next step</span></span></button>
+          <button type="button" className="choice-btn lift" onClick={() => setChoice("email")}><Mail size={20} aria-hidden="true" /><span><b>No, not right now</b><span className="hint">Use your Babson email instead</span></span></button>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="key-choice">
+      <button type="button" className="linkish choice-back" onClick={() => setChoice(null)}><ArrowLeft size={14} aria-hidden="true" />Back</button>
+      {choice === "key" ? <KeyForm /> : <EmailForm />}
+    </div>
+  );
+}
+
 export default function Gate() {
   const { browse } = useSession();
   const [problem, setProblem] = useState(false);
-  const c = L17.crit[1];
-
   return (
-    <div className="gate">
-      <section className="gate-left">
-        <div className="gate-brand"><span className="rail-mark"><Mark /></span><span>Thinka</span></div>
-        <div className="gate-copy">
-          <span className="thinka-hop gate-thinka"><Thinka size={88} mood="happy" title="Thinka, a bell curve with a face" /></span>
-          <h1>Thinka's AQM Prep</h1>
-          <p className="gate-lede">Study for AQM 1000 Midterm 2: class notes, Excel practice sets that mark themselves, and Dr Phil, an AI tutor that runs on the free Claude credit Babson gives every freshman.</p>
-        </div>
-
-        <KeyForm />
-
-        <ul className="gate-trust">
-          <li><strong>Your key never touches a Thinka server.</strong> There isn't one. This page sends it straight to Babson's Claude gateway, and the browser is told to block every other destination.</li>
-          <li><strong>Stored encrypted, only on this device.</strong> It's locked with a key your browser keeps and won't hand out, and forgotten after {IDLE_DAYS} days without a visit. On a shared computer, tick the box above.</li>
-          <li><strong>You see what you spend.</strong> Your real balance comes straight from Babson's gateway, so you can watch your $100 of credit.</li>
-        </ul>
+    <div className="gate gate-clean">
+      <section className="gate-col">
+        <header className="gate-title">
+          <span className="rail-mark" aria-hidden="true"><Mark /></span>
+          <h1>AQM Prep</h1>
+          <p className="gate-lede">Study for Dr. Phil's Midterm 2 utilizing this site.</p>
+        </header>
+        <KeyChoice />
+        <p className="gate-safe">Your key is encrypted and stored locally; we don't have access to it.</p>
         <div className="row gate-links">
-          <button type="button" className="linkish gate-browse" onClick={browse}>Look around without a key</button>
+          <button type="button" className="linkish gate-browse" onClick={browse}>Look around first</button>
           <button type="button" className="linkish gate-browse" onClick={() => setProblem(true)}>Have a problem?</button>
         </div>
         <ProblemDialog open={problem} onClose={() => setProblem(false)} />
-      </section>
-
-      <section className="gate-right" aria-label="A class example">
-        <figure className="gate-figure">
-          <figcaption>
-            <h2>Five cereal boxes, one question</h2>
-            <p>Lesson 17: the boxes weigh {BOXES.join(", ")} oz. If σ is 0.3, is the true mean different from 10 at α = 5%?</p>
-          </figcaption>
-          <Curve
-            dist={{ kind: "z" }}
-            regions={[
-              { from: -Infinity, to: L17.stat, kind: "p" },
-              { from: -L17.stat, to: Infinity, kind: "p" },
-              { from: -Infinity, to: -c, kind: "alpha" },
-              { from: c, to: Infinity, kind: "alpha" },
-            ]}
-            markers={[
-              { x: L17.stat, label: `Z = ${L17.stat.toFixed(2)}`, tone: "accent" },
-              { x: -c, label: `−${c.toFixed(2)}`, tone: "muted", dashed: true },
-              { x: c, label: `+${c.toFixed(2)}`, tone: "muted", dashed: true },
-            ]}
-            height={260}
-            ariaLabel={`Standard normal curve. The test statistic Z = ${L17.stat.toFixed(2)}; the shaded p-value is ${L17.pValue.toFixed(3)}; the rejection regions start at ±${c.toFixed(2)}.`}
-          />
-          <table className="ledger gate-ledger">
-            <tbody>
-              <tr><td className="lbl">Test statistic</td><td><code className="formula">=(9.78-10)/(0.3/SQRT(5))</code></td><td className="val num">{L17.stat.toFixed(4)}</td></tr>
-              <tr><td className="lbl">p-value, Z &lt; 0</td><td><code className="formula">=2*NORM.S.DIST(Z,TRUE)</code></td><td className="val num gate-p">{L17.pValue.toFixed(4)}</td></tr>
-              <tr><td className="lbl">Critical value</td><td><code className="formula">=NORM.S.INV(1-0.05/2)</code></td><td className="val num">±{c.toFixed(4)}</td></tr>
-            </tbody>
-          </table>
-          <p className="gate-verdict">p = {L17.pValue.toFixed(3)} is above α = 0.05, and Z sits inside ±{c.toFixed(2)}: do not reject H₀.</p>
-        </figure>
       </section>
     </div>
   );

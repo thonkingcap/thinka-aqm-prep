@@ -24,7 +24,7 @@ export type PartGrade = {
   got: number;
 };
 export type QuestionGrade = { q: Question; index: number; section?: string; sheetFound: boolean; parts: PartGrade[]; got: number; total: number };
-export type WorkbookKind = "mock" | "set" | "diag" | "topic" | "mix" | "exam" | "spec" | "area" | "exam3";
+export type WorkbookKind = "mock" | "set" | "diag" | "topic" | "mix" | "exam" | "spec" | "area" | "exam3" | "chi";
 export type WorkbookGrade = { kind: WorkbookKind; n: number; id: string; title: string; questions: QuestionGrade[]; got: number; total: number; notes: string[] };
 
 export function identify(id: string | null): { kind: WorkbookKind; n: number } | null {
@@ -83,7 +83,7 @@ export function gradeWorkbook(wb: ReadWorkbook): WorkbookGrade {
   if (!who) {
     throw new Error(wb.thinkaId
       ? "This workbook is from a mock exam, problem set or diagnostic the site doesn't recognise. Download it again from the site."
-      : "This doesn't look like a workbook downloaded from Thinka's AQM Prep: its \"Start here\" tab is missing its id. Download a fresh copy and copy your answers into it.");
+      : "This doesn't look like a workbook downloaded from AQM Prep: its \"Start here\" tab is missing its id. Download a fresh copy and copy your answers into it.");
   }
   let questions: Question[], sheets: SheetModel[], sections: (string | undefined)[], title: string, perPart: number;
   const def = workbookById((wb.thinkaId ?? "").trim());

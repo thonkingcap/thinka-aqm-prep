@@ -8,7 +8,7 @@
 // - A remembered key is forgotten automatically after IDLE_DAYS without a visit.
 // - "Remove key" deletes the encrypted key *and* the encryption key, so nothing left behind can be decrypted.
 // - The key is only ever sent to Babson's Claude gateway or api.anthropic.com (enforced by the
-//   site's Content-Security-Policy), never to a Thinka server: there isn't one.
+//   site's Content-Security-Policy), never to a server of ours.
 //
 // Honest limit: a page can't protect a key from malware or a malicious browser extension on the
 // same device, since those can act as the page itself. Encryption protects the key at rest.
@@ -171,6 +171,7 @@ export function looksLikeKey(k: string): string | null {
 
 export function mask(key: string): string {
   if (key.startsWith("aqmcode:")) return `Access code ${key.slice(8, 12)}…`;
+  if (key.startsWith("aqmemail:")) return key.slice(9);
   return `${key.slice(0, 6)}…${key.slice(-4)}`;
 }
 

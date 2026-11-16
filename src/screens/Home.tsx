@@ -96,6 +96,12 @@ export default function Home() {
         )}
       </section>
 
+      <a className="chi-callout lift" href="#/area/ht2/chi">
+        <span className="chi-badge" aria-hidden="true">χ²</span>
+        <span><b>Struggling with chi-squared?</b><span className="hint">Most people do. Four practice sets with only chi-squared tests on a variance, marked when you upload them.</span></span>
+        <span className="chi-go" aria-hidden="true">Practise χ² →</span>
+      </a>
+
       <section aria-labelledby="areas-h" className="home-areas-wrap">
         <div className="home-sec-head"><h2 id="areas-h">The four areas of the exam</h2><span className="hint">Notes and {AREA_VERSIONS} Excel sets in each</span></div>
         <div className="home-areas stagger">

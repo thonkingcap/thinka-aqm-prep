@@ -1,6 +1,6 @@
 // Claude in the browser, on the student's own key.
 // Babson keys go straight from this page to Babson's Claude gateway; sk-ant- keys go to api.anthropic.com.
-// There is no Thinka server in between.
+// Own keys go straight to Claude; access codes and Babson-email access go through this site's /api/claude.
 import Anthropic from "@anthropic-ai/sdk";
 import type { BetaMessageParam, BetaContentBlock, BetaToolUnion, BetaToolResultBlockParam, BetaTextBlockParam } from "@anthropic-ai/sdk/resources/beta/messages/messages";
 import { addUsage } from "./spend.ts";
@@ -37,6 +37,7 @@ export async function verifyKey(apiKey: string): Promise<void> {
   } catch (e) {
     const status = (e as { status?: number }).status;
     if (p.id === "code") {
+      if ((status === 401 || status === 403) && apiKey.startsWith("aqmemail:")) throw new Error("That doesn't look like a Babson email. Use your @babson.edu address.");
       if (status === 401 || status === 403) throw new Error("That access code isn't valid. Check it with Daniel and type it again.");
       if (status === 503) throw new Error("Shared access isn't switched on right now. Ask Daniel.");
       if (status === 429) throw new Error("Too many requests on this code right now. Wait a minute and try again.");
@@ -51,7 +52,9 @@ export async function verifyKey(apiKey: string): Promise<void> {
 }
 
 export function explainError(e: unknown, p?: Provider): string {
-  const who = p?.id === "babson" ? "Babson's Claude gateway" : "Anthropic";
+  const who = p?.id === "babson" ? "Babson's Claude gateway" : p?.id === "code" ? "This site's server" : "Anthropic";
+  // Shared access by email has a spending cap; the server explains what to do.
+  if (e instanceof Anthropic.APIError && e.status === 402) return /billing_error|shared credit/i.test(e.message) ? (e.message.match(/"message":"([^"]+)"/)?.[1] ?? "You've used the free shared credit on this site. To keep using Dr Phil, add your own Claude API key (click the key icon).") : e.message;
   const model = p?.modelLabel ?? "this model";
   if (e instanceof Anthropic.AuthenticationError) return `${who} didn't accept this key. Check that you copied the whole key and that it hasn't been revoked.`;
   if (e instanceof Anthropic.PermissionDeniedError) return `This key isn't allowed to use ${model}.`;
@@ -72,7 +75,7 @@ export function explainError(e: unknown, p?: Provider): string {
   return e instanceof Error ? e.message : String(e);
 }
 
-const SYSTEM_RULES = `You are "Dr Phil", the AI tutor on Thinka's AQM Prep, named after the course's professor, Dr Phil, at his request. You are an AI, not the professor himself: if a student asks, say so plainly. Never speak for him on grades, what will be on the exam, deadlines or course policy; send those questions to him. Write in a warm, encouraging teacher's voice in the first person.
+const SYSTEM_RULES = `You are "Dr Phil", the AI tutor on AQM Prep, named after the course's professor, Dr Phil, at his request. You are an AI, not the professor himself: if a student asks, say so plainly. Never speak for him on grades, what will be on the exam, deadlines or course policy; send those questions to him. Write in a warm, encouraging teacher's voice in the first person.
 
 Dr Phil is British, so speak like a friendly British lecturer:
 - British spelling and words throughout: "maths", "colour", "practise" (verb), "analyse", "behaviour", "centre", "modelling", "full stop", "revise" (to study for an exam).
