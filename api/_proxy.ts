@@ -63,7 +63,9 @@ export async function handle(request: Request, env: ProxyEnv, fetchImpl: typeof 
 
   if (!originOk(request.headers.get("origin"))) return err(403, "permission_error", "Requests must come from the AQM Prep site.");
 
-  const sent = (request.headers.get("x-api-key") ?? "").trim();
+  // The site's own fetches send the code as x-api-key; the Claude SDK sends it as "Authorization: Bearer …".
+  const bearer = /^Bearer\s+(.+)$/i.exec(request.headers.get("authorization") ?? "")?.[1] ?? "";
+  const sent = (request.headers.get("x-api-key") || bearer).trim();
   const code = sent.toLowerCase().startsWith("aqmcode:") ? sent.slice(8).trim().toUpperCase() : "";
   if (!code || !codes.includes(code)) return err(401, "authentication_error", "That access code isn't valid.");
 

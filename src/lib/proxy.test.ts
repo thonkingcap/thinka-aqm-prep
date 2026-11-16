@@ -42,6 +42,16 @@ const run = async (r: Request, e = env) => { const res = await handle(r, e, fake
   const sent = JSON.parse(String(up?.init.body));
   ok(sent.max_tokens === 16000 && !("fallbacks" in sent) && sent.model === "claude-sonnet-46", "max_tokens clamped, fallbacks dropped");
 }
+// The Claude SDK sends the code as "Authorization: Bearer …" (this is what broke chat on Nov 16).
+{
+  seen = [];
+  const r = new Request(`${SITE}/api/claude/v1/messages`, { method: "POST", headers: { authorization: "Bearer aqmcode:AQM-TEST1", "content-type": "application/json", origin: SITE, "x-forwarded-for": "6.6.6.6", "anthropic-version": "2026-10-21" }, body: JSON.stringify(msgBody) });
+  const { res } = await run(r);
+  ok(res.status === 200, `code in Authorization: Bearer accepted (${res.status})`);
+  const h = (seen[0]?.init.headers ?? {}) as Record<string, string>;
+  ok(h["x-api-key"] === OWNER && !Object.keys(h).some((k) => k.toLowerCase() === "authorization"), "Bearer code not forwarded; owner key sent");
+  ok((await run(new Request(`${SITE}/api/claude/v1/messages`, { method: "POST", headers: { authorization: "Bearer aqmcode:WRONG", "content-type": "application/json", origin: SITE }, body: JSON.stringify(msgBody) }))).res.status === 401, "wrong Bearer code refused");
+}
 // The rewrite form (?path=) and the models list.
 {
   seen = [];
