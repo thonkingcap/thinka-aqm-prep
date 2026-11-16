@@ -39,7 +39,7 @@ export default function KeySettings() {
         <div className="set-label">
           <h2>Your key</h2>
           {provider?.id === "code"
-            ? <p>{apiKey?.startsWith("aqmemail:") ? "You're using Daniel's shared credit with your Babson email, up to $10 of use." : "You're using an access code from Daniel."} Dr Phil runs on {provider.modelLabel} through this site's own server, which uses Daniel's key.</p>
+            ? <p>{apiKey?.startsWith("aqmemail:") ? "You're signed in with your Babson email in lieu of an API key." : "You're signed in with an access code."} Dr Phil runs on {provider.modelLabel}.</p>
             : <p>The tutor runs on {provider?.modelLabel ?? "Claude Sonnet"} with your own key, and the page sends it only to {babson ? "Babson's Claude gateway" : provider ? "api.anthropic.com" : "Babson's Claude gateway (or Anthropic, for keys made at platform.claude.com)"}. The site's security policy blocks every other destination.</p>}
         </div>
         <div className="set-panel">

@@ -102,7 +102,7 @@ function EmailForm() {
   }
   return (
     <form className="key-form" onSubmit={submit} autoComplete="off" noValidate>
-      <p className="choice-note">No problem. Enter your Babson email and you get the whole site, including Dr Phil, on Daniel's shared credit. If you use a lot (over $10), you'll be asked to add your own key to keep chatting.</p>
+      <p className="choice-note">Enter your Babson email in lieu of your API key.</p>
       <div className="field">
         <label htmlFor="babson-email">Your Babson email</label>
         <input id="babson-email" className="input" type="email" inputMode="email" placeholder="you@babson.edu" value={email}
