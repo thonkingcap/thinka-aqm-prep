@@ -11,7 +11,7 @@ import TutorGraphic from "../components/TutorGraphic.tsx";
 import type { GraphicSpec } from "../lib/graphic.ts";
 import { toShot, MAX_SHOTS, type Shot } from "../lib/screenshot.ts";
 import { fmt } from "../components/ui.tsx";
-import { KeyChoice } from "./Gate.tsx";
+import { SignIn } from "./Gate.tsx";
 import DrPhil from "../components/DrPhil.tsx";
 import "./screens.css";
 import "./tutor.css";
@@ -175,7 +175,7 @@ export default function Tutor() {
     return (
       <div className="page tutor-nokey">
         <div className="title-row"><div><h1>Dr Phil</h1><p className="sub">Dr Phil is an AI tutor (Claude Sonnet) running on your own API key. Paste the key from Babson's email to start. This device remembers it, so you only do this once.</p></div></div>
-        <div className="panel tutor-key"><KeyChoice /></div>
+        <div className="panel tutor-key"><SignIn /></div>
       </div>
     );
   }

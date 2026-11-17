@@ -37,6 +37,7 @@ export async function verifyKey(apiKey: string): Promise<void> {
   } catch (e) {
     const status = (e as { status?: number }).status;
     if (p.id === "code") {
+      if ((status === 401 || status === 403) && apiKey.startsWith("aqmuser:")) throw new Error("Something went wrong signing you in. Reload the page and try again.");
       if ((status === 401 || status === 403) && apiKey.startsWith("aqmemail:")) throw new Error("That doesn't look like a Babson email. Use your @babson.edu address.");
       if (status === 401 || status === 403) throw new Error("That access code isn't valid. Check it with Daniel and type it again.");
       if (status === 503) throw new Error("Shared access isn't switched on right now. Ask Daniel.");
@@ -54,7 +55,12 @@ export async function verifyKey(apiKey: string): Promise<void> {
 export function explainError(e: unknown, p?: Provider): string {
   const who = p?.id === "babson" ? "Babson's Claude gateway" : p?.id === "code" ? "This site's server" : "Anthropic";
   // Shared access by email has a spending cap; the server explains what to do.
-  if (e instanceof Anthropic.APIError && e.status === 402) return /billing_error|shared credit/i.test(e.message) ? (e.message.match(/"message":"([^"]+)"/)?.[1] ?? "You've used the free shared credit on this site. To keep using Dr Phil, add your own Claude API key (click the key icon).") : e.message;
+  if (e instanceof Anthropic.APIError && e.status === 402 && /billing_error|shared credit/i.test(e.message)) {
+    // Past the $10: the app opens a dialog asking them to link their own key.
+    try { window.dispatchEvent(new CustomEvent("aqm:capped")); } catch { /* not in a browser */ }
+    return "You've used your free $10 of shared credit. Link your own Claude API key to keep using Dr Phil.";
+  }
+  if (e instanceof Anthropic.APIError && e.status === 402) return e.message;
   const model = p?.modelLabel ?? "this model";
   if (e instanceof Anthropic.AuthenticationError) return `${who} didn't accept this key. Check that you copied the whole key and that it hasn't been revoked.`;
   if (e instanceof Anthropic.PermissionDeniedError) return `This key isn't allowed to use ${model}.`;

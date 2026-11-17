@@ -14,8 +14,11 @@ export const CODE_PREFIX = "aqmcode:";
 export const EMAIL_PREFIX = "aqmemail:";
 export const BABSON_EMAIL = /^[a-z0-9._%+-]+@babson\.edu$/i;
 export const isEmailKey = (k: string) => k.startsWith(EMAIL_PREFIX);
-/** Both go through this site's /api/claude, which uses Daniel's key. */
-export const isCodeKey = (k: string) => k.startsWith(CODE_PREFIX) || k.startsWith(EMAIL_PREFIX);
+/** The default: everyone starts on Daniel's key, as "aqmuser:<this browser's visitor id>", capped at $10 per id. */
+export const SHARED_PREFIX = "aqmuser:";
+export const isSharedKey = (k: string) => k.startsWith(SHARED_PREFIX) || k.startsWith(EMAIL_PREFIX);
+/** All of these go through this site's /api/claude, which uses Daniel's key. */
+export const isCodeKey = (k: string) => k.startsWith(CODE_PREFIX) || isSharedKey(k);
 export const emailOf = (k: string) => (isEmailKey(k) ? k.slice(EMAIL_PREFIX.length) : null);
 export type Provider = {
   id: ProviderId;

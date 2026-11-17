@@ -19,6 +19,7 @@ const DrPhilIcon = ({ size = 18 }: { size?: number; strokeWidth?: number }) => <
 import { ThinkaMark } from "./components/Thinka.tsx";
 import { useOnline } from "./lib/online.ts";
 import NamePrompt, { useNeedsName } from "./components/NamePrompt.tsx";
+import CapDialog from "./components/CapDialog.tsx";
 import { startUsageClock } from "./lib/usage.ts";
 
 startUsageClock();
@@ -52,7 +53,7 @@ export default function App() {
 
   if (!ready) return <div className="boot" aria-busy="true" />;
   if (screen === "admin") return <main className="main" id="main"><Admin /></main>;
-  if (!apiKey && !browsing && screen !== "key") return <>{needsName && <NamePrompt />}<Gate /></>;
+  if (!apiKey && !browsing && screen !== "key") return <Gate />;
 
   let body: ReactNode;
   switch (screen) {
@@ -105,6 +106,7 @@ export default function App() {
       </main>
       <ProblemDialog open={problem} onClose={() => setProblem(false)} />
       {needsName ? <NamePrompt /> : <Walkthrough />}
+      <CapDialog />
     </div>
   );
 }

@@ -3,8 +3,9 @@
 // environment (OWNER_API_KEY) and never reaches a browser. Two ways in, sent as x-api-key or
 // "Authorization: Bearer …":
 //   aqmcode:<CODE>     an access code from Daniel (ACCESS_CODES, comma-separated), no spend cap
-//   aqmemail:<email>   a Babson email (no verification), capped at $10 of estimated spend per email.
-// Email spend lives in Supabase (shared_spend), read and charged through two functions that only answer
+//   aqmuser:<uuid>     the default: anyone, by their browser's random visitor id, capped at $10 each.
+//   aqmemail:<email>   older sign-ins by Babson email (no verification), capped at $10 each too.
+// Shared spend lives in Supabase (shared_spend), read and charged through two functions that only answer
 // to PROXY_SECRET (the database stores just its SHA-256). Cost is worked out here from each reply's usage.
 
 export type ProxyEnv = { OWNER_API_KEY?: string; ACCESS_CODES?: string; PROXY_SECRET?: string; SHARED_LIMIT_USD?: string };
@@ -12,9 +13,10 @@ export type ProxyEnv = { OWNER_API_KEY?: string; ACCESS_CODES?: string; PROXY_SE
 const SUPABASE = "https://kxtdmgpecxlzyepshryw.supabase.co/rest/v1/rpc";
 const PUBLISHABLE = "sb_publishable_fDz6DAgzrVmsxMp_THba5g_swF5jxXH";
 const EMAIL = /^[a-z0-9._%+-]+@babson\.edu$/i;
+const VISITOR = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 /** Dollars per million tokens, as in src/lib/spend.ts. */
 const PRICE = { input: 2.0, output: 10.0, cacheWrite: 2.5, cacheRead: 0.2 };
-export const CAP_MESSAGE = "You've used the $10 of free shared credit on this site. To keep using Dr Phil, add your own Claude API key (click the key icon).";
+export const CAP_MESSAGE = "You've used your free $10 of shared credit. Link your own Claude API key to keep using Dr Phil.";
 
 const BABSON = "https://ca-litellm-mint-eus2.orangeflower-5d81efa8.eastus2.azurecontainerapps.io";
 const ANTHROPIC = "https://api.anthropic.com";
@@ -102,7 +104,13 @@ export async function handle(request: Request, env: ProxyEnv, fetchImpl: typeof 
   const sent = (request.headers.get("x-api-key") || bearer).trim();
   let user: string;
   let email: string | null = null;
-  if (sent.toLowerCase().startsWith("aqmemail:")) {
+  if (sent.toLowerCase().startsWith("aqmuser:")) {
+    const v = sent.slice(8).trim().toLowerCase();
+    if (!secret) return err(503, "api_error", "Shared access isn't set up.");
+    if (!VISITOR.test(v)) return err(401, "authentication_error", "Sign in again from the welcome screen.");
+    email = `v:${v}`;
+    user = `visitor:${v}`;
+  } else if (sent.toLowerCase().startsWith("aqmemail:")) {
     const e = sent.slice(9).trim().toLowerCase();
     if (!secret) return err(503, "api_error", "Shared access isn't set up.");
     if (!EMAIL.test(e)) return err(401, "authentication_error", "Use your Babson email (ending in @babson.edu).");

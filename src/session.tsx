@@ -1,10 +1,10 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import * as vault from "./lib/vault.ts";
 import { logKeyAdded, setUsageKey } from "./lib/usage.ts";
-import { isEmailKey, emailOf, CODE_PREFIX } from "./lib/provider.ts";
+import { isSharedKey, emailOf, CODE_PREFIX } from "./lib/provider.ts";
 import { setUsageEmail } from "./lib/usage.ts";
-/** Logged key tag: "email" for Babson-email access, "code" for an access code, else part of a one-way hash. */
-const tagFor = (key: string, fp: string) => (isEmailKey(key) ? "email" : key.startsWith(CODE_PREFIX) ? "code" : fp.slice(0, 10));
+/** Logged key tag: "shared" for Daniel's shared credit, "code" for an access code, else part of a one-way hash. */
+const tagFor = (key: string, fp: string) => (isSharedKey(key) ? "shared" : key.startsWith(CODE_PREFIX) ? "code" : fp.slice(0, 10));
 import { readSpend, type SpendState } from "./lib/spend.ts";
 import { fetchRemoteBalance, providerFor, type Provider, type RemoteBalance } from "./lib/provider.ts";
 

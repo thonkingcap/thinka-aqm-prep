@@ -149,6 +149,14 @@ const run = async (r: Request, e = env) => { const res = await handle(r, e, fake
   ok(capped.status === 402 && JSON.parse(capText).error.type === "billing_error" && JSON.parse(capText).error.message === CAP_MESSAGE && upstreamCalls === 0, `at the cap: 402, upstream never called (${capped.status})`);
   ok((await handle(emailReq("student.one@babson.edu"), { ...envE, SHARED_LIMIT_USD: "25" }, fake)).status === 200, "SHARED_LIMIT_USD raises the cap");
 
+  // The default: shared credit by the browser's visitor id.
+  rpcs.length = 0;
+  const vid = "3f2b8c1e-9a4d-4e7b-8c2a-1d5e6f7a8b9c";
+  const vReq = (id: string) => new Request(`${SITE}/api/claude/v1/messages`, { method: "POST", headers: { "content-type": "application/json", origin: SITE, "x-forwarded-for": "6.6.6.6", "x-api-key": `aqmuser:${id}` }, body: JSON.stringify(msgBody) });
+  const vRes = await handle(vReq(vid.toUpperCase()), { ...envE, SHARED_LIMIT_USD: "25" }, fake);
+  await vRes.text();
+  ok(vRes.status === 200 && rpcs[0]?.fn === "proxy_spent" && rpcs[0].body.p_email === `v:${vid}`, `visitor id: spend checked as v:<id> (${vRes.status}, ${String(rpcs[0]?.body.p_email)})`);
+  ok((await handle(vReq("not-a-uuid"), envE, fake)).status === 401, "malformed visitor id refused");
   const bad = await handle(emailReq("someone@gmail.com"), envE, fake);
   bodies.push(await bad.text());
   ok(bad.status === 401, `non-Babson email refused (${bad.status})`);

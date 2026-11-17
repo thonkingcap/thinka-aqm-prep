@@ -217,3 +217,8 @@
 .key-code-line { display: flex; gap: 8px; align-items: flex-start; font-size: 14px; color: var(--text) !important; margin: 4px 0 0 !important; }
 .key-code-line svg { flex: none; margin-top: 2px; color: var(--muted); }
 .key-help { max-width: 64ch; gap: 10px; }
+
+/* ---------- past the shared $10 ---------- */
+.cap-dialog { width: min(560px, calc(100vw - 32px)); }
+.cap-inner { display: flex; flex-direction: column; gap: 16px; }
+.cap-inner .problem-head p { margin: 6px 0 0; color: var(--muted); line-height: 1.5; }

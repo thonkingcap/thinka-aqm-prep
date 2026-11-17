@@ -1,10 +1,11 @@
 import { useState, type FormEvent } from "react";
 import KeyHelp from "../components/KeyHelp.tsx";
-import { ArrowLeft, ArrowRight, Eye, EyeOff, KeyRound, LoaderCircle, Mail } from "lucide-react";
+import { ArrowLeft, ArrowRight, Eye, EyeOff, KeyRound, LoaderCircle } from "lucide-react";
+import { setName as saveName, useNeedsName, visitorId } from "../lib/usage.ts";
 import { useSession } from "../session.tsx";
 import { verifyKey } from "../lib/claude.ts";
 import { looksLikeKey } from "../lib/vault.ts";
-import { isCode, CODE_PREFIX, EMAIL_PREFIX, BABSON_EMAIL } from "../lib/provider.ts";
+import { isCode, CODE_PREFIX, SHARED_PREFIX } from "../lib/provider.ts";
 import { Mark } from "../App.tsx";
 import ProblemDialog from "../components/ProblemDialog.tsx";
 import "./gate.css";
@@ -81,20 +82,22 @@ export function KeyForm({ onDone }: { onDone?: () => void; compact?: boolean }) 
   );
 }
 
-/** No key handy: a Babson email gets full access on Daniel's shared key (capped on the server). */
-function EmailForm() {
+/** The default way in: just their name. Everyone starts on Daniel's shared key, capped at $10 per browser on the server. */
+function StartForm() {
   const { useKey } = useSession();
-  const [email, setEmail] = useState("");
+  const needsName = useNeedsName();
+  const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   async function submit(e: FormEvent) {
     e.preventDefault();
-    const v = email.trim().toLowerCase();
-    if (!BABSON_EMAIL.test(v)) return setError("Use your Babson email: it ends in @babson.edu.");
+    const n = name.trim();
+    if (needsName && n.split(/\s+/).filter(Boolean).length < 2) return setError("Please type your first and last name.");
     setBusy(true); setError(null);
     try {
-      const k = EMAIL_PREFIX + v;
+      const k = SHARED_PREFIX + visitorId();
       await verifyKey(k);
+      if (needsName) saveName(n);
       await useKey(k, { shared: false });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -102,40 +105,33 @@ function EmailForm() {
   }
   return (
     <form className="key-form" onSubmit={submit} autoComplete="off" noValidate>
-      <p className="choice-note">Enter your Babson email in lieu of your API key.</p>
-      <div className="field">
-        <label htmlFor="babson-email">Your Babson email</label>
-        <input id="babson-email" className="input" type="email" inputMode="email" placeholder="you@babson.edu" value={email}
-          onChange={(e) => { setEmail(e.target.value); setError(null); }} autoComplete="email" autoCapitalize="off" spellCheck={false} aria-invalid={!!error} />
-      </div>
+      {needsName && (
+        <div className="field">
+          <label htmlFor="full-name">Your full name</label>
+          <input id="full-name" className="input" type="text" autoComplete="name" maxLength={60} placeholder="First and last name" value={name}
+            onChange={(e) => { setName(e.target.value); setError(null); }} aria-invalid={!!error} />
+        </div>
+      )}
       {error && <p className="error-text" role="alert">{error}</p>}
       <div className="row">
-        <button className="btn btn-primary" type="submit" disabled={busy || !email.trim()}>
-          {busy ? <LoaderCircle size={16} className="spin" aria-hidden="true" /> : null}{busy ? "Checking" : "Start studying"}{!busy && <ArrowRight size={16} aria-hidden="true" />}
+        <button className="btn btn-primary" type="submit" disabled={busy || (needsName && !name.trim())}>
+          {busy ? <LoaderCircle size={16} className="spin" aria-hidden="true" /> : null}{busy ? "Starting" : "Start studying"}{!busy && <ArrowRight size={16} aria-hidden="true" />}
         </button>
       </div>
+      <p className="choice-note muted">Dr Phil is free to use up to $10 each. After that, you'll link your own Claude API key.</p>
     </form>
   );
 }
 
-/** First question: is the key handy? Yes → paste it. No → Babson email. */
-export function KeyChoice() {
-  const [choice, setChoice] = useState<"key" | "email" | null>(null);
-  if (!choice) {
-    return (
-      <div className="key-choice">
-        <h2 className="choice-q">Do you have your Claude API key handy?</h2>
-        <div className="choice-buttons">
-          <button type="button" className="choice-btn lift" onClick={() => setChoice("key")}><KeyRound size={20} aria-hidden="true" /><span><b>Yes, I have it</b><span className="hint">Paste it in the next step</span></span></button>
-          <button type="button" className="choice-btn lift" onClick={() => setChoice("email")}><Mail size={20} aria-hidden="true" /><span><b>No, not right now</b><span className="hint">Use your Babson email instead</span></span></button>
-        </div>
-      </div>
-    );
-  }
+/** Sign in: name only by default (shared credit); students who'd rather use their own key can. */
+export function SignIn() {
+  const [own, setOwn] = useState(false);
   return (
     <div className="key-choice">
-      <button type="button" className="linkish choice-back" onClick={() => setChoice(null)}><ArrowLeft size={14} aria-hidden="true" />Back</button>
-      {choice === "key" ? <KeyForm /> : <EmailForm />}
+      {own ? <KeyForm /> : <StartForm />}
+      <button type="button" className="linkish choice-back" onClick={() => setOwn((o) => !o)}>
+        {own ? <><ArrowLeft size={14} aria-hidden="true" />Just use my name instead</> : <><KeyRound size={14} aria-hidden="true" />I'd rather use my own Claude key</>}
+      </button>
     </div>
   );
 }
@@ -151,8 +147,7 @@ export default function Gate() {
           <h1>AQM Prep</h1>
           <p className="gate-lede">Study for Dr. Phil's Midterm 2 utilizing this site.</p>
         </header>
-        <KeyChoice />
-        <p className="gate-safe">Your key is encrypted and stored locally; we don't have access to it.</p>
+        <SignIn />
         <div className="row gate-links">
           <button type="button" className="linkish gate-browse" onClick={browse}>Look around first</button>
           <button type="button" className="linkish gate-browse" onClick={() => setProblem(true)}>Have a problem?</button>
