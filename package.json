@@ -10,7 +10,7 @@
     "test": "node --experimental-strip-types src/lib/stats.test.ts && node --experimental-strip-types src/lib/practice.test.ts && node --experimental-strip-types src/lib/plan.test.ts && node --experimental-strip-types src/lib/xlsx.test.ts && node --experimental-strip-types src/lib/fnDocs.test.ts && node --experimental-strip-types src/lib/xlsxRead.test.ts && node --experimental-strip-types src/lib/grade.test.ts && node --experimental-strip-types src/lib/sets.test.ts && node --experimental-strip-types src/lib/exam3.test.ts && node --experimental-strip-types src/lib/paper.test.ts && node --experimental-strip-types src/lib/l18.test.ts && node --experimental-strip-types src/lib/ai.test.ts && node --experimental-strip-types src/lib/usage.test.ts && node --experimental-strip-types src/lib/keys.test.ts && node --experimental-strip-types src/lib/proxy.test.ts"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^1.7.0",
+    "@anthropic-ai/sdk": "^1.8.0",
     "fflate": "^0.8.3",
     "lucide-react": "^1.70.0",
     "react": "^19.3.1",
