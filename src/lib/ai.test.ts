@@ -1,6 +1,6 @@
 // Offline checks for the parts of ai.ts that don't need the network: turning Claude's tool output into
 // marks and into a custom-set spec.
-import { parseMarks, clampScore, markPrompt, specFromDesign, MAX_QUESTIONS, MARK_TOOL, DESIGN_TOOL } from "./aiParse.ts";
+import { parseMarks, clampScore, markPrompt, specFromDesign, buildTutorSet, MAX_QUESTIONS, MARK_TOOL, DESIGN_TOOL } from "./aiParse.ts";
 import { workbookById, specId } from "./sets.ts";
 
 let fails = 0;
@@ -81,6 +81,21 @@ ok(tooMany.spec.sc?.length === 6, "at most 6 scenarios");
 ok(throws(() => specFromDesign({ title: "x", items: [{ kind: "nope", count: 3 }], summary: "s" })), "no usable kinds throws");
 ok(throws(() => specFromDesign(null)), "null input throws");
 ok(specFromDesign({ items: [{ kind: "normal-less", count: 0 }] }, rng).spec.q.length === 1, "count below 1 becomes 1");
+
+// ---------- Dr Phil's practice_set tool ----------
+{
+  const r = buildTutorSet({ title: "Chi-squared drill", items: [{ kind: "var-test", count: 3 }, { kind: "ht-full", count: 2, caseKey: "ge-unknown-p" }], summary: "3 variance tests and 2 left-tailed t-tests." });
+  ok("set" in r, "tutor set builds");
+  if ("set" in r) {
+    ok(r.set.id.startsWith("spec:") && r.set.questions === 5 && r.set.title === "Chi-squared drill", "tutor set id, count and title");
+    const def = workbookById(r.set.id);
+    ok(!!def && def.questions.length === 5, "tutor set id rebuilds the same workbook");
+    ok(!!def && def.questions.slice(0, 3).every((q) => q.kind === "var-test"), "tutor set keeps the kinds in order");
+  }
+  const bad = buildTutorSet({ title: "x", items: [{ kind: "regression", count: 4 }], summary: "" });
+  ok("error" in bad, "unknown kinds give an error for Claude, not a throw");
+  ok("error" in buildTutorSet(null), "junk input gives an error");
+}
 
 if (fails) { console.log(`ai.test: ${fails} failure(s)`); process.exit(1); }
 console.log("ai.test: all passed");

@@ -9,6 +9,9 @@ import { courseNotesText } from "./course.ts";
 import { providerFor, resolveModel, type Provider } from "./provider.ts";
 import { logClaude } from "./usage.ts";
 import { cleanGraphic, DRAW_SCHEMA, DRAW_TOOL_DESCRIPTION, type GraphicSpec } from "./graphic.ts";
+import { DESIGN_TOOL, DESIGN_RULES, KIND_HELP, buildTutorSet, type TutorSet } from "./aiParse.ts";
+
+export type { TutorSet };
 
 export function makeClient(apiKey: string) {
   // dangerouslyAllowBrowser: this app is "bring your own key": each student uses their own key in
@@ -116,6 +119,16 @@ How to work:
 - Students may send screenshots: an exam or practice question, their Excel sheet, or an error. Read every number and label in the image carefully and say which values you read before using them (a quick list); if part of it is unreadable or cut off, say so and ask. For an Excel sheet, point to cells by their address (B7) when it helps. Then compute with the excel tool as usual.
 - The student's messages may include a practice question from the site with its official answer and formulas; trust those values, and explain the method that leads to them.
 
+Custom practice sets (the practice_set tool):
+- When a student asks for a practice set, a worksheet, a workbook, "some problems" or "more questions" to do on their own, call practice_set. The site builds a real Excel workbook from your mix: one tab per question with the data in cells, yellow answer cells and an answer-key tab, and shows the student a card to download it and upload it back to be marked. Only quiz in the chat when they ask to be quizzed ("quiz me", "ask me one").
+- If the request is vague ("give me practice"), build a sensible mixed set rather than asking a string of questions; you can mention you'll happily make another one on a narrower topic. Use what you know from the conversation: if they've been struggling with something, weight the set towards it.
+- You never write the questions, numbers or answers yourself: the site's verified stats engine generates every number, data set and answer key from the kinds you choose. So never list the questions, preview numbers or claim what the answers are; you haven't seen them.
+- After the tool returns, reply in two or three sentences: what's in the set (from the summary), and how to use it (do it in Excel with formulas, try it all before opening the answer key, then upload it with the card's "Mark my file" button). The card already has the download button, so don't describe where to click beyond that.
+- Question kinds:
+${KIND_HELP}
+- How to choose the mix:
+${DESIGN_RULES}
+
 The course notes below are the reference. Prefer their wording, examples and formulas.`;
 
 /** Large, stable system prompt (rules + notes). Kept byte-identical between requests so it caches. */
@@ -142,6 +155,11 @@ const TOOLS: BetaToolUnion[] = [
     eager_input_streaming: true,
   } as BetaToolUnion,
   { name: "draw", description: DRAW_TOOL_DESCRIPTION, input_schema: DRAW_SCHEMA } as unknown as BetaToolUnion,
+  {
+    name: "practice_set",
+    description: "Builds a downloadable Excel practice workbook (with an answer key, marked on upload) from a question mix. You choose the kinds, counts, optional story scenarios, a title and a one-line summary; the site generates every number and answer.",
+    input_schema: DESIGN_TOOL.input_schema,
+  } as unknown as BetaToolUnion,
 ];
 
 export type ToolRun = { formula: string; value?: number; error?: string };
@@ -149,6 +167,7 @@ export type TutorEvents = {
   onText: (delta: string) => void;
   onTool: (runs: ToolRun[]) => void;
   onGraphic: (spec: GraphicSpec) => void;
+  onSet: (set: TutorSet) => void;
   onStatus: (s: "thinking" | "writing" | "calculating" | "idle") => void;
 };
 
@@ -244,6 +263,18 @@ export async function runTutorTurn(apiKey: string, keyFp: string, history: BetaM
         const g = cleanGraphic(block.input);
         if ("spec" in g) ev.onGraphic(g.spec);
         results.push({ type: "tool_result", tool_use_id: block.id, ...("spec" in g ? { content: "shown" } : { is_error: true, content: `Not drawn: ${g.error}` }) });
+        continue;
+      }
+      if (block.name === "practice_set") {
+        const r = buildTutorSet(block.input);
+        if ("set" in r) ev.onSet(r.set);
+        results.push({
+          type: "tool_result",
+          tool_use_id: block.id,
+          ...("set" in r
+            ? { content: `Built "${r.set.title}" (${r.set.questions} questions). Summary: ${r.set.summary}\nThe student now sees a card with a download button and a "Mark my file" upload button under your message.` }
+            : { is_error: true, content: `Not built: ${r.error}` }),
+        });
         continue;
       }
       const input = block.input as { formulas?: unknown };

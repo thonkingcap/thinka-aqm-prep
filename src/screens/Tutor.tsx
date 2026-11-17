@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState, type ClipboardEvent, type DragEvent, type FormEvent, type KeyboardEvent } from "react";
 import { useOnline } from "../lib/online.ts";
-import { ArrowUp, Calculator, ImagePlus, LoaderCircle, Plus, Square, X } from "lucide-react";
+import { ArrowUp, Calculator, Download, FileSpreadsheet, ImagePlus, LoaderCircle, Plus, Square, Upload, X } from "lucide-react";
 import type { BetaMessageParam } from "@anthropic-ai/sdk/resources/beta/messages/messages";
 import { useSession } from "../session.tsx";
 import { KEY_IN_TEXT } from "../lib/vault.ts";
-import { runTutorTurn, type ToolRun } from "../lib/claude.ts";
+import { runTutorTurn, type ToolRun, type TutorSet } from "../lib/claude.ts";
+import { downloadById } from "../lib/download.ts";
+import type { WorkbookGrade } from "../lib/grade.ts";
+import { UploadBox, GradeReport } from "../components/UploadGrade.tsx";
 import { money, balanceView } from "../lib/spend.ts";
 import Markdown from "../components/Markdown.tsx";
 import TutorGraphic from "../components/TutorGraphic.tsx";
@@ -16,18 +19,18 @@ import DrPhil from "../components/DrPhil.tsx";
 import "./screens.css";
 import "./tutor.css";
 
-type Part = { type: "text"; text: string } | { type: "tool"; runs: ToolRun[] } | { type: "graphic"; spec: GraphicSpec };
+type Part = { type: "text"; text: string } | { type: "tool"; runs: ToolRun[] } | { type: "graphic"; spec: GraphicSpec } | { type: "set"; set: TutorSet };
 type Turn = { role: "user"; text: string; shots?: string[] } | { role: "assistant"; parts: Part[]; error?: string; note?: string };
 
 // Kept at module level so the conversation survives switching screens (not page reloads).
 const store: { history: BetaMessageParam[]; turns: Turn[] } = { history: [], turns: [] };
 
 const STARTERS = [
+  "Make me a practice set on hypothesis tests, mixed tails, Z and T.",
   "Quiz me on the 12 hypothesis test questions, one at a time.",
   "When do I use Z and when do I use T?",
   "Explain why the two-tailed p-value formula changes with the sign of the statistic.",
   "What's the difference between \"where will x̄ land\" and \"where is μ\"?",
-  "Give me an exam-style left-tailed t-test with raw data.",
   "How do I tell from H₀ whether it's a left, right or two-tailed test?",
 ];
 
@@ -46,6 +49,30 @@ function ToolLedger({ runs }: { runs: ToolRun[] }) {
         </tbody>
       </table>
     </details>
+  );
+}
+
+/** A practice set Dr Phil built: download it, and upload the finished file right here to have it marked. */
+function SetCard({ set }: { set: TutorSet }) {
+  const [marking, setMarking] = useState(false);
+  const [graded, setGraded] = useState<WorkbookGrade | null>(null);
+  return (
+    <section className="tutor-set" aria-label={`Practice set: ${set.title}`}>
+      <div className="tutor-set-head">
+        <FileSpreadsheet size={20} aria-hidden="true" />
+        <div>
+          <h3>{set.title}</h3>
+          <p className="hint">{set.summary}</p>
+        </div>
+      </div>
+      <div className="tutor-set-actions">
+        <button type="button" className="btn btn-primary btn-small" onClick={() => downloadById(set.id)}><Download size={14} aria-hidden="true" />Download workbook ({set.questions} question{set.questions === 1 ? "" : "s"})</button>
+        <button type="button" className="btn btn-ghost btn-small" onClick={() => setMarking((m) => !m)} aria-expanded={marking}><Upload size={14} aria-hidden="true" />Mark my file</button>
+      </div>
+      {marking && !graded && <UploadBox onGraded={setGraded} />}
+      {graded && <GradeReport g={graded} onClose={() => { setGraded(null); setMarking(false); }} />}
+      {!marking && !graded && <p className="hint">Answer key on the last tab. Try the whole set first, then upload it here to have every answer marked.</p>}
+    </section>
   );
 }
 
@@ -137,6 +164,7 @@ export default function Tutor() {
         }),
         onTool: (runs) => update((a) => { a.parts.push({ type: "tool", runs }); }),
         onGraphic: (spec) => update((a) => { a.parts.push({ type: "graphic", spec }); }),
+        onSet: (set) => update((a) => { a.parts.push({ type: "set", set }); }),
         onStatus: setStatus,
       }, ac.signal);
       if (stop === "refusal") update((a) => { a.note = "Claude declined to answer this one. Try rephrasing the question."; });
@@ -218,7 +246,7 @@ export default function Tutor() {
             ) : (
               <div key={i} className="msg msg-ai">
                 <div className="msg-who"><DrPhil size={22} /><span>Dr Phil</span></div>
-                {t.parts.map((p, j) => (p.type === "text" ? <Markdown key={j} text={p.text} /> : p.type === "graphic" ? <TutorGraphic key={j} spec={p.spec} /> : <ToolLedger key={j} runs={p.runs} />))}
+                {t.parts.map((p, j) => (p.type === "text" ? <Markdown key={j} text={p.text} /> : p.type === "graphic" ? <TutorGraphic key={j} spec={p.spec} /> : p.type === "set" ? <SetCard key={j} set={p.set} /> : <ToolLedger key={j} runs={p.runs} />))}
                 {i === turns.length - 1 && busy && (
                   <p className="tutor-status"><LoaderCircle size={14} className="spin" aria-hidden="true" /> {status === "calculating" ? "Working it out in Excel" : status === "thinking" ? "Dr Phil is thinking" : "Writing"}</p>
                 )}
@@ -248,7 +276,7 @@ export default function Tutor() {
           <input ref={fileRef} type="file" accept="image/*" multiple className="sr-only" tabIndex={-1} onChange={(e) => { if (e.target.files) addShots(e.target.files); e.target.value = ""; }} />
           <button type="button" className="btn btn-ghost btn-icon composer-attach" onClick={() => fileRef.current?.click()} disabled={shots.length >= MAX_SHOTS} aria-label="Attach a screenshot" title="Attach a screenshot (or paste one)"><ImagePlus size={17} aria-hidden="true" /></button>
           <label htmlFor="composer" className="sr-only">Message Dr Phil</label>
-          <textarea id="composer" rows={1} placeholder="Ask Dr Phil about any Midterm 2 topic, or paste a screenshot" value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={onKey} onPaste={onPaste} />
+          <textarea id="composer" rows={1} placeholder="Ask Dr Phil anything, ask for a practice set, or paste a screenshot" value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={onKey} onPaste={onPaste} />
           {busy ? (
             <button type="button" className="btn btn-primary btn-icon" onClick={() => abortRef.current?.abort()} aria-label="Stop"><Square size={14} aria-hidden="true" /></button>
           ) : (
