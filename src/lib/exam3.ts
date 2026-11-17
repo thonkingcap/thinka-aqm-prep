@@ -46,25 +46,26 @@ export const EXAM3_TEXT: { n: number; section: number; points: number; lead?: st
 ];
 
 // ---------- answers ----------
-type Spec = Omit<Part, "id"> & { id?: string; alts?: number[]; find?: "value"; label: string; at?: RegExp };
-const tolP = (p: number) => Math.max(0.0005, Math.min(0.002, 0.02 * p));
-const num = (label: string, answer: number, excel: string, explain: string, tol: number, extra: Partial<Spec> = {}): Spec =>
+/** One marked part: its answer, where to find it (a label beside it, an exact cell, or by value) and its slips. */
+export type Spec = Omit<Part, "id"> & { id?: string; alts?: number[]; find?: "value"; label: string; at?: RegExp; cell?: string };
+export const tolP = (p: number) => Math.max(0.0005, Math.min(0.002, 0.02 * p));
+export const num = (label: string, answer: number, excel: string, explain: string, tol: number, extra: Partial<Spec> = {}): Spec =>
   ({ label, kind: "number", answer, excel, explain, tol, format: "num", ...extra });
-const decision = (reject: boolean, rule: string): Spec => ({
+export const decision = (reject: boolean, rule: string): Spec => ({
   label: "Decision (R or DR)", kind: "choice", answer: reject ? DECISIONS[0] : DECISIONS[1], options: DECISIONS,
   excel: `${rule} → ${reject ? "R" : "DR"}`, explain: "Reject H₀ when the p-value is below α, the same as the statistic falling past the critical value.", at: /^decision/i,
 });
-const text = (label: string, model: string, keyPoints: string[]): Spec => ({ label, kind: "text", answer: model, keyPoints, excel: "Written answer", explain: "" });
-const r4 = (x: number) => Math.round(x * 10_000) / 10_000;
+export const text = (label: string, model: string, keyPoints: string[]): Spec => ({ label, kind: "text", answer: model, keyPoints, excel: "Written answer", explain: "" });
+export const r4 = (x: number) => Math.round(x * 10_000) / 10_000;
 
 /** A one-sample test's six cells, in the template's order. */
-function testParts(o: { n: number; alpha: number; stat: number; statF: string; crit: number; critF: string; p: number; pF: string; tail: "left" | "right" | "two"; S: "Z" | "T"; traps?: { stat?: Part["traps"]; crit?: Part["traps"]; p?: Part["traps"] }; twoSidedStat?: boolean }): Spec[] {
+export function testParts(o: { n: number; alpha: number; stat: number; statF: string; crit: number; critF: string; p: number; pF: string; tail: "left" | "right" | "two"; S: "Z" | "T" | "χ²"; traps?: { stat?: Part["traps"]; crit?: Part["traps"]; p?: Part["traps"] }; twoSidedStat?: boolean }): Spec[] {
   const reject = o.p < o.alpha;
   const crit = Math.abs(o.crit);
   return [
     num("n", o.n, "=COUNT(data)", "Count the data with COUNT (or COUNTA).", 0, { at: /^n$/i }),
-    num("alpha", o.alpha, "0.05", "Given in the question.", 1e-9, { at: /^alpha$|^α$/i }),
-    num("Test statistic", o.stat, o.statF, o.S === "Z" ? "σ is known: Z = (x̄ − μ₀)/(σ/√n)." : "σ is unknown: T = (x̄ − μ₀)/(S/√n) with ν = n − 1.", 0.005, { at: /^test stat/i, traps: o.traps?.stat, ...(o.twoSidedStat ? { alts: [-o.stat] } : {}) }),
+    num("alpha", o.alpha, String(o.alpha), "Given in the question.", 1e-9, { at: /^alpha$|^α$/i }),
+    num("Test statistic", o.stat, o.statF, o.S === "Z" ? "σ is known: Z = (x̄ − μ₀)/(σ/√n)." : o.S === "T" ? "σ is unknown: T = (x̄ − μ₀)/(S/√n) with ν = n − 1." : "χ² = (n − 1)·S²/σ₀² with ν = n − 1.", 0.005, { at: /^test stat/i, traps: o.traps?.stat, ...(o.twoSidedStat ? { alts: [-o.stat] } : {}) }),
     num("Critical value", o.crit, o.critF, o.tail === "two" ? "Two tails: ±.INV(1 − α/2)." : o.tail === "left" ? "Left tail: .INV(α), a negative number." : "Right tail: .INV(1 − α).", 0.003, { at: /^crit/i, traps: o.traps?.crit, ...(o.tail === "two" ? { alts: [-o.crit] } : {}) }),
     num("p-value", o.p, o.pF, o.tail === "two" ? "Two tails: double the tail the statistic points into (the class rule, no T.DIST.2T or ABS)." : o.tail === "left" ? "Left tail: .DIST(stat)." : "Right tail: 1 − .DIST(stat).", tolP(o.p), { at: /^p.?val/i, format: "prob", traps: o.traps?.p }),
     decision(reject, `p = ${r4(o.p)} ${reject ? "<" : "≥"} ${o.alpha}; ${o.S} = ${r4(o.stat)} vs ${o.tail === "two" ? "±" : ""}${r4(o.tail === "two" ? crit : o.crit)}`),
@@ -163,16 +164,16 @@ function build(world?: { q12?: { xbar: number; s: number } }): QDef[] {
 }
 
 // ---------- reading a student's workbook ----------
-const colNum = (c: string) => { let n = 0; for (const ch of c) n = n * 26 + ch.charCodeAt(0) - 64; return n; };
-const colName = (n: number) => { let s = ""; while (n > 0) { const r = (n - 1) % 26; s = String.fromCharCode(65 + r) + s; n = Math.floor((n - 1) / 26); } return s; };
-const split = (a: string) => { const m = /^([A-Z]+)(\d+)$/.exec(a); return m ? { c: colNum(m[1]), r: Number(m[2]) } : null; };
+export const colNum = (c: string) => { let n = 0; for (const ch of c) n = n * 26 + ch.charCodeAt(0) - 64; return n; };
+export const colName = (n: number) => { let s = ""; while (n > 0) { const r = (n - 1) % 26; s = String.fromCharCode(65 + r) + s; n = Math.floor((n - 1) / 26); } return s; };
+export const split = (a: string) => { const m = /^([A-Z]+)(\d+)$/.exec(a); return m ? { c: colNum(m[1]), r: Number(m[2]) } : null; };
 
 // Rows where each question starts (column B), per tab.
 const STARTS: Record<number, [number, number]> = { 1: [0, 3], 2: [0, 9], 3: [0, 19], 4: [0, 21], 5: [0, 27], 6: [1, 3], 7: [1, 11], 8: [2, 3], 9: [2, 22], 10: [2, 24], 11: [2, 26], 12: [2, 29], 13: [3, 3], 14: [3, 10] };
 // Text the professor's template already contains: not a student's answer.
-const TEMPLATE_TEXT = /^(table \d|exam [12]|n|alpha|test statistic|critical value|p value|decision|write r for reject and dr for do not reject|sample mean|sample std dev)$/i;
+export const TEMPLATE_TEXT = /^(table \d+|exam [12]|n|alpha|test statistic|critical value|p value|decision|write r for reject and dr for do not reject|sample mean|sample std dev)$/i;
 
-function findTab(wb: ReadWorkbook, name: string): Record<string, CellVal> | undefined {
+export function findTab(wb: ReadWorkbook, name: string): Record<string, CellVal> | undefined {
   const key = wb.sheetOrder.find((s) => s.trim().toLowerCase() === name.toLowerCase());
   return key ? wb.sheets[key] : undefined;
 }
@@ -184,13 +185,14 @@ export function isExam3(wb: ReadWorkbook): boolean {
   return !!ci && !!ht && TABS.every((t) => findTab(wb, t)) && Number(ci.D12) === 61.4 && Number(ht.D12) === 327;
 }
 
-function region(cells: Record<string, CellVal>, n: number) {
-  const [tab, start] = STARTS[n];
-  const next = Object.entries(STARTS).filter(([k, [t, r]]) => Number(k) > n && t === tab).map(([, [, r]]) => r)[0] ?? Infinity;
+export type Starts = Record<number, [tab: number, row: number]>;
+function region(cells: Record<string, CellVal>, n: number, starts: Starts = STARTS) {
+  const [tab, start] = starts[n];
+  const next = Object.entries(starts).filter(([k, [t, r]]) => Number(k) > n && t === tab).map(([, [, r]]) => r)[0] ?? Infinity;
   return Object.entries(cells).map(([a, v]) => ({ a, v, p: split(a)! })).filter((x) => x.p && x.p.r >= start && x.p.r < next);
 }
 
-function gradeOne(v: CellVal | undefined, s: Spec): Omit<PartGrade, "part" | "cell" | "points" | "got"> {
+export function gradeOne(v: CellVal | undefined, s: Spec): Omit<PartGrade, "part" | "cell" | "points" | "got"> {
   const part = s as unknown as Part;
   const r = gradeCell(v, part);
   if (r.ok || s.kind !== "number" || !s.alts?.length || typeof v !== "number") return r;
@@ -201,9 +203,11 @@ function gradeOne(v: CellVal | undefined, s: Spec): Omit<PartGrade, "part" | "ce
   return r;
 }
 
-function locate(cells: Record<string, CellVal> | undefined, n: number, s: Spec, wb: ReadWorkbook): { cell: string; r: Omit<PartGrade, "part" | "cell" | "points" | "got"> } {
+export function locate(cells: Record<string, CellVal> | undefined, n: number, s: Spec, wb: ReadWorkbook, starts: Starts = STARTS): { cell: string; r: Omit<PartGrade, "part" | "cell" | "points" | "got"> } {
   if (!cells) return { cell: "", r: gradeOne(undefined, s) };
-  const reg = region(cells, n);
+  // A known answer cell with something in it: mark that.
+  if (s.cell && cells[s.cell] !== undefined && cells[s.cell] !== null && cells[s.cell] !== "") return { cell: s.cell, r: gradeOne(cells[s.cell], s) };
+  const reg = region(cells, n, starts);
   if (s.at) {
     const label = reg.find((x) => typeof x.v === "string" && s.at!.test(x.v.trim()));
     if (label) {

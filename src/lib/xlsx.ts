@@ -51,6 +51,66 @@ const XF = { normal: 0, title: 1, header: 2, pct: 3, answer: 4, hint: 5, answerP
 // Writer-internal cell: may force a style (used for the small grey id stamp).
 type XCell = Cell & { xf?: number };
 
+// The professor's exam look (Exam 3): Aptos Narrow 11, bold question numbers in column B, grey table
+// headers, thin borders round labels and data, purple cells for n/alpha/Decision/written answers and
+// blue cells for computed values (his theme's accent tints, written as RGB).
+const EX = { normal: 0, qnum: 1, tblLeft: 2, tblCenter: 3, label: 4, dataLeft: 5, data: 6, purple: 7, blue: 8, hint: 9, tiny: 10, labelItalic: 11 } as const;
+function examStyleFor(c: XCell): number {
+  if (c.xf !== undefined) return c.xf;
+  switch (c.role) {
+    case "title": return EX.qnum;
+    case "header": return c.align === "center" ? EX.tblCenter : EX.tblLeft;
+    case "label": return EX.label;
+    case "data": return c.align === "left" ? EX.dataLeft : EX.data;
+    case "answer": return c.tone === "blue" ? EX.blue : EX.purple;
+    case "hint": return EX.hint;
+    default: return EX.normal;
+  }
+}
+const EXAM_STYLES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+<fonts count="4">
+<font><sz val="11"/><color theme="1"/><name val="Aptos Narrow"/><family val="2"/></font>
+<font><b/><sz val="11"/><color theme="1"/><name val="Aptos Narrow"/><family val="2"/></font>
+<font><i/><sz val="11"/><color theme="1"/><name val="Aptos Narrow"/><family val="2"/></font>
+<font><sz val="6"/><color rgb="FFD9D9D9"/><name val="Aptos Narrow"/><family val="2"/></font>
+</fonts>
+<fills count="5">
+<fill><patternFill patternType="none"/></fill>
+<fill><patternFill patternType="gray125"/></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFE8E8E8"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFF2CFEE"/><bgColor indexed="64"/></patternFill></fill>
+<fill><patternFill patternType="solid"><fgColor rgb="FFCAEEFB"/><bgColor indexed="64"/></patternFill></fill>
+</fills>
+<borders count="2">
+<border><left/><right/><top/><bottom/><diagonal/></border>
+<border><left style="thin"><color indexed="64"/></left><right style="thin"><color indexed="64"/></right><top style="thin"><color indexed="64"/></top><bottom style="thin"><color indexed="64"/></bottom><diagonal/></border>
+</borders>
+<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>
+<cellXfs count="12">
+<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>
+<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+<xf numFmtId="0" fontId="0" fillId="2" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left"/></xf>
+<xf numFmtId="0" fontId="0" fillId="2" borderId="1" xfId="0" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"/>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="left"/></xf>
+<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"/>
+<xf numFmtId="0" fontId="0" fillId="3" borderId="1" xfId="0" applyFill="1" applyBorder="1"/>
+<xf numFmtId="0" fontId="0" fillId="4" borderId="1" xfId="0" applyFill="1" applyBorder="1"/>
+<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+<xf numFmtId="0" fontId="3" fillId="0" borderId="0" xfId="0" applyFont="1"/>
+<xf numFmtId="0" fontId="2" fillId="0" borderId="1" xfId="0" applyFont="1" applyBorder="1"/>
+</cellXfs>
+<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
+<dxfs count="0"/>
+<tableStyles count="0" defaultTableStyle="TableStyleMedium2" defaultPivotStyle="PivotStyleLight16"/>
+</styleSheet>`;
+
+/** Excel stores the newer functions with an _xlfn. prefix; without it they show #NAME? until re-entered. */
+export function xlfn(f: string): string {
+  return f.replace(/(^|[^.\w])(NORM\.S\.INV|NORM\.S\.DIST|NORM\.INV|NORM\.DIST|T\.INV\.2T|T\.INV|T\.DIST\.2T|T\.DIST\.RT|T\.DIST|CHISQ\.INV\.RT|CHISQ\.INV|CHISQ\.DIST\.RT|CHISQ\.DIST|STDEV\.S|VAR\.S)\(/g, "$1_xlfn.$2(");
+}
+
 function styleFor(c: XCell): number {
   if (c.xf !== undefined) return c.xf;
   const role: CellRole | undefined = c.role;
@@ -97,9 +157,13 @@ const STYLES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 </styleSheet>`;
 
 // ---------- worksheet ----------
-function cellXml(addr: string, c: XCell): string {
-  const s = styleFor(c);
+function cellXml(addr: string, c: XCell, exam = false): string {
+  const s = exam ? examStyleFor(c) : styleFor(c);
   const sAttr = s ? ` s="${s}"` : "";
+  if (c.f) {
+    const f = esc(xlfn(c.f.replace(/^=/, "")));
+    return `<c r="${addr}"${sAttr}${typeof c.v === "string" ? ` t="str"` : ""}><f>${f}</f></c>`;
+  }
   if (typeof c.v === "number" && Number.isFinite(c.v)) return `<c r="${addr}"${sAttr}><v>${String(c.v)}</v></c>`;
   if (typeof c.v === "string" && c.v !== "") {
     const text = esc(c.v.slice(0, MAX_CELL_TEXT));
@@ -108,12 +172,12 @@ function cellXml(addr: string, c: XCell): string {
   return s ? `<c r="${addr}"${sAttr}/>` : "";
 }
 
-function sheetXml(m: SheetModel, active: boolean): string {
+function sheetXml(m: SheetModel, active: boolean, exam = false): string {
   const rows = new Map<number, { col: number; xml: string }[]>();
   for (const [rawAddr, c] of Object.entries(m.cells)) {
     const p = parseAddr(rawAddr);
     if (!p) continue;
-    const xml = cellXml(rawAddr.toUpperCase(), c);
+    const xml = cellXml(rawAddr.toUpperCase(), c, exam);
     if (!xml) continue;
     if (!rows.has(p.row)) rows.set(p.row, []);
     rows.get(p.row)!.push({ col: p.col, xml });
@@ -132,7 +196,7 @@ function sheetXml(m: SheetModel, active: boolean): string {
 <sheetViews><sheetView workbookViewId="0"${active ? ` tabSelected="1"` : ""}/></sheetViews>
 <sheetFormatPr defaultRowHeight="15"/>
 ${cols}<sheetData>${rowXml}</sheetData>
-<pageMargins left="0.7" right="0.7" top="0.75" bottom="0.75" header="0.3" footer="0.3"/>
+${m.merges?.length ? `<mergeCells count="${m.merges.length}">${m.merges.map((r) => `<mergeCell ref="${esc(r)}"/>`).join("")}</mergeCells>\n` : ""}<pageMargins left="0.7" right="0.7" top="0.75" bottom="0.75" header="0.3" footer="0.3"/>
 </worksheet>`;
 }
 
@@ -153,8 +217,15 @@ function startSheet(title: string, intro: string[], id?: string): SheetModel {
 }
 
 // ---------- package ----------
-export function buildXlsx(sheets: SheetModel[], opts: { title: string; intro?: string[]; id?: string }): Uint8Array {
-  const all = [startSheet(opts.title, opts.intro ?? [], opts.id), ...sheets];
+/**
+ * `look: "exam"` lays the workbook out like the professor's exams: his styles, only the given tabs (no
+ * "Start here"), with the id kept in a hidden name and a tiny faint stamp in A1 of the first tab.
+ */
+export function buildXlsx(sheets: SheetModel[], opts: { title: string; intro?: string[]; id?: string; look?: "exam" }): Uint8Array {
+  const exam = opts.look === "exam";
+  const stamped = exam && opts.id ? sheets.map((s, i) => (i === 0 ? { ...s, cells: { ...s.cells, A1: { v: THINKA_ID_PREFIX + opts.id, xf: EX.tiny } as XCell } } : s)) : sheets;
+  const all = exam ? stamped : [startSheet(opts.title, opts.intro ?? [], opts.id), ...sheets];
+  const hasFormulas = all.some((s) => Object.values(s.cells).some((c) => c.f));
   const used = new Set<string>();
   const names = all.map((s) => sheetName(s.name, used));
   const n = all.length;
@@ -199,7 +270,7 @@ ${names.map((_, i) => `<Override PartName="/xl/worksheets/sheet${i + 1}.xml" Con
 <workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
 <bookViews><workbookView activeTab="0"/></bookViews>
 <sheets>${names.map((s, i) => `<sheet name="${esc(s)}" sheetId="${i + 1}" r:id="rId${i + 1}"/>`).join("")}</sheets>
-${opts.id && opts.id.length <= 200 ? `<definedNames><definedName name="thinka_id" hidden="1">${esc(`"${opts.id.replace(/"/g, '""')}"`)}</definedName></definedNames>\n` : ""}</workbook>`);
+${opts.id && opts.id.length <= 200 ? `<definedNames><definedName name="thinka_id" hidden="1">${esc(`"${opts.id.replace(/"/g, '""')}"`)}</definedName></definedNames>\n` : ""}${hasFormulas ? `<calcPr calcId="191029" fullCalcOnLoad="1"/>\n` : ""}</workbook>`);
 
   put("xl/_rels/workbook.xml.rels", `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
@@ -207,8 +278,8 @@ ${names.map((_, i) => `<Relationship Id="rId${i + 1}" Type="http://schemas.openx
 <Relationship Id="rId${n + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>
 </Relationships>`);
 
-  put("xl/styles.xml", STYLES);
-  all.forEach((s, i) => put(`xl/worksheets/sheet${i + 1}.xml`, sheetXml(s, i === 0)));
+  put("xl/styles.xml", exam ? EXAM_STYLES : STYLES);
+  all.forEach((s, i) => put(`xl/worksheets/sheet${i + 1}.xml`, sheetXml(s, i === 0, exam)));
 
   return zipSync(files, { level: 6 });
 }

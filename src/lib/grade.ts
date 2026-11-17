@@ -9,6 +9,7 @@ import { fmtNumber } from "./format.ts";
 import { DIAGNOSTIC, DIAG_SEED_MAX, diagnosticQuestions } from "./plan.ts";
 import { workbookById, workbookSheets } from "./sets.ts";
 import { isExam3, gradeExam3 } from "./exam3.ts";
+import { isPaperId, gradePaper } from "./paper.ts";
 
 export type PartGrade = {
   part: Part;
@@ -24,7 +25,7 @@ export type PartGrade = {
   got: number;
 };
 export type QuestionGrade = { q: Question; index: number; section?: string; sheetFound: boolean; parts: PartGrade[]; got: number; total: number };
-export type WorkbookKind = "mock" | "set" | "diag" | "topic" | "mix" | "exam" | "spec" | "area" | "exam3" | "chi";
+export type WorkbookKind = "mock" | "set" | "diag" | "topic" | "mix" | "exam" | "spec" | "area" | "exam3" | "chi" | "paper";
 export type WorkbookGrade = { kind: WorkbookKind; n: number; id: string; title: string; questions: QuestionGrade[]; got: number; total: number; notes: string[] };
 
 export function identify(id: string | null): { kind: WorkbookKind; n: number } | null {
@@ -79,6 +80,7 @@ export function diagnose(value: number, p: Part): string | undefined {
 
 export function gradeWorkbook(wb: ReadWorkbook): WorkbookGrade {
   if (isExam3(wb)) return gradeExam3(wb);
+  if (isPaperId(wb.thinkaId)) return gradePaper(wb, Number(wb.thinkaId!.trim().split(":")[1]));
   const who = identify(wb.thinkaId);
   if (!who) {
     throw new Error(wb.thinkaId

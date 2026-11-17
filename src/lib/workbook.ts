@@ -13,13 +13,18 @@ import type { Question, QuestionKind } from "./practice.ts";
 import { generate, generateCase } from "./practice.ts";
 
 export type CellRole = "title" | "text" | "header" | "label" | "given" | "data" | "answer" | "hint";
-export type Cell = { v?: number | string; role?: CellRole; pct?: boolean };
+export type Cell = {
+  v?: number | string; role?: CellRole; pct?: boolean;
+  /** Exam look only: answer-cell colour (purple for n, alpha, Decision, written; blue for computed values), alignment, a formula (answer keys). */
+  tone?: "purple" | "blue"; align?: "left" | "center"; f?: string;
+};
 export type SheetModel = {
   name: string;                     // tab name, ≤ 31 chars, no []:*?/\
   cells: Record<string, Cell>;      // "B5" → cell
   colWidths: number[];              // A.. in Excel character units
   answerCells: Record<string, string>; // part id → "B12"
   rows: number;                     // rows used
+  merges?: string[];                // e.g. "D3:E3"
 };
 
 export const SHEET_COLS = ["A", "B", "C", "D", "E", "F", "G", "H"];

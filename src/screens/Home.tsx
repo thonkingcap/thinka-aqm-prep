@@ -1,11 +1,11 @@
 // Home: start with Exam 3, then the plan it builds, then the four areas and full practice exams.
 import { useEffect, useState } from "react";
-import { ArrowRight, Download, FileSpreadsheet, Timer } from "lucide-react";
+import { ArrowRight, FileSpreadsheet, FileText, KeyRound, Timer } from "lucide-react";
 import { AREAS, AREA_VERSIONS } from "../lib/areas.ts";
-import { EXAM_COUNT, EXAM_MINUTES } from "../lib/sets.ts";
+import { PAPER_COUNT, PAPER_MINUTES, paperId } from "../lib/paper.ts";
 import { examDate, daysUntil } from "../lib/progress.ts";
 import { readResult, currentPlan, todayIso, readDone } from "../lib/plan.ts";
-import { downloadById } from "../lib/download.ts";
+import { downloadPaperWorkbook, downloadPaperDocx, downloadPaperKey } from "../lib/download.ts";
 import { readScores } from "../components/UploadGrade.tsx";
 import { DayRow } from "../components/PlanDays.tsx";
 import PageHint from "../components/PageHint.tsx";
@@ -27,6 +27,21 @@ function usePlanState() {
     window.addEventListener("storage", on);
     return () => { window.removeEventListener("aqm:plan", on); window.removeEventListener("storage", on); };
   }, []);
+}
+
+/** One practice exam: the Word paper, the workbook to fill in, and its answer key. */
+function PaperCard({ n, best }: { n: number; best?: { best: number; total: number } }) {
+  const [err, setErr] = useState<string | null>(null);
+  return (
+    <div className="home-mock lift">
+      <b>Practice exam {n}</b>
+      <span className="hint num">{best ? `Best ${Math.round(best.best * 10) / 10}/${best.total}` : "Not tried yet"}</span>
+      <button className="btn btn-ghost btn-small" onClick={() => { setErr(null); downloadPaperDocx(n).catch((e) => setErr(e instanceof Error ? e.message : String(e))); }} aria-label={`Download the questions for practice exam ${n} (Word)`}><FileText size={13} aria-hidden="true" />Questions</button>
+      <button className="btn btn-ghost btn-small" onClick={() => downloadPaperWorkbook(n)} aria-label={`Download the workbook for practice exam ${n} (Excel)`}><FileSpreadsheet size={13} aria-hidden="true" />Workbook</button>
+      <button className="btn btn-ghost btn-small" onClick={() => downloadPaperKey(n)} aria-label={`Download the answer key for practice exam ${n}`}><KeyRound size={13} aria-hidden="true" />Answer key</button>
+      {err && <span className="hint error-text" role="alert">{err}</span>}
+    </div>
+  );
 }
 
 export default function Home() {
@@ -123,19 +138,10 @@ export default function Home() {
       </section>
 
       <section className="panel" aria-labelledby="mocks-h" id="mocks">
-        <div className="panel-head"><h2 id="mocks-h">Full practice exams</h2><span className="hint"><Timer size={12} aria-hidden="true" /> {EXAM_MINUTES} minutes each, like Exam 3</span></div>
-        <p className="hint home-lead">All four areas in one workbook, laid out like the real exam. Set a timer, no calculator, then drop it into any upload box on the site.</p>
+        <div className="panel-head"><h2 id="mocks-h">Full practice exams</h2><span className="hint"><Timer size={12} aria-hidden="true" /> {PAPER_MINUTES} minutes each, like Exam 3</span></div>
+        <p className="hint home-lead">Each one is laid out exactly like last spring's Exam 3: a Word question paper and a four-tab workbook, with chi-squared and two-sample tests added and the expectation question left out. Set a timer, no calculator, try it all before the answer key, then drop the workbook into any upload box on the site to have it marked.</p>
         <div className="home-mocks stagger">
-          {Array.from({ length: EXAM_COUNT }, (_, k) => k + 1).map((n) => {
-            const s = scores[`exam:${n}`];
-            return (
-              <div key={n} className="home-mock lift">
-                <b>Exam {n}</b>
-                <span className="hint num">{s ? `Best ${Math.round(s.best * 10) / 10}/${s.total}` : "Not tried yet"}</span>
-                <button className="btn btn-ghost btn-small" onClick={() => downloadById(`exam:${n}`)} aria-label={`Download practice exam ${n}`}><Download size={13} aria-hidden="true" />Download</button>
-              </div>
-            );
-          })}
+          {Array.from({ length: PAPER_COUNT }, (_, k) => k + 1).map((n) => <PaperCard key={n} n={n} best={scores[paperId(n)]} />)}
         </div>
       </section>
     </div>
