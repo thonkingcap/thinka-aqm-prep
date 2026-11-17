@@ -2,6 +2,7 @@
 import { buildXlsx, downloadXlsx } from "./xlsx.ts";
 import { workbookById, workbookSheets, workbookIntro, type WorkbookDef } from "./sets.ts";
 import { paper } from "./paper.ts";
+import { l18Set } from "./l18.ts";
 import { buildPaperDocx, TEMPLATE_URL } from "./docx.ts";
 
 export function downloadWorkbook(def: WorkbookDef) {
@@ -43,4 +44,10 @@ export async function downloadPaperDocx(n: number) {
   if (!res.ok) throw new Error("Couldn't load the Word template. Check your connection and try again.");
   const bytes = buildPaperDocx(P, new Uint8Array(await res.arrayBuffer()));
   saveBlob(bytes, `${P.file}.docx`, "application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+}
+
+/** A Lesson 18 practice set: the Practice tab and its Answer key tab. */
+export function downloadL18(n: number) {
+  const S = l18Set(n);
+  if (S) downloadXlsx(buildXlsx(S.sheets, { title: `AQM Prep · ${S.title}`, intro: S.intro, id: S.id }), `${S.file}.xlsx`);
 }

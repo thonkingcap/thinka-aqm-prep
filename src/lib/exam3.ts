@@ -215,6 +215,8 @@ export function locate(cells: Record<string, CellVal> | undefined, n: number, s:
       return { cell, r: gradeOne(cells[cell], s) };
     }
   }
+  // A part with a known answer cell that's empty: blank (a value elsewhere could match by coincidence).
+  if (s.cell && s.kind !== "text" && s.find !== "value") return { cell: s.cell, r: { ok: false, status: "blank", mine: "Blank", answer: gradeOne(undefined, s).answer } };
   if (s.kind === "text") {
     const words = reg.filter((x) => typeof x.v === "string" && !TEMPLATE_TEXT.test(x.v.trim()) && x.v.trim().length > 1).sort((a, b) => a.p.r - b.p.r || a.p.c - b.p.c);
     const joined = words.map((x) => String(x.v).trim()).join(" ");

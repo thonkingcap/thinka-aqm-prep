@@ -108,7 +108,7 @@ export default function Area({ id, route = [] }: { id?: string; route?: string[]
             })}
           </div>
           <div className="area-note"><DownloadNote /></div>
-          <p className="hint area-exam3">This section is <a href="#/exam3">Exam 3 {qRange(a)}</a>. Full timed practice exams are on <a href="#/home">Home</a>.</p>
+          <p className="hint area-exam3">This section is <a href="#/exam3">Exam 3 {qRange(a)}</a>. Full timed practice exams are on <a href="#/home">Home</a>.{(a.id === "ht2" || a.id === "two") && <> Sets laid out like the Lesson 18 exercises are on <a href="#/home/l18">Home</a> too.</>}</p>
         </section>
         {a.videos && a.videos.length > 0 && (
           <section className="panel area-videos" aria-labelledby="videos-h">

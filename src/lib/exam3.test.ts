@@ -25,6 +25,14 @@ ok(near(val(11, "Sample std"), Math.sqrt(1000 / 999 * 0.537 * 0.463)), "Q11 S");
 ok(EXAM3_TEXT.reduce((s, q) => s + q.points, 0) === 38, "38 points, as on the paper");
 console.log(`${fails === 0 ? "PASS" : "FAILED"}: Exam 3 key, ${fails} failures`);
 
+// The download is the professor's own blank workbook: it must be recognised as Exam 3 and score 0.
+{
+  const blankWb = readXlsx(new Uint8Array(readFileSync(new URL("../../public/exam3-blank.xlsx", import.meta.url))));
+  const g = gradeWorkbook(blankWb);
+  if (!isExam3(blankWb) || g.kind !== "exam3" || g.got !== 0) { console.log("FAIL: the professor's blank Exam 3 isn't recognised as a blank Exam 3", g.kind, g.got); process.exit(1); }
+  console.log("PASS: professor's blank Exam 3 recognised, marked 0");
+}
+
 if (!HAS_OPENPYXL) { console.log("PASS (round trip skipped: no Python with openpyxl; set THINKA_PYTHON)"); process.exit(fails ? 1 : 0); }
 
 const T = ["Confidence intervals", "Hypothesis testing I", "Hypothesis testing II", "Two-sample tests"];
@@ -102,3 +110,4 @@ const stretch = workbookById(specId(targetedSpec({ ...full, questions: full.ques
 ok(!!stretch && stretch.questions.length >= 5, "stretch set when nothing was lost");
 console.log(`${fails === 0 ? "PASS" : "FAILED"}: Exam 3 round trip, ${fails} failures`);
 if (fails) process.exit(1);
+

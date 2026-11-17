@@ -27,9 +27,15 @@ function writeSaved(s: Saved | null) {
   try { if (s) localStorage.setItem(LAST, JSON.stringify(s)); else localStorage.removeItem(LAST); } catch { /* ignore */ }
 }
 
-function downloadBlank() {
-  const bytes = buildXlsx(exam3Sheets(), { title: "AQM1000 · Exam 3 (Spring 2026), blank copy", intro: EXAM3_INTRO, id: EXAM3_ID });
-  downloadXlsx(bytes, "AQM1000-Exam-3-blank.xlsx");
+/** The professor's own blank Exam 3 workbook (public/exam3-blank.xlsx). If it can't be fetched, the site's rebuilt copy. */
+async function downloadBlank() {
+  try {
+    const res = await fetch("/exam3-blank.xlsx");
+    if (!res.ok) throw new Error(String(res.status));
+    downloadXlsx(new Uint8Array(await res.arrayBuffer()), "AQM1000-Exam-3-blank.xlsx");
+  } catch {
+    downloadXlsx(buildXlsx(exam3Sheets(), { title: "AQM1000 · Exam 3 (Spring 2026), blank copy", intro: EXAM3_INTRO, id: EXAM3_ID }), "AQM1000-Exam-3-blank.xlsx");
+  }
 }
 
 export default function Exam3() {
@@ -61,7 +67,7 @@ export default function Exam3() {
           <div>
             <b>Get the workbook</b>
             <p className="hint">Same tabs and cells as the professor's. Already have his file? Use that.</p>
-            <button className="btn btn-secondary btn-small" onClick={downloadBlank}><Download size={14} aria-hidden="true" />Blank Exam 3 (.xlsx)</button>
+            <button className="btn btn-secondary btn-small" onClick={() => { void downloadBlank(); }}><Download size={14} aria-hidden="true" />Blank Exam 3 (.xlsx)</button>
           </div>
         </li>
         <li className="exam3-step lift">

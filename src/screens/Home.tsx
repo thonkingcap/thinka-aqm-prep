@@ -11,6 +11,7 @@ import { DayRow } from "../components/PlanDays.tsx";
 import PageHint from "../components/PageHint.tsx";
 import { areaProgress } from "./Area.tsx";
 import PhilCorner from "../components/PhilCorner.tsx";
+import L18Panel from "../components/L18Panel.tsx";
 import "./screens.css";
 import "./home.css";
 
@@ -144,6 +145,8 @@ export default function Home() {
           {Array.from({ length: PAPER_COUNT }, (_, k) => k + 1).map((n) => <PaperCard key={n} n={n} best={scores[paperId(n)]} />)}
         </div>
       </section>
+
+      <L18Panel scores={scores} />
     </div>
   );
 }
