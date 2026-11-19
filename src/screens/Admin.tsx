@@ -11,7 +11,7 @@ const RPC = "https://kxtdmgpecxlzyepshryw.supabase.co/rest/v1/rpc/admin_stats";
 const PUBLISHABLE = "sb_publishable_fDz6DAgzrVmsxMp_THba5g_swF5jxXH";
 const SESSION = "aqm.admin";
 
-type Person = { visitor: string; name: string | null; email?: string | null; used_shared?: boolean | null; first_seen: string; last_seen: string; minutes: number; requests: number; spend: number; keys: number; used_code: boolean | null; days: number };
+type Person = { visitor: string; name: string | null; email?: string | null; used_shared?: boolean | null; first_seen: string; last_seen: string; minutes: number; requests: number; spend: number; keys: number; used_code: boolean | null; days: number; up?: number; down?: number };
 type Stats = {
   generated_at: string;
   totals: { people: number; named: number; minutes: number; claude_requests: number; unique_keys: number; code_users: number; spend: number; tokens_in: number; tokens_out: number; spend_since: string | null; shared_spend?: number; shared_users?: number };
@@ -19,6 +19,8 @@ type Stats = {
   people: Person[];
   days: { day: string; people: number; minutes: number; requests: number; spend: number }[];
   features: Record<string, number>;
+  ratings?: { up: number; down: number; raters: number; reasons: Record<string, number>; recent_down: { at: string; detail: string | null; name: string | null }[] };
+  ideas?: { at: string; name: string | null; body: string; page: string | null; source: string | null }[];
 };
 
 async function fetchStats(code: string): Promise<Stats> {
@@ -34,6 +36,8 @@ async function fetchStats(code: string): Promise<Stats> {
 const when = (iso: string) => new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 const hours = (min: number) => (min >= 60 ? `${(min / 60).toFixed(1)} h` : `${Math.round(min)} min`);
 const usd = (n: number) => (n > 0 && n < 0.01 ? "<$0.01" : money(n));
+const REASON: Record<string, string> = { wrong: "Wrong answer", confusing: "Confusing", long: "Too long", off: "Not what I asked" };
+const PAGE: Record<string, string> = { home: "Home", exam3: "Exam 3", area: "An area", learn: "Notes", tutor: "Dr Phil", key: "Key" };
 const FEATURE: Record<string, string> = { tutor: "Dr Phil chat", verify: "Key checks", mark: "Written-answer marking", design: "Custom sets", plan: "Exam 3 advice" };
 
 export default function Admin() {
@@ -83,6 +87,8 @@ export default function Admin() {
     ["Claude requests", String(t.claude_requests), "chat, marking, key checks"],
     ["Spent (estimate)", usd(t.spend), t.spend_since ? `since ${when(t.spend_since)}` : "counting from this update"],
     ["Unique API keys", String(t.unique_keys), t.spend_since ? "since key tags began" : "counting from this update"],
+    ["Dr Phil rated helpful", stats.ratings && stats.ratings.up + stats.ratings.down > 0 ? `${Math.round((100 * stats.ratings.up) / (stats.ratings.up + stats.ratings.down))}%` : "—", stats.ratings ? `${stats.ratings.up} 👍 · ${stats.ratings.down} 👎 · ${stats.ratings.raters} people` : "no ratings yet"],
+    ["Feature ideas", String(stats.ideas?.length ?? 0), stats.ideas?.length ? `latest ${when(stats.ideas[0].at)}` : "none yet"],
     ["On your shared credit", String((t.shared_users ?? 0) + t.code_users), `${usd(t.shared_spend ?? 0)} of your key · ${t.code_users} by code`],
   ];
 
@@ -120,7 +126,7 @@ export default function Admin() {
         </div>
         <div className="admin-scroll">
           <table className="ledger admin-table">
-            <thead><tr><th>Name</th><th>First visit</th><th>Last visit</th><th className="val">Time</th><th className="val">Requests</th><th className="val">Spent</th><th>Access</th></tr></thead>
+            <thead><tr><th>Name</th><th>First visit</th><th>Last visit</th><th className="val">Time</th><th className="val">Requests</th><th className="val">Spent</th><th className="val">👍/👎</th><th>Access</th></tr></thead>
             <tbody>
               {people.map((p) => (
                 <tr key={p.visitor}>
@@ -130,6 +136,7 @@ export default function Admin() {
                   <td className="val num">{hours(p.minutes)}</td>
                   <td className="val num">{p.requests}</td>
                   <td className="val num">{p.spend ? usd(p.spend) : "—"}</td>
+                  <td className="val num">{p.up || p.down ? `${p.up ?? 0}/${p.down ?? 0}` : "—"}</td>
                   <td>{p.email || p.used_shared ? "Shared credit" : p.used_code ? "Access code" : p.keys ? `Own key${p.keys > 1 ? ` (${p.keys})` : ""}` : <span className="muted">—</span>}</td>
                 </tr>
               ))}
@@ -137,6 +144,42 @@ export default function Admin() {
           </table>
         </div>
       </section>
+
+      <section className="panel" style={{ marginTop: 16 }}>
+        <div className="panel-head"><h2>Feature ideas ({stats.ideas?.length ?? 0})</h2><span className="hint">Newest first · "asked" means it came from the pop-up prompt</span></div>
+        {stats.ideas?.length ? (
+          <div className="admin-scroll">
+            <table className="ledger admin-table">
+              <thead><tr><th>When</th><th>Who</th><th>Idea</th><th>From</th></tr></thead>
+              <tbody>
+                {stats.ideas.map((x, i) => (
+                  <tr key={i}><td className="num">{when(x.at)}</td><td className="lbl">{x.name ?? <span className="muted">No name</span>}</td><td className="admin-idea">{x.body}</td><td className="hint">{x.source === "prompt" ? "asked" : "lightbulb"}{x.page ? ` · ${PAGE[x.page] ?? x.page}` : ""}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : <p className="hint">No ideas yet. Students see a prompt after 20 active minutes, and a lightbulb in the side rail.</p>}
+      </section>
+
+      {stats.ratings && stats.ratings.down > 0 && (
+        <section className="panel" style={{ marginTop: 16 }}>
+          <div className="panel-head"><h2>Not helpful: why</h2><span className="hint">Reasons are optional, so they won't add up to every 👎</span></div>
+          <div className="admin-split" style={{ marginTop: 0 }}>
+            <table className="ledger">
+              <tbody>
+                {Object.entries(stats.ratings.reasons).sort((a, b) => b[1] - a[1]).map(([k, n]) => <tr key={k}><td className="lbl">{REASON[k] ?? k}</td><td className="val num">{n}</td></tr>)}
+                <tr><td className="lbl muted">No reason given</td><td className="val num">{stats.ratings.down - Object.values(stats.ratings.reasons).reduce((a, b) => a + b, 0)}</td></tr>
+              </tbody>
+            </table>
+            <table className="ledger">
+              <thead><tr><th>Recent 👎</th><th>Reason</th></tr></thead>
+              <tbody>
+                {stats.ratings.recent_down.slice(0, 12).map((d, i) => <tr key={i}><td className="lbl">{d.name ?? <span className="muted">No name</span>} <span className="hint">· {when(d.at)}</span></td><td>{d.detail ? REASON[d.detail] ?? d.detail : <span className="muted">—</span>}</td></tr>)}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
 
       {stats.shared && stats.shared.length > 0 && (
         <section className="panel" style={{ marginTop: 16 }}>

@@ -11,3 +11,5 @@
 .admin-split { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: 16px; margin-top: 16px; }
 @media (max-width: 760px) { .admin-split { grid-template-columns: minmax(0, 1fr); } }
 .admin-table td + td, .admin-table th + th { padding-left: 18px; }
+
+.admin-table td.admin-idea { white-space: pre-wrap; min-width: 240px; max-width: 520px; line-height: 1.45; }

@@ -1,8 +1,10 @@
 // Usage logs, so the site's author can see how many students it helps.
 // Logged: a random visitor id, the name the student types, active minutes on the site, a count of Claude
-// requests (which feature), each request's estimated cost and token counts, and a short key tag (part of
-// a one-way hash of the key, or "code" for access codes) so unique keys can be counted. Never the key
-// itself or anything it could be rebuilt from, and never answers or messages.
+// requests (which feature), each request's estimated cost and token counts, a short key tag (part of
+// a one-way hash of the key, or "code" for access codes) so unique keys can be counted, and 👍/👎 on
+// Dr Phil's replies (which reply number, plus an optional reason). Never the key itself or anything it
+// could be rebuilt from, and never answers or messages. Feature ideas are the one piece of text kept,
+// and only because the student writes and sends one on purpose.
 // Rows go to a Supabase function that can only append (log_event); this key can't read anything back.
 // Everything here is fire-and-forget: it never throws and never blocks the page.
 import { useEffect, useState } from "react";
@@ -13,8 +15,9 @@ const VISITOR_KEY = "aqm.visitor";
 const NAME_KEY = "aqm.name";
 
 export type ClaudeFeature = "tutor" | "mark" | "design" | "plan" | "verify";
-type Kind = "hello" | "time" | "claude" | "key" | "cost";
-export type UsagePayload = { p_visitor: string; p_kind: Kind; p_name?: string; p_email?: string; p_seconds?: number; p_feature?: ClaudeFeature; p_page?: string; p_key_tag?: string; p_cost?: number; p_tokens_in?: number; p_tokens_out?: number };
+type Kind = "hello" | "time" | "claude" | "key" | "cost" | "rate";
+export type UsagePayload = { p_visitor: string; p_kind: Kind; p_name?: string; p_email?: string; p_seconds?: number; p_feature?: ClaudeFeature; p_page?: string; p_key_tag?: string; p_cost?: number; p_tokens_in?: number; p_tokens_out?: number; p_rating?: -1 | 0 | 1; p_ref?: string; p_detail?: RateReason };
+export type RateReason = "wrong" | "confusing" | "long" | "off";
 
 /** The current key's tag: the first 10 characters of its one-way fingerprint, or "code". */
 let keyTag: string | null = null;
@@ -110,7 +113,39 @@ export function logCost(cost: number, tokensIn: number, tokensOut: number) {
   send(payload("cost", { p_cost: Math.round(cost * 1e6) / 1e6, p_tokens_in: Math.round(tokensIn), p_tokens_out: Math.round(tokensOut), ...withKey() }));
 }
 
+/** 👍 (1), 👎 (-1) or taken back (0) on one Dr Phil reply. `ref` is "<chat id>:<reply number>"; the latest row per ref counts. */
+export function logRating(ref: string, rating: -1 | 0 | 1, reason?: RateReason) {
+  if (!/^[A-Za-z0-9_-]{1,24}:[0-9]{1,4}$/.test(ref)) return;
+  send(payload("rate", { p_rating: rating, p_ref: ref, ...(rating === -1 && reason ? { p_detail: reason } : {}) }));
+}
+
+// ---------- feature ideas ----------
+const IDEA_ENDPOINT = ENDPOINT.replace(/log_event$/, "suggest_idea");
+/** Sends a feature idea. Resolves when it's stored; throws a message a student can read if it isn't. */
+export async function sendIdea(body: string, source: "prompt" | "button"): Promise<void> {
+  const text = body.trim().slice(0, 1000);
+  if (text.length < 3) throw new Error("Write a few more words first.");
+  if (typeof navigator !== "undefined" && navigator.onLine === false) throw new Error("You're offline. Try again when you're back online.");
+  const dev = (import.meta as unknown as { env?: { DEV?: boolean } }).env?.DEV;
+  if (dev && !store.get("aqm.logdev")) { console.info("[dev] idea not sent:", text); return; }
+  const name = getName();
+  let res: Response;
+  try {
+    res = await fetch(IDEA_ENDPOINT, {
+      method: "POST",
+      headers: { apikey: PUBLISHABLE, "Content-Type": "application/json" },
+      body: JSON.stringify({ p_visitor: visitorId(), p_body: text, ...(name ? { p_name: name } : {}), p_page: page(), p_source: source }),
+    });
+  } catch { throw new Error("Couldn't reach the server. Check your connection and try again."); }
+  const ok = res.ok ? await res.json().catch(() => false) : false;
+  if (ok !== true) throw new Error(res.ok ? "You've sent a lot of ideas in the last hour. Try again a bit later." : `That didn't send (${res.status}). Try again in a minute.`);
+}
+
 // ---------- time on site ----------
+const ACTIVE_KEY = "aqm.activeSec";
+/** Active seconds on the site in this browser, all visits together (drives the ideas prompt). */
+export function activeSeconds(): number { return Number(store.get(ACTIVE_KEY)) || 0; }
+
 const TICK = 15_000;          // sample every 15 s
 const IDLE = 10 * 60_000;     // no input for 10 min: stop counting (a forgotten tab)
 const FLUSH = 5 * 60;         // send a row every 5 active minutes
@@ -138,6 +173,8 @@ export function startUsageClock() {
     const s = Math.min(3600, Math.round(pending));
     if (s < min) return;
     pending -= s;
+    store.set(ACTIVE_KEY, String(activeSeconds() + s));
+    try { window.dispatchEvent(new CustomEvent("aqm:active")); } catch { /* ignore */ }
     send(payload("time", { p_seconds: s }));
   };
 

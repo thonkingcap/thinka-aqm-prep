@@ -1,5 +1,5 @@
 import { useEffect, useState, type JSX, type ReactNode } from "react";
-import { CircleHelp, FileSpreadsheet, House, KeyRound, LifeBuoy } from "lucide-react";
+import { CircleHelp, FileSpreadsheet, House, KeyRound, LifeBuoy, Lightbulb } from "lucide-react";
 import ProblemDialog from "./components/ProblemDialog.tsx";
 import { useSession, useRoute } from "./session.tsx";
 import Gate from "./screens/Gate.tsx";
@@ -20,6 +20,7 @@ import { ThinkaMark } from "./components/Thinka.tsx";
 import { useOnline } from "./lib/online.ts";
 import NamePrompt, { useNeedsName } from "./components/NamePrompt.tsx";
 import CapDialog from "./components/CapDialog.tsx";
+import { IdeaDialog, IdeaNudge, openIdeas } from "./components/Ideas.tsx";
 import { startUsageClock } from "./lib/usage.ts";
 
 startUsageClock();
@@ -92,6 +93,11 @@ export default function App() {
             <span className="rail-label" aria-hidden="true">Help</span>
             <span className="rail-tip" aria-hidden="true">Have a problem?</span>
           </button>
+          <button type="button" className="rail-link rail-btn rail-desk" onClick={() => openIdeas("button")} aria-label="Suggest a feature">
+            <Lightbulb size={18} strokeWidth={1.6} aria-hidden="true" />
+            <span className="rail-label" aria-hidden="true">Ideas</span>
+            <span className="rail-tip" aria-hidden="true">Suggest a feature</span>
+          </button>
           <a className="rail-link" href="#/key" aria-label={apiKey ? "API key and balance (key active)" : "API key and balance (no key)"} aria-current={screen === "key" ? "page" : undefined}>
             <KeyRound size={18} strokeWidth={1.6} aria-hidden="true" />
             <span className={`rail-dot${apiKey ? " on" : ""}`} aria-hidden="true" />
@@ -107,6 +113,8 @@ export default function App() {
       <ProblemDialog open={problem} onClose={() => setProblem(false)} />
       {needsName ? <NamePrompt /> : <Walkthrough />}
       <CapDialog />
+      <IdeaDialog />
+      <IdeaNudge allowed={!needsName && screen !== "tutor" && screen !== "key"} />
     </div>
   );
 }

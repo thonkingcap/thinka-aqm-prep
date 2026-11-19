@@ -67,3 +67,16 @@
 .tutor-set-head svg { flex: none; margin-top: 2px; }
 .tutor-set-head h3 { font-size: 15px; font-weight: 600; margin: 0 0 2px; }
 .tutor-set-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* 👍/👎 under each reply */
+.rate { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin-top: -4px; font-size: 12px; color: var(--muted); }
+.rate-q { margin-right: 4px; }
+.rate-btn { display: grid; place-items: center; width: 28px; height: 28px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; transition: background-color 120ms var(--ease), color 120ms var(--ease), border-color 120ms var(--ease); }
+.rate-btn:hover { background: var(--raised); color: var(--text); }
+.rate-btn[aria-pressed="true"] { color: var(--text); border-color: var(--control); background: var(--surface); }
+.rate-btn:focus-visible, .rate-reason:focus-visible { outline: 2px solid var(--text); outline-offset: 1px; }
+.rate-reasons { display: inline-flex; flex-wrap: wrap; gap: 6px; margin-left: 6px; animation: rise 260ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.rate-reason { padding: 4px 10px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--text); font-size: 12px; cursor: pointer; }
+.rate-reason:hover { border-color: var(--control); }
+.rate-reason[aria-pressed="true"] { background: var(--text); color: var(--surface); border-color: var(--text); }
+@media (prefers-reduced-motion: reduce) { .rate-reasons { animation: none; } }

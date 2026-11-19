@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ClipboardEvent, type DragEvent, type FormEvent, type KeyboardEvent } from "react";
 import { useOnline } from "../lib/online.ts";
-import { ArrowUp, Calculator, Download, FileSpreadsheet, ImagePlus, LoaderCircle, Plus, Square, Upload, X } from "lucide-react";
+import { ArrowUp, Calculator, Download, FileSpreadsheet, ImagePlus, LoaderCircle, Plus, Square, ThumbsDown, ThumbsUp, Upload, X } from "lucide-react";
 import type { BetaMessageParam } from "@anthropic-ai/sdk/resources/beta/messages/messages";
 import { useSession } from "../session.tsx";
 import { KEY_IN_TEXT } from "../lib/vault.ts";
@@ -16,14 +16,47 @@ import { toShot, MAX_SHOTS, type Shot } from "../lib/screenshot.ts";
 import { fmt } from "../components/ui.tsx";
 import { SignIn } from "./Gate.tsx";
 import DrPhil from "../components/DrPhil.tsx";
+import { logRating, type RateReason } from "../lib/usage.ts";
 import "./screens.css";
 import "./tutor.css";
 
 type Part = { type: "text"; text: string } | { type: "tool"; runs: ToolRun[] } | { type: "graphic"; spec: GraphicSpec } | { type: "set"; set: TutorSet };
 type Turn = { role: "user"; text: string; shots?: string[] } | { role: "assistant"; parts: Part[]; error?: string; note?: string };
 
+type Rated = { r: -1 | 1; reason?: RateReason };
+const newChatId = () => Math.random().toString(36).slice(2, 10) || "chat";
+
 // Kept at module level so the conversation survives switching screens (not page reloads).
-const store: { history: BetaMessageParam[]; turns: Turn[] } = { history: [], turns: [] };
+// chatId + reply number name each reply for 👍/👎, so a changed mind replaces the earlier rating.
+const store: { history: BetaMessageParam[]; turns: Turn[]; chatId: string; ratings: Record<number, Rated> } = { history: [], turns: [], chatId: newChatId(), ratings: {} };
+
+const REASONS: [RateReason, string][] = [["wrong", "Wrong answer"], ["confusing", "Confusing"], ["long", "Too long"], ["off", "Not what I asked"]];
+
+/** One tap: was this reply helpful? After 👎, an optional reason (one more tap, never required). */
+function RateReply({ n }: { n: number }) {
+  const [rated, setRated] = useState<Rated | undefined>(store.ratings[n]);
+  const ref = `${store.chatId}:${n}`;
+  function save(next: Rated | undefined) {
+    setRated(next);
+    if (next) store.ratings[n] = next; else delete store.ratings[n];
+    logRating(ref, next ? next.r : 0, next?.reason);
+  }
+  const tap = (r: -1 | 1) => save(rated?.r === r ? undefined : { r });
+  return (
+    <div className="rate" role="group" aria-label="Was this reply helpful?">
+      <span className="rate-q">{rated ? (rated.r === 1 ? "Glad it helped" : rated.reason ? "Thanks, noted" : "What was off?") : "Helpful?"}</span>
+      <button type="button" className="rate-btn" aria-pressed={rated?.r === 1} aria-label="Helpful" title="Helpful" onClick={() => tap(1)}><ThumbsUp size={14} aria-hidden="true" /></button>
+      <button type="button" className="rate-btn" aria-pressed={rated?.r === -1} aria-label="Not helpful" title="Not helpful" onClick={() => tap(-1)}><ThumbsDown size={14} aria-hidden="true" /></button>
+      {rated?.r === -1 && (
+        <span className="rate-reasons">
+          {REASONS.map(([k, label]) => (
+            <button key={k} type="button" className="rate-reason" aria-pressed={rated.reason === k} onClick={() => save({ r: -1, reason: rated.reason === k ? undefined : k })}>{label}</button>
+          ))}
+        </span>
+      )}
+    </div>
+  );
+}
 
 const STARTERS = [
   "Make me a practice set on hypothesis tests, mixed tails, Z and T.",
@@ -194,6 +227,8 @@ export default function Tutor() {
   function newChat() {
     abortRef.current?.abort();
     store.history = [];
+    store.chatId = newChatId();
+    store.ratings = {};
     setTurns([]);
     startSpent.current = null;
     setChatCost(0);
@@ -252,6 +287,7 @@ export default function Tutor() {
                 )}
                 {t.note && <p className="notice neutral">{t.note}</p>}
                 {t.error && <p className="notice" role="alert">{t.error}</p>}
+                {!t.error && t.parts.length > 0 && !(i === turns.length - 1 && busy) && <RateReply key={`${store.chatId}:${i}`} n={i} />}
               </div>
             ),
           )}
