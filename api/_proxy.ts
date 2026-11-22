@@ -37,6 +37,8 @@ function err(status: number, type: string, message: string): Response {
 function originOk(origin: string | null): boolean {
   if (!origin) return true;
   if (origin === "https://thinka-aqm-prep.vercel.app") return true;
+  // thonkingcap.dev/aqm proxies to this deployment, so pages there send their own origin.
+  if (origin === "https://thonkingcap.dev" || origin === "https://www.thonkingcap.dev") return true;
   if (/^https:\/\/[a-z0-9-]+-thonkingcap\.vercel\.app$/.test(origin)) return true;
   return /^http:\/\/localhost(:\d{1,5})?$/.test(origin);
 }
@@ -59,7 +61,7 @@ export function resetLimits() { hits.clear(); }
 
 function pathOf(url: URL): string {
   const q = url.searchParams.get("path");
-  const raw = q ?? url.pathname.replace(/^\/api\/claude\/?/, "");
+  const raw = q ?? url.pathname.replace(/^(\/aqm)?\/api\/claude\/?/, "");
   return raw.replace(/^\/+|\/+$/g, "");
 }
 

@@ -1,8 +1,13 @@
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
-import { readFileSync, readdirSync, statSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, readFileSync, readdirSync, renameSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { join, relative } from "node:path";
+import { BASE, SCOPE } from "./src/lib/base.ts";
+
+// The build goes in dist/aqm/ so Vercel serves it at /aqm/... as plain files (dist is still the output folder).
+const ROOT = "dist";
+const OUT = join(ROOT, BASE.replace(/^\/|\/$/g, ""));
 
 // Content-Security-Policy for the built site. The browser itself refuses to send anything
 // (including the API key) anywhere except Babson's Claude gateway, api.anthropic.com and the
@@ -38,26 +43,34 @@ function csp(): Plugin {
   };
 }
 
-// Writes dist/sw.js listing every built file, versioned by their contents, so the site works offline.
+// Writes dist/aqm/sw.js listing every built file, versioned by their contents, so the site works offline.
+// Also writes dist/sw.js, a kill switch for the old service worker that was registered at / before the move to /aqm/.
 function offline(): Plugin {
   return {
     name: "aqm-offline",
     apply: "build",
+    // Clear all of dist, not just dist/aqm, so files from an older layout can't linger next to it.
+    buildStart() { rmSync(ROOT, { recursive: true, force: true }); },
     closeBundle() {
-      const dist = "dist";
+      // _headers is for Netlify / Cloudflare Pages, which only read it from the top of the output folder.
+      if (existsSync(join(OUT, "_headers"))) renameSync(join(OUT, "_headers"), join(ROOT, "_headers"));
       const walk = (d: string): string[] => readdirSync(d).flatMap((f) => (statSync(join(d, f)).isDirectory() ? walk(join(d, f)) : [join(d, f)]));
-      const files = walk(dist).map((f) => relative(dist, f).split("\\").join("/")).filter((f) => !["sw.js", "_headers"].includes(f)).sort();
+      const files = walk(OUT).map((f) => relative(OUT, f).split("\\").join("/")).filter((f) => !["sw.js", "index.html"].includes(f)).sort();
       const template = readFileSync("src/sw-template.js", "utf8");
       const hash = createHash("sha256").update(template);
-      for (const f of files) hash.update(f).update(readFileSync(join(dist, f)));
-      const list = ["/", ...files.map((f) => `/${f}`)];
-      const sw = template.replace("__VERSION__", hash.digest("hex").slice(0, 12)).replace("__FILES__", JSON.stringify(list));
-      writeFileSync(join(dist, "sw.js"), sw);
+      for (const f of [...files, "index.html"]) hash.update(f).update(readFileSync(join(OUT, f)));
+      // The page is cached as /aqm (no slash), which both hosts answer directly: thonkingcap.dev redirects
+      // /aqm/ and /aqm/index.html to /aqm, and a redirected response can't be served to a page from the cache.
+      const list = [SCOPE, ...files.map((f) => `${BASE}${f}`)];
+      const sw = template.replace("__VERSION__", hash.digest("hex").slice(0, 12)).replace("__FILES__", JSON.stringify(list)).replace("__SCOPE__", JSON.stringify(SCOPE));
+      writeFileSync(join(OUT, "sw.js"), sw);
+      copyFileSync("src/sw-kill.js", join(ROOT, "sw.js"));
     },
   };
 }
 
 export default defineConfig({
   plugins: [react(), csp(), offline()],
-  build: { sourcemap: false },
+  base: BASE,
+  build: { sourcemap: false, outDir: OUT, emptyOutDir: true },
 });

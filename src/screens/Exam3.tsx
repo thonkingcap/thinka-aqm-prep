@@ -13,6 +13,7 @@ import type { WorkbookGrade } from "../lib/grade.ts";
 import { coachExam3, designCustomSet, type CoachAdvice } from "../lib/ai.ts";
 import { useSession } from "../session.tsx";
 import { useOnline } from "../lib/online.ts";
+import { BASE } from "../lib/base.ts";
 import PageHint from "../components/PageHint.tsx";
 import PhilCorner from "../components/PhilCorner.tsx";
 import "./screens.css";
@@ -30,7 +31,7 @@ function writeSaved(s: Saved | null) {
 /** The professor's own blank Exam 3 workbook (public/exam3-blank.xlsx). If it can't be fetched, the site's rebuilt copy. */
 async function downloadBlank() {
   try {
-    const res = await fetch("/exam3-blank.xlsx");
+    const res = await fetch(`${BASE}exam3-blank.xlsx`);
     if (!res.ok) throw new Error(String(res.status));
     downloadXlsx(new Uint8Array(await res.arrayBuffer()), "AQM1000-Exam-3-blank.xlsx");
   } catch {

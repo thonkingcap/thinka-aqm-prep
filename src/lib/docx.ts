@@ -5,6 +5,7 @@
 // with italic [points], questions on Word's own numbered list, H₀ with a real subscript.
 import { unzipSync, zipSync, strFromU8, strToU8 } from "fflate";
 import type { Paper } from "./paper.ts";
+import { BASE } from "./base.ts";
 
 const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
@@ -65,4 +66,4 @@ export function buildPaperDocx(P: Paper, template: Uint8Array): Uint8Array {
   return zipSync(files, { level: 6 });
 }
 
-export const TEMPLATE_URL = "/exam-paper-template.docx";
+export const TEMPLATE_URL = `${BASE}exam-paper-template.docx`;

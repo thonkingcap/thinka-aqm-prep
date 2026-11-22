@@ -2,7 +2,7 @@
 
 A study site for Babson AQM 1000 Midterm 2 (Lessons 12–18: the normal distribution, the CLT, confidence intervals, the 12 hypothesis-test cases, chi-squared tests for a variance, and two-sample and paired tests), built by a student for classmates. The exam is answered in Excel with no calculator, so all practice happens in Excel.
 
-**Live:** https://thinka-aqm-prep.vercel.app
+**Live:** https://thonkingcap.dev/aqm (proxied to https://thinka-aqm-prep.vercel.app/aqm, where `/` redirects to `/aqm`)
 
 ## What's in it
 
@@ -25,9 +25,9 @@ Everything except the tutor works without a key.
 
 ```bash
 npm install
-npm run dev      # http://localhost:5173
+npm run dev      # http://localhost:3300/aqm/
 npm test         # stats engine vs SciPy, practice generator, grading
-npm run build    # static site in dist/
+npm run build    # static site in dist/aqm/ (served at /aqm/), plus dist/sw.js, the kill switch for the old root worker
 ```
 
 The workbook round-trip tests need a Python with `openpyxl`. Point `THINKA_PYTHON` at it; without it, those tests are skipped.

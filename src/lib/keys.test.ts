@@ -19,7 +19,7 @@ const { looksLikeKey, mask } = await import("./vault.ts");
   eq(looksLikeKey("AQM-7K3Q"), null, "codes pass the key check");
   eq(looksLikeKey("aq"), "Babson keys start with sk- followed by letters and numbers. Copy it again from Babson's email", "too short to be a code");
   eq(providerFor(CODE_PREFIX + "AQM-7K3Q").id, "code", "code provider");
-  eq(providerFor(CODE_PREFIX + "AQM-7K3Q").baseURL, "/api/claude", "codes go to this site only");
+  eq(providerFor(CODE_PREFIX + "AQM-7K3Q").baseURL, "/aqm/api/claude", "codes go to this site only, under /aqm");
   eq(mask(CODE_PREFIX + "AQM-7K3Q").startsWith("Access code"), true, "mask");
   rememberModel("sk-testtesttesttesttest00", "claude-sonnet-46");
   eq(providerFor("sk-testtesttesttesttest00").model, "claude-sonnet-46", "remembered per key");

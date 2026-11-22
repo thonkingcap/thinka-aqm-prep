@@ -1,9 +1,14 @@
-// Offline support. Generated into dist/sw.js at build time with the list of every file in the build,
+// Offline support. Generated into dist/aqm/sw.js (served at /aqm/sw.js) at build time with the list of every file in the build,
 // so after one visit the whole site (notes, workbooks, marking) works with no internet.
-// Only same-origin GETs are handled: Claude API calls (including /api/) and the feedback form always go to the network.
+// Only same-origin GETs under /aqm are handled: Claude API calls (including /aqm/api/) and the feedback form always go to the network.
+// The site lives under /aqm (thonkingcap.dev/aqm proxies to it), and this worker's scope is /aqm.
 const VERSION = "__VERSION__";
 const FILES = __FILES__;
-const CACHE = `aqm-prep-${VERSION}`;
+/** The page (/aqm, no slash). Saved under this one key and served for every navigation when offline. */
+const PAGE = __SCOPE__;
+// "aqm-v2-": a new prefix, so the kill switch for the old root worker (src/sw-kill.js), which deletes
+// "aqm-prep-" caches, never touches this one. Activating here also clears those old caches.
+const CACHE = `aqm-v2-${VERSION}`;
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILES)).then(() => self.skipWaiting()));
@@ -12,7 +17,7 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k.startsWith("aqm-prep-") && k !== CACHE).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => (k.startsWith("aqm-v2-") || k.startsWith("aqm-prep-")) && k !== CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
   );
 });
@@ -22,18 +27,21 @@ self.addEventListener("fetch", (event) => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
-  // The access-code proxy (/api/claude) is live data: never cache it.
-  if (url.pathname.startsWith("/api/")) return;
+  // Only this site's own files. On thonkingcap.dev everything outside /aqm belongs to the hub.
+  if (url.pathname !== PAGE && !url.pathname.startsWith(`${PAGE}/`)) return;
+  // The shared-access proxy (/aqm/api/claude) is live data: never cache it.
+  if (url.pathname.startsWith(`${PAGE}/api/`)) return;
   // Pages: try the network briefly so updates arrive, fall back to the saved copy offline.
   if (req.mode === "navigate") {
     event.respondWith((async () => {
       const cache = await caches.open(CACHE);
       try {
         const res = await Promise.race([fetch(req), new Promise((_, no) => setTimeout(() => no(new Error("slow")), 4000))]);
-        if (res.ok) cache.put("/index.html", res.clone());
+        // Only a direct answer is saved: /aqm/ on thonkingcap.dev comes back as a redirect to /aqm.
+        if (res.ok && !res.redirected) cache.put(PAGE, res.clone());
         return res;
       } catch {
-        return (await cache.match("/index.html", { ignoreVary: true })) || (await cache.match("/", { ignoreVary: true })) || Response.error();
+        return (await cache.match(PAGE, { ignoreVary: true })) || Response.error();
       }
     })());
     return;

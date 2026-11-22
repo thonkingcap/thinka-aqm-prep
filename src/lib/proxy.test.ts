@@ -78,10 +78,13 @@ const run = async (r: Request, e = env) => { const res = await handle(r, e, fake
   ok((await run(req("/api/claude/v1/messages", { key: "aqmcode:AQM-TEST1", body: msgBody, origin: "https://evil.example" }))).res.status === 403, "bad origin 403");
   ok((await run(req("/api/claude/v1/messages", { key: "aqmcode:AQM-TEST1", body: msgBody, origin: "http://localhost:3300", ip: "1.1.1.4" }))).res.status === 200, "localhost origin allowed");
   ok((await run(req("/api/claude/v1/messages", { key: "aqmcode:AQM-TEST1", body: msgBody, origin: "https://thinka-aqm-prep-abc123-thonkingcap.vercel.app", ip: "1.1.1.4" }))).res.status === 200, "preview origin allowed");
+  ok((await run(req("/aqm/api/claude/v1/messages", { key: "aqmcode:AQM-TEST1", body: msgBody, origin: "https://thonkingcap.dev", ip: "1.1.1.5" }))).res.status === 200, "thonkingcap.dev origin and /aqm path allowed");
+  ok((await run(req("/api/claude/v1/messages", { key: "aqmcode:AQM-TEST1", body: msgBody, origin: "https://thonkingcap.dev.evil.example", ip: "1.1.1.5" }))).res.status === 403, "lookalike origin 403");
   ok((await run(req("/api/claude/v1/messages", { key: "aqmcode:AQM-TEST1", body: { ...msgBody, model: "gpt-4o" } }))).res.status === 400, "non-Claude model 400");
   ok((await run(req("/api/claude/v1/messages", { key: "aqmcode:AQM-TEST1", body: "not json" }))).res.status === 400, "bad JSON 400");
   ok((await run(req("/api/claude/v1/messages", { key: "aqmcode:AQM-TEST1", body: "x".repeat(4 * 1024 * 1024 + 10) }))).res.status === 413, "too large 413");
-  ok(seen.length === 2, `only the two allowed requests reached upstream (${seen.length})`);
+  ok(seen.length === 3, `only the three allowed requests reached upstream (${seen.length})`);
+  ok(seen[2]?.url.endsWith("/v1/messages"), "the /aqm path reaches /v1/messages upstream");
 }
 // Rate limit per IP.
 {

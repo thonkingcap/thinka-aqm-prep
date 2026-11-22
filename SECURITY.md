@@ -36,7 +36,9 @@ Please report security issues privately through GitHub's **"Report a vulnerabili
 
 ## Offline mode
 
-The site registers a service worker (`/sw.js`, generated at build time from `src/sw-template.js`) that saves the site's own files on the device so it works without internet. It only handles same-origin GET requests for those files: it never sees or stores your API key or any request to Claude, Babson's gateway or the feedback form. The Content-Security-Policy allows `worker-src 'self'` and `connect-src 'self'` for this, and Trusted Types allows a single policy, `sw`, that accepts exactly the URL `/sw.js`; any other script URL still throws.
+The site lives under `/aqm/` (https://thonkingcap.dev/aqm proxies to it). It registers a service worker (`/aqm/sw.js`, scope `/aqm`, generated at build time from `src/sw-template.js`) that saves the site's own files on the device so it works without internet. It only handles same-origin GET requests for those files under `/aqm`: it never sees or stores your API key or any request to Claude, Babson's gateway or the feedback form. The Content-Security-Policy allows `worker-src 'self'` and `connect-src 'self'` for this, and Trusted Types allows a single policy, `sw`, that accepts exactly the URL `/aqm/sw.js`; any other script URL still throws.
+
+Before the move the worker was `/sw.js` with scope `/`. That URL now serves a kill switch (`src/sw-kill.js`) that deletes the old worker's caches and unregisters it.
 
 ## Usage logs
 
@@ -54,15 +56,15 @@ It never logs your API key itself, your answers or your messages. Your key still
 
 Some students don't have a Babson Claude key. Daniel can give them an access code instead. The code is
 typed where a key would go, stored like a key (as `aqmcode:<CODE>`), and sent only to this site's own
-function at `/api/claude` (`api/claude.ts`, logic in `api/_proxy.ts`). That function:
+function at `/aqm/api/claude` (also reachable as `/api/claude`) (`api/claude.ts`, logic in `api/_proxy.ts`). That function:
 
-- accepts only `GET /v1/models` and `POST /v1/messages`, from this site's origin (or localhost);
+- accepts only `GET /v1/models` and `POST /v1/messages`, from this site's origins (thinka-aqm-prep.vercel.app, thonkingcap.dev) or localhost;
 - checks the code against `ACCESS_CODES` (comma-separated, case-insensitive) in Vercel's environment;
 - forwards the request with Daniel's key from `OWNER_API_KEY` in Vercel's environment. The key never
   reaches a browser, the repository or any response, and the student's code is not forwarded;
 - allows Claude models only, caps `max_tokens` at 16,000 and request bodies at 4 MB, and limits each
   IP address to 60 requests per 10 minutes (per server instance);
-- never caches anything (the offline service worker skips `/api/`).
+- never caches anything (the offline service worker skips `/aqm/api/`).
 
 To revoke a code, remove it from `ACCESS_CODES` in Vercel and redeploy. Removing `OWNER_API_KEY` or
 `ACCESS_CODES` switches shared access off entirely.

@@ -6,6 +6,8 @@
 // Not every key can use every model (some Babson keys only get claude-sonnet-46), so the site asks the
 // service which models the key has, picks the best, and remembers it per key on this device.
 
+import { BASE } from "./base.ts";
+
 export const BABSON_GATEWAY = "https://ca-litellm-mint-eus2.orangeflower-5d81efa8.eastus2.azurecontainerapps.io";
 
 export type ProviderId = "babson" | "anthropic" | "code";
@@ -32,7 +34,7 @@ export const PROVIDERS: Record<ProviderId, Provider> = {
   // Babson's gateway offers claude-sonnet-5 and claude-sonnet-46; Sonnet 5 is the newer one.
   babson: { id: "babson", label: "Babson's Claude gateway", baseURL: BABSON_GATEWAY, model: "claude-sonnet-5", modelLabel: "Claude Sonnet 5" },
   anthropic: { id: "anthropic", label: "Anthropic", model: "claude-sonnet-5-5", modelLabel: "Claude Sonnet 5.5" },
-  code: { id: "code", label: "Daniel's shared access (this site's server)", baseURL: "/api/claude", model: "claude-sonnet-5", modelLabel: "Claude Sonnet 5" },
+  code: { id: "code", label: "Daniel's shared access (this site's server)", baseURL: `${BASE}api/claude`, model: "claude-sonnet-5", modelLabel: "Claude Sonnet 5" },
 };
 
 // ---------- which model ----------
