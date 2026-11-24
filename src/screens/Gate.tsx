@@ -145,7 +145,7 @@ export default function Gate() {
         <header className="gate-title">
           <span className="rail-mark" aria-hidden="true"><Mark /></span>
           <h1>AQM Prep</h1>
-          <p className="gate-lede">Study for Dr. Phil's Midterm 2 utilizing this site.</p>
+          <p className="gate-lede">Review Dr. Phil's AQM 1000 lesson by lesson, unit by unit, and for the final.</p>
         </header>
         <SignIn />
         <div className="row gate-links">

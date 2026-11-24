@@ -80,7 +80,7 @@ export default function Area({ id, route = [] }: { id?: string; route?: string[]
               );
             })}
           </ol>
-          <button className="btn btn-ghost btn-small area-ask" onClick={() => askTutor(`Quiz me on ${a.title.toLowerCase()} for Midterm 2, one exam-style question at a time, using the class's Excel functions.`)}>
+          <button className="btn btn-ghost btn-small area-ask" onClick={() => askTutor(`Quiz me on ${a.title.toLowerCase()} for the final, one exam-style question at a time, using the class's Excel functions.`)}>
             <MessageSquare size={14} aria-hidden="true" />Ask Dr Phil to quiz me on this
           </button>
         </section>

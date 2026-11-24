@@ -3,7 +3,7 @@ import { ExternalLink, RefreshCw, Trash2 } from "lucide-react";
 import { useSession } from "../session.tsx";
 import { mask, isShared, IDLE_DAYS } from "../lib/vault.ts";
 import { BILLING_URL, KEYS_URL, PRICE, money, readSpend, writeSpend, balanceView } from "../lib/spend.ts";
-import { examDate, setExamDate, clearAttempts, DEFAULT_EXAM } from "../lib/progress.ts";
+import { clearAttempts } from "../lib/progress.ts";
 import { KeyForm, SignIn } from "./Gate.tsx";
 import { isSharedKey } from "../lib/provider.ts";
 import "./screens.css";
@@ -12,7 +12,6 @@ import "./settings.css";
 export default function KeySettings() {
   const { apiKey, fp, spend, remote, provider, refreshBalance, forget } = useSession();
   const [start, setStart] = useState(spend ? String(spend.start) : "100");
-  const [exam, setExam] = useState(examDate());
   const [saved, setSaved] = useState<string | null>(null);
   const babson = provider?.id === "babson";
   const view = balanceView(remote, spend);
@@ -135,16 +134,10 @@ export default function KeySettings() {
 
       <section className="set-row">
         <div className="set-label">
-          <h2>Exam date and progress</h2>
-          <p>The home screen counts down to this date. Practice history lives only in this browser.</p>
+          <h2>Progress</h2>
+          <p>Practice history lives only in this browser.</p>
         </div>
         <div className="set-panel stack">
-          <div className="field">
-            <label htmlFor="exam-date">Midterm 2 date</label>
-            <div className="row">
-              <input id="exam-date" type="date" className="input set-small" value={exam} onChange={(e) => { setExam(e.target.value); setExamDate(e.target.value || DEFAULT_EXAM); }} />
-            </div>
-          </div>
           <div><button className="btn btn-ghost" onClick={() => { if (confirm("Clear all practice history on this device?")) clearAttempts(); }}>Clear practice history</button></div>
         </div>
       </section>

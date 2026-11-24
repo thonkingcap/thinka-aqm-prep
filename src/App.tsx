@@ -1,5 +1,5 @@
-import { useEffect, useState, type JSX, type ReactNode } from "react";
-import { CircleHelp, FileSpreadsheet, House, KeyRound, LifeBuoy, Lightbulb } from "lucide-react";
+import { lazy, Suspense, useEffect, useState, type JSX, type ReactNode } from "react";
+import { BookOpen, CalendarClock, CircleHelp, House, KeyRound, Layers, LifeBuoy, Lightbulb, Rocket } from "lucide-react";
 import ProblemDialog from "./components/ProblemDialog.tsx";
 import { useSession, useRoute } from "./session.tsx";
 import Gate from "./screens/Gate.tsx";
@@ -13,7 +13,14 @@ import Area from "./screens/Area.tsx";
 import Exam3 from "./screens/Exam3.tsx";
 import Admin from "./screens/Admin.tsx";
 import Walkthrough, { openHowTo } from "./components/Walkthrough.tsx";
-import { AREAS } from "./lib/areas.ts";
+import StartDialog from "./components/StartDialog.tsx";
+// The review screens carry every lesson's content, so they load on demand.
+const LessonPage = lazy(() => import("./screens/Lessons.tsx"));
+const LessonList = lazy(() => import("./screens/Lessons.tsx").then((m) => ({ default: m.LessonList })));
+const UnitPage = lazy(() => import("./screens/Unit.tsx"));
+const UnitList = lazy(() => import("./screens/Unit.tsx").then((m) => ({ default: m.UnitList })));
+const Final = lazy(() => import("./screens/Final.tsx"));
+const Ahead = lazy(() => import("./screens/Ahead.tsx"));
 import DrPhil from "./components/DrPhil.tsx";
 const DrPhilIcon = ({ size = 18 }: { size?: number; strokeWidth?: number }) => <DrPhil size={size + 6} />;
 import { ThinkaMark } from "./components/Thinka.tsx";
@@ -25,12 +32,14 @@ import { startUsageClock } from "./lib/usage.ts";
 
 startUsageClock();
 
-/** Nav: Home, Exam 3, the exam's four areas (numbered), the tutor. `tiny` is the phone label. */
-const MOBILE: Record<string, string> = { ci: "CIs", ht1: "Tests I", ht2: "Tests II", two: "Two-sam." };
-const NAV: { href: string; label: string; tiny: string; match: (r: string[]) => boolean; icon?: typeof House | ((p: { size?: number; strokeWidth?: number }) => JSX.Element); n?: number }[] = [
+/** Nav: Home, the four ways in (lessons, units, final, get ahead), the tutor. `tiny` is the phone label. */
+type NavIcon = typeof House | ((p: { size?: number; strokeWidth?: number }) => JSX.Element);
+const NAV: { href: string; label: string; tiny: string; match: (r: string[]) => boolean; icon: NavIcon }[] = [
   { href: "#/home", label: "Home", tiny: "Home", icon: House, match: (r) => !r[0] || r[0] === "home" },
-  { href: "#/exam3", label: "Exam 3: start here", tiny: "Exam 3", icon: FileSpreadsheet, match: (r) => r[0] === "exam3" },
-  ...AREAS.map((a) => ({ href: `#/area/${a.id}`, label: `${a.n}. ${a.title}`, tiny: MOBILE[a.id] ?? a.short, n: a.n, match: (r: string[]) => r[0] === "area" && r[1] === a.id })),
+  { href: "#/lessons", label: "Lesson by lesson", tiny: "Lessons", icon: BookOpen, match: (r) => r[0] === "lessons" || r[0] === "lesson" || r[0] === "learn" },
+  { href: "#/units", label: "Unit by unit", tiny: "Units", icon: Layers, match: (r) => r[0] === "units" || r[0] === "unit" || r[0] === "exam3" || r[0] === "area" },
+  { href: "#/final", label: "Final review", tiny: "Final", icon: CalendarClock, match: (r) => r[0] === "final" },
+  { href: "#/ahead", label: "Get ahead (BETA)", tiny: "Ahead", icon: Rocket, match: (r) => r[0] === "ahead" },
   { href: "#/tutor", label: "Dr Phil (AI tutor)", tiny: "Dr Phil", icon: DrPhilIcon, match: (r) => r[0] === "tutor" },
 ];
 
@@ -58,6 +67,12 @@ export default function App() {
 
   let body: ReactNode;
   switch (screen) {
+    case "lessons": body = <LessonList />; break;
+    case "lesson": body = <LessonPage n={Number(route[1])} tab={route[2]} />; break;
+    case "units": body = <UnitList />; break;
+    case "unit": body = <UnitPage u={route[1]} tab={route[2]} />; break;
+    case "final": body = <Final tab={route[1]} />; break;
+    case "ahead": body = <Ahead tab={route[1]} />; break;
     case "exam3": body = <Exam3 />; break;
     case "admin": body = <Admin />; break;
     case "area": body = <Area id={route[1]} route={route.slice(2)} />; break;
@@ -74,9 +89,9 @@ export default function App() {
     <div className="app">
       <nav className="rail" aria-label="Main">
         <a className="rail-mark" href="#/home" aria-label="AQM Prep home"><Mark /></a>
-        {NAV.map(({ href, label, tiny, match, icon: Icon, n }, i) => (
-          <a key={href} className={`rail-link${n ? " rail-area" : ""}${i === 2 ? " rail-first-area" : ""}`} href={href} aria-label={label} aria-current={match(route) ? "page" : undefined}>
-            {Icon ? <Icon size={18} strokeWidth={1.6} aria-hidden="true" /> : <span className="rail-num" aria-hidden="true">{n}</span>}
+        {NAV.map(({ href, label, tiny, match, icon: Icon }) => (
+          <a key={href} className="rail-link" href={href} aria-label={label} aria-current={match(route) ? "page" : undefined}>
+            <Icon size={18} strokeWidth={1.6} aria-hidden="true" />
             <span className="rail-label" aria-hidden="true">{tiny}</span>
             <span className="rail-tip" aria-hidden="true">{label}</span>
           </a>
@@ -108,10 +123,11 @@ export default function App() {
       </nav>
       <main className="main" id="main">
         {!online && <p className="offline-bar" role="status">You're offline. Notes, workbook downloads and marking all still work; Dr Phil and the Claude features come back when you reconnect.</p>}
-        <div className="route" key={route.join("/")}>{body}</div>
+        <div className="route" key={route.join("/")}><Suspense fallback={<div className="page" aria-busy="true" />}>{body}</Suspense></div>
       </main>
       <ProblemDialog open={problem} onClose={() => setProblem(false)} />
       {needsName ? <NamePrompt /> : <Walkthrough />}
+      <StartDialog allowed={!needsName} landing={screen === "home" && !route[1]} />
       <CapDialog />
       <IdeaDialog />
       <IdeaNudge allowed={!needsName && screen !== "tutor" && screen !== "key"} />

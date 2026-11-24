@@ -4,7 +4,7 @@
 import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
 import { Check, FileSpreadsheet, LoaderCircle, MessageSquare, Sparkles, Upload, X } from "lucide-react";
 import { readXlsx } from "../lib/xlsxRead.ts";
-import { gradeWorkbook, type PartGrade, type QuestionGrade, type WorkbookGrade } from "../lib/grade.ts";
+import { gradeWorkbook, setLessonGrader, isLessonWorkbookId, type PartGrade, type QuestionGrade, type WorkbookGrade } from "../lib/grade.ts";
 import { addAttempt } from "../lib/progress.ts";
 import { saveResult, scoreDiagnostic, exam3Result } from "../lib/plan.ts";
 import { markWritten } from "../lib/ai.ts";
@@ -40,9 +40,11 @@ export function UploadBox({ onGraded }: { onGraded: (g: WorkbookGrade) => void }
     try {
       if (file.size > 15 * 1024 * 1024) throw new Error("That file is over 15 MB, which is too big for a practice workbook.");
       const bytes = new Uint8Array(await file.arrayBuffer());
-      const g = gradeWorkbook(readXlsx(bytes));
+      const wb = readXlsx(bytes);
+      if (isLessonWorkbookId(wb.thinkaId)) setLessonGrader((await import("../lib/lessons/books.ts")).gradeBook);
+      const g = gradeWorkbook(wb);
       saveScore(g.id || `${g.kind}:${g.n}`, g.got, g.total);
-      for (const qg of g.questions) {
+      for (const qg of g.kind === "lesson" ? [] : g.questions) {
         const marked = qg.parts.filter((p) => p.status !== "written");
         if (!marked.length) continue;
         addAttempt({ kind: qg.q.kind, topic: qg.q.topic, caseKey: qg.q.caseKey, correct: marked.filter((p) => p.ok).length, total: marked.length, ts: Date.now() });
@@ -96,6 +98,13 @@ const TOPIC_INFO: Record<string, { name: string; learn: string; area: string }> 
 };
 
 const partKey = (q: QuestionGrade, p: PartGrade) => `${q.index}:${p.part.id}`;
+/** A topic's name and where to reread / practise it (older Exam 2 topics, or a lesson for Lessons workbooks). */
+function topicLinks(t: string): { name: string; learn: string; practise: string } {
+  const m = /^lesson:(\d+)(?::(.+))?$/.exec(t);
+  if (m) return { name: m[2] ?? `Lesson ${m[1]}`, learn: `#/lesson/${m[1]}`, practise: `#/lesson/${m[1]}/practice` };
+  const i = TOPIC_INFO[t];
+  return { name: i?.name ?? t, learn: `#/learn/${i?.learn ?? ""}`, practise: `#/area/${i?.area ?? "ci"}` };
+}
 
 export function GradeReport({ g, onClose, onMarks }: { g: WorkbookGrade; onClose?: () => void; onMarks?: (scores: Record<string, number>) => void }) {
   const { askTutor, apiKey, fp } = useSession();
@@ -201,7 +210,7 @@ export function GradeReport({ g, onClose, onMarks }: { g: WorkbookGrade; onClose
           <div>
             <h3 className="review-h">What went well</h3>
             {strong.length ? (
-              <ul className="review-list">{strong.map(([t, v]) => <li key={t}><Check size={14} className="ok-mark" aria-hidden="true" /> {TOPIC_INFO[t]?.name ?? t} <span className="muted num">{v.got}/{v.total}</span></li>)}</ul>
+              <ul className="review-list">{strong.map(([t, v]) => <li key={t}><Check size={14} className="ok-mark" aria-hidden="true" /> {topicLinks(t).name} <span className="muted num">{v.got}/{v.total}</span></li>)}</ul>
             ) : <p className="hint">Nothing fully right yet. Start with the first topic below.</p>}
           </div>
           <div>
@@ -210,11 +219,11 @@ export function GradeReport({ g, onClose, onMarks }: { g: WorkbookGrade; onClose
               <ul className="review-list">
                 {weak.map(([t, v]) => (
                   <li key={t}>
-                    <div><b>{TOPIC_INFO[t]?.name ?? t}</b> <span className="muted num">{Number.isInteger(v.got) ? v.got : v.got.toFixed(1)}/{v.total}</span></div>
+                    <div><b>{topicLinks(t).name}</b> <span className="muted num">{Number.isInteger(v.got) ? v.got : v.got.toFixed(1)}/{v.total}</span></div>
                     {v.slips.slice(0, 3).map((s) => <div key={s} className="hint">• {s}</div>)}
                     <div className="row review-links">
-                      <a className="linkish" href={`#/learn/${TOPIC_INFO[t]?.learn ?? ""}`}>Reread the notes</a>
-                      <a className="linkish" href={`#/area/${TOPIC_INFO[t]?.area ?? "ci"}`}>Practise it in Excel</a>
+                      <a className="linkish" href={topicLinks(t).learn}>Reread the notes</a>
+                      <a className="linkish" href={topicLinks(t).practise}>Practise it in Excel</a>
                     </div>
                   </li>
                 ))}

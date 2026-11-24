@@ -1,0 +1,32 @@
+.start-scrim {
+  position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 16px;
+  background: rgba(10, 10, 10, 0.32); animation: start-fade 180ms var(--ease) both;
+}
+.start {
+  position: relative; width: min(680px, 100%); max-height: calc(100vh - 32px); overflow: auto;
+  background: var(--surface); border-radius: 12px; padding: 28px; box-shadow: 0 24px 64px rgba(0, 0, 0, 0.18);
+  animation: start-rise 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.start h2 { font-size: 22px; font-weight: 500; letter-spacing: -0.01em; margin-bottom: 4px; }
+.start-x { position: absolute; top: 14px; right: 14px; width: 32px; height: 32px; display: grid; place-items: center; border: 0; border-radius: 6px; background: transparent; cursor: pointer; color: var(--muted); }
+.start-x:hover { background: var(--raised); color: var(--text); }
+.start-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 20px 0 18px; }
+.start-choice {
+  display: flex; gap: 12px; align-items: flex-start; padding: 16px; text-decoration: none;
+  border: 1px solid var(--border); border-radius: var(--radius-card); background: var(--surface);
+  transition: border-color 160ms var(--ease), transform 200ms var(--ease), box-shadow 200ms var(--ease);
+}
+.start-choice:hover, .start-choice:focus-visible { border-color: var(--text); transform: translateY(-2px); box-shadow: 0 10px 24px rgba(0, 0, 0, 0.07); }
+.start-icon { flex: none; width: 36px; height: 36px; display: grid; place-items: center; border-radius: 8px; background: var(--raised); }
+.start-text { display: flex; flex-direction: column; gap: 4px; }
+.start-text b { font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+.start-text > span { font-size: 13px; color: var(--muted); line-height: 1.45; }
+.start-foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.beta-tag { display: inline-flex; align-items: center; height: 18px; padding: 0 6px; border-radius: 999px; font-size: 10px; font-weight: 600; letter-spacing: 0.06em; border: 1px solid currentColor; color: var(--text); background: transparent; }
+@media (max-width: 600px) {
+  .start { padding: 22px 16px; }
+  .start-grid { grid-template-columns: 1fr; }
+}
+@keyframes start-fade { from { opacity: 0; } }
+@keyframes start-rise { from { opacity: 0; transform: translateY(12px) scale(0.98); } }
+@media (prefers-reduced-motion: reduce) { .start-scrim, .start { animation: none; } }

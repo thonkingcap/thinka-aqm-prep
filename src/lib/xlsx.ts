@@ -108,7 +108,7 @@ const EXAM_STYLES = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 
 /** Excel stores the newer functions with an _xlfn. prefix; without it they show #NAME? until re-entered. */
 export function xlfn(f: string): string {
-  return f.replace(/(^|[^.\w])(NORM\.S\.INV|NORM\.S\.DIST|NORM\.INV|NORM\.DIST|T\.INV\.2T|T\.INV|T\.DIST\.2T|T\.DIST\.RT|T\.DIST|CHISQ\.INV\.RT|CHISQ\.INV|CHISQ\.DIST\.RT|CHISQ\.DIST|STDEV\.S|VAR\.S)\(/g, "$1_xlfn.$2(");
+  return f.replace(/(^|[^.\w])(NORM\.S\.INV|NORM\.S\.DIST|NORM\.INV|NORM\.DIST|T\.INV\.2T|T\.INV|T\.DIST\.2T|T\.DIST\.RT|T\.DIST|CHISQ\.INV\.RT|CHISQ\.INV|CHISQ\.DIST\.RT|CHISQ\.DIST|STDEV\.S|STDEV\.P|VAR\.S|VAR\.P|MODE\.SNGL|QUARTILE\.INC|QUARTILE\.EXC|PERCENTILE\.INC|PERCENTILE\.EXC|FORECAST\.LINEAR)\(/g, "$1_xlfn.$2(");
 }
 
 function styleFor(c: XCell): number {

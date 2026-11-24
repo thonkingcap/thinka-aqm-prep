@@ -1,8 +1,7 @@
-// "How to use this site": three short steps, shown once on the first visit and reopened from the
-// "?" button in the nav (or anything that dispatches the "aqm:howto" event).
+// "How to use this site": four short steps, opened from the start pop-up, the "?" button in the nav,
+// or anything that dispatches the "aqm:howto" event. (The start pop-up greets first-time visitors now.)
 import { useEffect, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, FileSpreadsheet, ListChecks, PencilLine, X } from "lucide-react";
-import { AREAS } from "../lib/areas.ts";
+import { ArrowLeft, ArrowRight, BookOpen, FileSpreadsheet, Layers, Rocket, X } from "lucide-react";
 import "./walkthrough.css";
 
 const SEEN = "aqm.howto.seen";
@@ -10,34 +9,37 @@ export const openHowTo = () => window.dispatchEvent(new CustomEvent("aqm:howto")
 
 const STEPS = [
   {
+    icon: BookOpen,
+    title: "Lesson by lesson",
+    body: "Every class has four parts: Learn (the professor's definitions, the red ones tagged), a worked example, a two-minute quick check, and Excel practice. Do them in order, or jump to the one you need.",
+    cta: { label: "Open the lessons", href: "#/lessons" },
+  },
+  {
     icon: FileSpreadsheet,
-    title: "Start with Exam 3",
-    body: "Download last spring's Exam 3 (or use the copy you already did), finish it in Excel with formulas, no calculator, then drop the file in. The site marks every answer.",
-    cta: { label: "Open Exam 3", href: "#/exam3" },
+    title: "Excel practice gets marked",
+    body: "Download a workbook, fill the yellow cells with formulas (no rounding, like the exams), save it and drop it back in. You see what went right, the likely slip behind each mistake, and the formula that gets it. The answer key is a separate download.",
+    cta: { label: "Try Lesson 2's practice", href: "#/lesson/2/practice" },
   },
   {
-    icon: ListChecks,
-    title: "Get your plan",
-    body: "Your marked Exam 3 becomes a day-by-day plan up to the midterm. It spends your time on the parts you missed, and it shows up on Home.",
-    cta: { label: "Go Home", href: "#/home" },
+    icon: Layers,
+    title: "Units and the final",
+    body: "Unit 1 is everything on Exam 1, Unit 2 everything on Exam 2: each has a mixed check and exam-style papers. Final review mixes the whole course and lists every definition in one place.",
+    cta: { label: "See the units", href: "#/units" },
   },
   {
-    icon: PencilLine,
-    title: "Practise the four areas",
-    body: `The exam has four sections: ${AREAS.map((a) => a.title.toLowerCase()).join(", ").replace(/, ([^,]*)$/, " and $1")}. Each has short notes and Excel sets: download one, solve it, upload it to see what went right and what slipped.`,
-    cta: { label: "Open area 1", href: "#/area/ci" },
+    icon: Rocket,
+    title: "Get ahead (BETA)",
+    body: "Regression and the rest of the term, before it's taught: built from the syllabus and last spring's final, and rebuilt from the professor's notes once the classes happen.",
+    cta: { label: "Get ahead", href: "#/ahead" },
   },
 ] as const;
 
-function seen(): boolean {
-  try { return localStorage.getItem(SEEN) === "1"; } catch { return true; }
-}
 function markSeen() {
   try { localStorage.setItem(SEEN, "1"); } catch { /* ignore */ }
 }
 
 export default function Walkthrough() {
-  const [open, setOpen] = useState(() => !seen());
+  const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState<1 | -1>(1);
   const box = useRef<HTMLDivElement>(null);

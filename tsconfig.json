@@ -14,5 +14,5 @@
     "noUnusedLocals": true
   },
   "include": ["src"],
-  "exclude": ["src/**/*.test.ts", "src/lib/testEnv.ts"]
+  "exclude": ["src/**/*.test.ts", "src/lib/testEnv.ts", "src/lib/lessons/try.ts"]
 }
