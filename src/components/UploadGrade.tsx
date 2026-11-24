@@ -41,7 +41,7 @@ export function UploadBox({ onGraded }: { onGraded: (g: WorkbookGrade) => void }
       if (file.size > 15 * 1024 * 1024) throw new Error("That file is over 15 MB, which is too big for a practice workbook.");
       const bytes = new Uint8Array(await file.arrayBuffer());
       const wb = readXlsx(bytes);
-      if (isLessonWorkbookId(wb.thinkaId)) setLessonGrader((await import("../lib/lessons/books.ts")).gradeBook);
+      if (isLessonWorkbookId(wb.thinkaId)) setLessonGrader((await import("../lib/lessons/grader.ts")).gradeAny);
       const g = gradeWorkbook(wb);
       saveScore(g.id || `${g.kind}:${g.n}`, g.got, g.total);
       for (const qg of g.kind === "lesson" ? [] : g.questions) {
@@ -78,7 +78,7 @@ export function UploadBox({ onGraded }: { onGraded: (g: WorkbookGrade) => void }
         <input ref={inputRef} type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" onChange={(e) => handle(e.target.files?.[0])} className="sr-only" />
         {busy ? <LoaderCircle size={20} className="spin" aria-hidden="true" /> : <Upload size={20} aria-hidden="true" />}
         <span className="upload-main">{busy ? "Marking your workbook" : "Upload your finished workbook"}</span>
-        <span className="hint">Drop the .xlsx here or click to choose it. It's marked on this device; only written answers go to Claude, and only if you ask.</span>
+        <span className="hint">Drop the .xlsx here or click to choose it.</span>
       </label>
       {error && <p className="notice upload-error" role="alert">{error}</p>}
     </div>

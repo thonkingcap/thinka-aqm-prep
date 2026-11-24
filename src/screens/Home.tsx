@@ -10,8 +10,8 @@ import "./hub.css";
 
 const WAYS = [
   { href: "#/lessons", icon: BookOpen, title: "Lesson by lesson", body: "His definitions, a worked example, a quick check and marked Excel practice for every class." },
-  { href: "#/units", icon: Layers, title: "Unit by unit", body: "Unit 1 is everything on Exam 1, Unit 2 everything on Exam 2: mixed questions and review papers." },
-  { href: "#/final", icon: CalendarClock, title: "Final review", body: "Papers across the whole course, a mixed check, and every definition in one place." },
+  { href: "#/units", icon: Layers, title: "Unit by unit", body: "A diagnostic for each unit, laid out like the real exam, then the lessons it says to review." },
+  { href: "#/final", icon: CalendarClock, title: "Final review", body: "A two-hour practice test laid out like last spring's final, and every definition in one place." },
   { href: "#/ahead", icon: Rocket, title: "Get ahead", beta: true, body: "Regression and the rest of the term, before it's taught." },
 ];
 

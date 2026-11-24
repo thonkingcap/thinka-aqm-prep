@@ -38,10 +38,15 @@ const para = (pPrFmt: Fmt, body: string, list = false) =>
 const empty = () => para({}, "");
 
 /** The question paper's document.xml body paragraphs (without the page setup). */
-export function paperParagraphs(P: Paper, formulaBox: string): string {
+export function paperParagraphs(P: Pick<Paper, "header" | "sections"> & { instructions?: string[] }, formulaBox: string): string {
   const out: string[] = [para({ b: true }, run(P.header, { b: true }))];
+  if (P.instructions?.length) {
+    out.push(para({ b: true }, run("Instructions", { b: true })));
+    for (const line of P.instructions) out.push(para({}, runs(line)));
+    out.push(empty());
+  }
   P.sections.forEach((s, k) => {
-    out.push(para({ i: true }, run(`${k + 1}. ${s.title} `, { u: true }) + run(`[${s.points} points]`, { i: true, u: true })));
+    out.push(para({ i: true }, run(`${k + 1}. ${s.title}${s.points ? " " : ""}`, { u: true }) + (s.points ? run(`[${s.points} points]`, { i: true, u: true }) : "")));
     for (const it of s.items) {
       if (it.kind === "lead") out.push(para({}, runs(it.text)));
       else if (it.kind === "q") out.push(para({}, runs(it.text) + run(" ") + run(`[${it.points}]`, { i: true }), true));
@@ -53,7 +58,7 @@ export function paperParagraphs(P: Paper, formulaBox: string): string {
 }
 
 /** Builds the .docx from the template's bytes. */
-export function buildPaperDocx(P: Paper, template: Uint8Array): Uint8Array {
+export function buildPaperDocx(P: Pick<Paper, "header" | "sections"> & { instructions?: string[] }, template: Uint8Array): Uint8Array {
   const files = unzipSync(template);
   const doc = strFromU8(files["word/document.xml"]);
   const open = doc.indexOf("<w:body>") + "<w:body>".length;

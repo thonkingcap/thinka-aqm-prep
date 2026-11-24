@@ -51,8 +51,8 @@ export default function StartDialog({ allowed, landing }: { allowed: boolean; la
   const close = () => setOpen(false);
   const CHOICES = [
     { href: "#/lessons", icon: BookOpen, title: "Review a lesson", body: "Pick a class: his definitions, a worked example, a two-minute quick check and Excel practice." },
-    { href: "#/units", icon: Layers, title: "Review a unit", body: "Unit 1 (Exam 1) or Unit 2 (Exam 2): mixed questions across the unit and exam-style papers." },
-    { href: "#/final", icon: CalendarClock, title: "Prepare for the final", body: `${days > 0 ? `${days} day${days === 1 ? "" : "s"} to go (Wed 16 Dec).` : "Wed 16 Dec."} Review papers across the course and every definition in one place.` },
+    { href: "#/units", icon: Layers, title: "Review a unit", body: "Unit 1 (Exam 1) or Unit 2 (Exam 2): a diagnostic in the real exam's format tells you which lessons to review." },
+    { href: "#/final", icon: CalendarClock, title: "Prepare for the final", body: `${days > 0 ? `${days} day${days === 1 ? "" : "s"} to go (Wed 16 Dec).` : "Wed 16 Dec."} A full practice test in the final's format, and every definition in one place.` },
     { href: "#/ahead", icon: Rocket, title: "Get ahead", beta: true, body: "Regression and the rest of the semester, before it's taught. Built from the syllabus and past finals." },
   ];
   return (
@@ -60,7 +60,6 @@ export default function StartDialog({ allowed, landing }: { allowed: boolean; la
       <div className="start" role="dialog" aria-modal="true" aria-labelledby="start-title" ref={box}>
         <button className="start-x" onClick={close} aria-label="Close"><X size={16} aria-hidden="true" /></button>
         <h2 id="start-title">What do you want to do?</h2>
-        <p className="hint">Midterm 2 is done. Everything here now builds towards the final.</p>
         <div className="start-grid">
           {CHOICES.map(({ href, icon: Icon, title, body, beta }) => (
             <a key={href} className="start-choice" href={href} onClick={close}>

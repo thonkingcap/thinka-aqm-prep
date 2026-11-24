@@ -147,6 +147,8 @@ export function tolFor(p: Part): number {
   if (p.format === "prob") return Math.max(0.0005, Math.min(0.002, 0.02 * Math.abs(a)));
   return Math.max(0.01, 0.002 * Math.abs(a));
 }
+/** Part labels in a report: a…z, then a2…z2, a3… (questions can have more than 26 cells). */
+export const partId = (k: number) => String.fromCharCode(97 + (k % 26)) + (k >= 26 ? String(Math.floor(k / 26) + 1) : "");
 export function toGradePart(p: Part, id: string): GradePart {
   return {
     id, label: p.label, kind: p.options ? "choice" : "number", answer: p.answer, options: p.options,

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Download, KeyRound } from "lucide-react";
 import { bookById } from "../lib/lessons/books.ts";
 import { downloadBook } from "../lib/lessons/download.ts";
-import { UploadBox, GradeReport, readScores, DownloadNote } from "./UploadGrade.tsx";
+import { UploadBox, GradeReport, readScores } from "./UploadGrade.tsx";
 import type { WorkbookGrade } from "../lib/grade.ts";
 
 export function bookBest(id: string): number | null {
@@ -41,18 +41,12 @@ export function PracticePanel({ ids, labels, lead, title = "Practice in Excel", 
   const live = ids.filter((id) => bookById(id));
   return (
     <section className="panel" aria-labelledby={headId}>
-      <div className="panel-head"><h2 id={headId}>{title}</h2><span className="hint">{live.length} version{live.length === 1 ? "" : "s"}, new numbers in each</span></div>
+      <div className="panel-head"><h2 id={headId}>{title}</h2></div>
       {lead && <p className="hint hub-lead">{lead}</p>}
       {live.length ? (
         <div className="books stagger">{live.map((id, k) => <BookCard key={id} id={id} label={labels?.[ids.indexOf(id)] ?? `Version ${k + 1}`} scores={scores} />)}</div>
       ) : <p className="hint">Practice for this is on its way.</p>}
-      <ol className="hub-steps">
-        <li><span className="num">1</span>Download a version and fill the yellow cells in Excel with formulas.</li>
-        <li><span className="num">2</span>Save it, then drop it in below. It's marked on this device.</li>
-        <li><span className="num">3</span>Read what slipped, then try the next version.</li>
-      </ol>
       <div className="hub-upload"><UploadBox onGraded={(g) => { setGraded(g); setScores(readScores()); }} /></div>
-      <div className="hub-note"><DownloadNote /></div>
       {graded && <div className="hub-report"><GradeReport g={graded} onClose={() => setGraded(null)} /></div>}
     </section>
   );

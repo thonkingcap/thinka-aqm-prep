@@ -2,7 +2,7 @@
 // must give the paper's answer; a workbook filled with those values must be marked full marks; a blank
 // one zero; and the Word paper must build from the template.
 import { readFileSync } from "node:fs";
-import { paper, PAPER_COUNT, PAPER_TABS, plain } from "./paper.ts";
+import { paper, PAPER_COUNT, DIAG_PAPER, PAPER_TABS, plain } from "./paper.ts";
 import { evaluate } from "./excel.ts";
 import { buildXlsx } from "./xlsx.ts";
 import { readXlsx } from "./xlsxRead.ts";
@@ -32,7 +32,7 @@ function evalSheet(s: SheetModel): (addr: string) => number | string | null {
 }
 
 const template = new Uint8Array(readFileSync(new URL("../../public/exam-paper-template.docx", import.meta.url)));
-for (let n = 1; n <= PAPER_COUNT; n++) {
+for (const n of [...Array.from({ length: PAPER_COUNT }, (_, k) => k + 1), DIAG_PAPER]) {
   const P = paper(n)!;
   ok(P === paper(n), `paper ${n} is cached/deterministic`);
   ok(P.questions.length === 15 && P.questions.reduce((s, q) => s + q.points, 0) === 43, `paper ${n}: 15 questions, 43 points`);
@@ -80,5 +80,5 @@ for (let n = 1; n <= PAPER_COUNT; n++) {
   ok(doc.includes("txbx") && /<w:sectPr[\s\S]*w:orient="landscape"/.test(doc), `paper ${n}: formula box and landscape page kept`);
 }
 
-console.log(fails ? `FAILED: practice exams, ${fails} failure(s)` : `PASS: practice exams, ${PAPER_COUNT} papers`);
+console.log(fails ? `FAILED: practice exams, ${fails} failure(s)` : `PASS: practice exams, ${PAPER_COUNT} papers + the Unit 2 diagnostic`);
 if (fails) process.exit(1);

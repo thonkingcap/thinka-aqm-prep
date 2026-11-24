@@ -9,7 +9,6 @@ import { useSession } from "../session.tsx";
 import Quiz from "../components/Quiz.tsx";
 import { PracticePanel, bookBest } from "../components/Books.tsx";
 import { Formula } from "../components/ui.tsx";
-import PageHint from "../components/PageHint.tsx";
 import "./screens.css";
 import "./hub.css";
 
@@ -52,7 +51,6 @@ export function LessonList() {
       <header className="hub-head stagger">
         <p className="hub-eyebrow"><BookOpen size={14} aria-hidden="true" /> Lesson by lesson</p>
         <h1>Pick a lesson</h1>
-        <PageHint>each lesson has four parts: Learn (his definitions), a worked example, a two-minute quick check, and Excel practice that the site marks. Do them in that order, or jump to the one you need.</PageHint>
       </header>
       {!LESSONS.length && <p className="notice">Lessons are being added. Check back soon.</p>}
       {groups.map((g) => {
@@ -92,13 +90,12 @@ export default function LessonPage({ n, tab }: { n: number; tab?: string }) {
   else if (t === "example") body = <Examples L={L} />;
   else if (t === "check") body = (
     <section className="panel" aria-labelledby="qc-h">
-      <div className="panel-head"><h2 id="qc-h">Quick check</h2><span className="hint">{L.quiz.length} questions · about two minutes</span></div>
+      <div className="panel-head"><h2 id="qc-h">Quick check</h2><span className="hint">{L.quiz.length} questions</span></div>
       <Quiz id={`lesson:${L.n}`} items={L.quiz} />
     </section>
   );
   else body = (
-    <PracticePanel headId="pr-h" ids={Array.from({ length: VERSIONS }, (_, k) => lessonBookId(L.n, k + 1))}
-      lead={`Each version has ${L.makers.length} tab${L.makers.length === 1 ? "" : "s"}: ${L.makers.map((m) => m.title).join(" · ")}.`} />
+    <PracticePanel headId="pr-h" ids={Array.from({ length: VERSIONS }, (_, k) => lessonBookId(L.n, k + 1))} />
   );
 
   return (
@@ -108,7 +105,7 @@ export default function LessonPage({ n, tab }: { n: number; tab?: string }) {
         <h1>{L.title}{L.beta && <span className="beta-tag big">BETA</span>}</h1>
         <p className="hint">{L.week}</p>
         <p className="lesson-summary">{L.summary}</p>
-        {L.beta && <p className="notice beta-note"><TriangleAlert size={14} aria-hidden="true" /> Not taught yet. This is built ahead of the class from the syllabus, last spring's final and the textbook, so it may not match exactly how the professor teaches it. It will be replaced with his notes once the class happens.</p>}
+        {L.beta && <p className="notice beta-note"><TriangleAlert size={14} aria-hidden="true" /> Not taught yet: built from the syllabus, last spring's final and the textbook, so details may differ from how he teaches it.</p>}
       </header>
       <nav className="seg lesson-tabs" aria-label="Parts of this lesson">
         {TABS.map(({ id, label, icon: Icon }) => (
@@ -120,7 +117,7 @@ export default function LessonPage({ n, tab }: { n: number; tab?: string }) {
       <div className="lesson-body" key={t}>{body}</div>
       <div className="row lesson-ask">
         <button className="btn btn-ghost btn-small" onClick={ask}><MessageSquare size={14} aria-hidden="true" />Ask Dr Phil to teach this lesson</button>
-        <span className="hint">Built from: {L.sources.join(", ")}</span>
+        <span className="hint" title={L.sources.join(", ")}>{L.beta ? "Built from the syllabus and past finals" : "Built from his notes, homework and past exams"}</span>
       </div>
       <nav className="hub-pager" aria-label="Other lessons">
         {prev ? <a className="hub-pager-link lift" href={`#/lesson/${prev.n}${t === "learn" ? "" : `/${t}`}`}><ArrowLeft size={14} aria-hidden="true" /><span><span className="hint">Lesson {prev.n}</span><b>{prev.title}</b></span></a> : <span />}
@@ -135,8 +132,7 @@ function Learn({ L }: { L: Lesson }) {
   return (
     <div className="lesson-learn">
       <section className="panel" aria-labelledby="defs-h">
-        <div className="panel-head"><h2 id="defs-h">Definitions and key facts</h2><span className="hint">{L.defs.length}{red ? ` · ${red} he marked in red` : ""}</span></div>
-        {red > 0 && <p className="hint hub-lead">Red in his notes means "examinable, especially". Those are tagged.</p>}
+        <div className="panel-head"><h2 id="defs-h">Definitions and key facts</h2><span className="hint">{red ? `${red} highlighted red in his notes` : ""}</span></div>
         <dl className="defs">
           {L.defs.map((d, k) => (
             <div key={k} className="def">

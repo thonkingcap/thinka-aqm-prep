@@ -23,7 +23,7 @@ const STEPS = [
   {
     icon: Layers,
     title: "Units and the final",
-    body: "Unit 1 is everything on Exam 1, Unit 2 everything on Exam 2: each has a mixed check and exam-style papers. Final review mixes the whole course and lists every definition in one place.",
+    body: "Each unit starts with a diagnostic in the real exam's format (Word paper + workbook). Upload it and it tells you which lessons to review. Final review has a full two-hour practice test and every definition in one place.",
     cta: { label: "See the units", href: "#/units" },
   },
   {

@@ -17,6 +17,12 @@ import { mean, stdevS, normInv, normCdf, tInv, tCdf, chisqCdf, chisqInv } from "
 import { num, text, testParts, r4, locate, findTab, type Spec, type Starts } from "./exam3.ts";
 
 export const PAPER_COUNT = 6;
+/** Paper 7 is the Unit 2 diagnostic: the same Exam 3 layout with its own numbers, listed on the Unit 2 page. */
+export const DIAG_PAPER = 7;
+/** Which lesson each of the diagnostic's questions tests (its report points at lessons, not the old areas). */
+/** Lesson titles (as on the Lessons pages; kept here so marking doesn't load every lesson). */
+const DIAG_LESSON_TITLE: Record<number, string> = {"13":"Confidence intervals: where the sample mean lands","14":"Confidence intervals: parameters, statistics, μ and σ known, σ known","15":"Sample variance, the t distribution and the interval when nothing is known","16":"One sample hypothesis tests","17":"P-values, critical values and one-tailed tests","18":"The chi-squared test for a variance, and two-sample tests"};
+export const DIAG_LESSON: Record<number, number> = { 1: 13, 2: 13, 3: 13, 4: 14, 5: 15, 6: 16, 7: 16, 8: 16, 9: 16, 10: 18, 11: 17, 12: 17, 13: 18, 14: 18, 15: 18 };
 export const PAPER_MINUTES = 60;
 export const paperId = (n: number) => `paper:${n}`;
 export const PAPER_TABS = ["Confidence intervals", "Hypothesis testing I", "Hypothesis testing II", "Two-sample tests"];
@@ -87,7 +93,7 @@ const TWO_Z = [
 const cache = new Map<number, Paper>();
 /** Practice paper n (1…PAPER_COUNT). Deterministic: the same n always gives the same paper. */
 export function paper(n: number): Paper | null {
-  if (!(Number.isInteger(n) && n >= 1 && n <= PAPER_COUNT)) return null;
+  if (!(Number.isInteger(n) && ((n >= 1 && n <= PAPER_COUNT) || n === DIAG_PAPER))) return null;
   const hit = cache.get(n);
   if (hit) return hit;
   const p = build(n);
@@ -429,9 +435,10 @@ function build(n: number): Paper {
   fill(3, sp(14), blockF(B14, `=COUNT(${rng4})`, 0.05, sp(14)[2].excel, sp(14)[3].excel, sp(14)[4].excel));
   fill(3, sp(15), blockF(B15, `=COUNT(${rng6})`, 0.05, sp(15)[2].excel.split(", the")[0], sp(15)[3].excel.split(", the")[0], sp(15)[4].excel.split(", the")[0]));
 
-  const title = `Practice exam ${n}`;
+  const diag = n === DIAG_PAPER;
+  const title = diag ? "Unit 2 diagnostic" : `Practice exam ${n}`;
   return {
-    n, id: paperId(n), title, header: `AQM1000, Fall 2026, Midterm 2 practice exam ${n} (AQM Prep)`, file: `AQM-Midterm-2-practice-exam-${n}`,
+    n, id: paperId(n), title, header: diag ? "AQM1000, Fall 2026, Unit 2 diagnostic (AQM Prep)" : `AQM1000, Fall 2026, Midterm 2 practice exam ${n} (AQM Prep)`, file: diag ? "AQM-Unit-2-diagnostic" : `AQM-Midterm-2-practice-exam-${n}`,
     sections, questions: Q, sheets, key: key.map((s, i) => ({ ...s, name: PAPER_TABS[i] })), starts, fallback, coin: { N, h, tail: coinTail, alpha: 0.05 },
   };
 }
@@ -485,6 +492,8 @@ export function gradePaper(wb: ReadWorkbook, n: number): WorkbookGrade {
   const writtenN = base.reduce((s, g) => s + g.parts.filter((p) => p.status === "written").length, 0);
   if (writtenN) notes.push(`${writtenN} written answer${writtenN === 1 ? " needs" : "s need"} marking: have Claude mark ${writtenN === 1 ? "it" : "them"}, or compare with the model answer below.`);
   notes.push("Section 1 has no fixed answer cells, so intervals are found by value anywhere in each question's rows.");
+  // The diagnostic reports by lesson, so "what to work on" links to the lesson pages.
+  if (n === DIAG_PAPER) for (const g of base) { const L = DIAG_LESSON[g.index + 1]; g.q = { ...g.q, topic: `lesson:${L}:Lesson ${L}: ${DIAG_LESSON_TITLE[L]}` as TopicId }; }
   return { kind: "paper", n, id: P.id, title: P.title, questions: base, got: base.reduce((s, g) => s + g.got, 0), total: base.reduce((s, g) => s + g.total, 0), notes };
 }
 

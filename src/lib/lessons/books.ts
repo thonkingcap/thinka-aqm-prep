@@ -8,7 +8,7 @@
 import type { ReadWorkbook } from "../xlsxRead.ts";
 import type { Question, QuestionKind, TopicId } from "../practice.ts";
 import { gradeCell, type PartGrade, type QuestionGrade, type WorkbookGrade } from "../grade.ts";
-import { makeBlocks, tabName, toGradePart, bookSheets, type BlockMaker, type LessonBook } from "./kit.ts";
+import { partId, makeBlocks, tabName, toGradePart, bookSheets, type BlockMaker, type LessonBook } from "./kit.ts";
 import { LESSONS, lessonByN } from "./index.ts";
 import type { Lesson, UnitId } from "./types.ts";
 
@@ -153,7 +153,7 @@ export function gradeBook(wb: ReadWorkbook): WorkbookGrade {
     const sheetName = wb.sheets[name] ? name : wb.sheetOrder.find((s) => s.startsWith(`Q${i + 1} `));
     const cells = sheetName ? wb.sheets[sheetName] : undefined;
     const parts: PartGrade[] = b.parts.map((p, k) => {
-      const part = toGradePart(p, String.fromCharCode(97 + k));
+      const part = toGradePart(p, partId(k));
       let r = gradeCell(cells?.[p.cell], part);
       // Accepted alternatives (e.g. QUARTILE.EXC as well as .INC): right if the cell matches any of them.
       for (const alt of p.alts ?? []) {

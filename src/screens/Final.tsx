@@ -1,6 +1,7 @@
 // Final review: #/final[/papers|/check|/defs]. The final is cumulative (Wed 16 Dec 2026, LGRAC).
 import { useMemo, useState, type ReactNode } from "react";
-import { BookMarked, CalendarClock, ClipboardCheck, FileSpreadsheet, Printer, Route } from "lucide-react";
+import { BookMarked, CalendarClock, ClipboardCheck, FileSpreadsheet, Gauge, Printer, Route } from "lucide-react";
+import Diagnostic from "../components/Diagnostic.tsx";
 import { LESSONS, lessonsInUnit } from "../lib/lessons/index.ts";
 import { finalBookId, VERSIONS } from "../lib/lessons/books.ts";
 import { finalDate, daysTo } from "../lib/lessons/dates.ts";
@@ -15,6 +16,7 @@ import "./hub.css";
 
 const TABS = [
   { id: "", label: "How to prepare", icon: Route },
+  { id: "test", label: "Practice test", icon: Gauge },
   { id: "papers", label: "Review papers", icon: FileSpreadsheet },
   { id: "check", label: "Mixed check", icon: ClipboardCheck },
   { id: "defs", label: "Every definition", icon: BookMarked },
@@ -47,7 +49,7 @@ function Prepare() {
         <div className="panel-head"><h2 id="how-h">How he told students to revise last spring</h2><span className="hint">In his order of importance</span></div>
         <ol className="final-steps">
           <li><b>Read every class notes file and note every definition.</b> <span>The <a href="#/final/defs">Every definition</a> tab has them all in one place, by lesson. Use it to build your handwritten sheet.</span></li>
-          <li><b>Redo every exam under exam conditions, timed.</b> <span>His past papers are on Canvas (Files › Past Exams). The <a href="#/final/papers">review papers</a> here are marked when you upload them.</span></li>
+          <li><b>Redo every exam under exam conditions, timed.</b> <span>His past papers are on Canvas (Files › Past Exams). The <a href="#/final/test">practice test</a> here is marked when you upload it.</span></li>
           <li><b>Know each homework well enough to repeat a question quickly.</b> <span>Homework solutions are on Canvas. Each lesson's Excel practice mirrors the homework style.</span></li>
           <li><b>Look over the past exams and make sure you can answer every question.</b> <span>Use the <a href="#/final/check">mixed check</a> to find weak lessons, then open that lesson.</span></li>
           <li><b>Practise saving the file to your computer (not OneDrive) and uploading it to Canvas.</b> <span>He gives no consideration for late or wrong uploads.</span></li>
@@ -83,7 +85,6 @@ function AllDefs() {
         <label className="check"><input type="checkbox" checked={onlyRed} onChange={(e) => setOnlyRed(e.target.checked)} /> Only the ones in red</label>
         <button className="btn btn-ghost btn-small" onClick={() => window.print()}><Printer size={14} aria-hidden="true" />Print</button>
       </div>
-      <p className="hint hub-lead">Last spring's note sheet had to be handwritten (typed sheets were taken away), so print this to read, then write your own.</p>
       {groups.map(({ L, defs }) => (
         <div key={L.n} className="all-defs-group">
           <h3><a href={`#/lesson/${L.n}`}>Lesson {L.n}: {L.title}</a>{L.beta && <span className="beta-tag">BETA</span>}</h3>
@@ -103,13 +104,11 @@ export default function Final({ tab }: { tab?: string }) {
   const t = TABS.find((x) => x.id === (tab ?? ""))?.id ?? "";
   const days = daysTo(finalDate());
   let body: ReactNode;
-  if (t === "papers") body = (
-    <PracticePanel headId="fp-h" title="Final review papers" ids={Array.from({ length: VERSIONS }, (_, k) => finalBookId(k + 1))}
-      lead="A question from each big area of the course, like last spring's two-hour final. The regression tab is BETA until it's taught." />
-  );
+  if (t === "test") body = <Diagnostic id="dx:final" like="laid out like last spring's final" />;
+  else if (t === "papers") body = <PracticePanel headId="fp-h" title="Final review papers" ids={Array.from({ length: VERSIONS }, (_, k) => finalBookId(k + 1))} />;
   else if (t === "check") body = (
     <section className="panel" aria-labelledby="fc-h">
-      <div className="panel-head"><h2 id="fc-h">Mixed quick check</h2><span className="hint">15 questions from across the course · new ones each time</span></div>
+      <div className="panel-head"><h2 id="fc-h">Mixed quick check</h2><span className="hint">15 questions</span></div>
       <Quiz id="final" items={pooledQuiz([1, 2, 3])} pick={15} />
     </section>
   );

@@ -82,13 +82,13 @@ export function diagnose(value: number, p: Part): string | undefined {
 /** Lessons/Units/Final workbooks are marked by lessons/books.ts, loaded on demand (it carries every lesson). */
 let lessonGrader: ((wb: ReadWorkbook) => WorkbookGrade) | null = null;
 export function setLessonGrader(g: (wb: ReadWorkbook) => WorkbookGrade) { lessonGrader = g; }
-export const isLessonWorkbookId = (id: string | null | undefined) => /^(les:\d+:\d+|unit:[123]:\d+|final:\d+)$/.test((id ?? "").trim());
+export const isLessonWorkbookId = (id: string | null | undefined) => /^(les:\d+:\d+|unit:[123]:\d+|final:\d+|dx:[a-z0-9]+)$/.test((id ?? "").trim());
 
 export function gradeWorkbook(wb: ReadWorkbook): WorkbookGrade {
   if (isExam3(wb)) return gradeExam3(wb);
   if (isPaperId(wb.thinkaId)) return gradePaper(wb, Number(wb.thinkaId!.trim().split(":")[1]));
   if (isL18Id(wb.thinkaId)) return gradeL18(wb, Number(wb.thinkaId!.trim().split(":")[1]));
-  if (lessonGrader && /^(les:\d+:\d+|unit:[123]:\d+|final:\d+)$/.test((wb.thinkaId ?? "").trim())) return lessonGrader(wb);
+  if (lessonGrader && isLessonWorkbookId(wb.thinkaId)) return lessonGrader(wb);
   const who = identify(wb.thinkaId);
   if (!who) {
     throw new Error(wb.thinkaId

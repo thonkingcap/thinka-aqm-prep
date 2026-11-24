@@ -155,3 +155,9 @@
   .panel { border: 0; padding: 0; }
   .def { break-inside: avoid; }
 }
+
+/* diagnostics */
+.diag-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+.diag-head h2 { font-size: 17px; font-weight: 500; }
+.diag-head .hint { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; }
+.diag-actions { margin-bottom: 14px; }
