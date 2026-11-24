@@ -22,7 +22,7 @@ export default function Home() {
   return (
     <div className="page home">
       <header className="home-head stagger">
-        <PhilCorner line="Midterm's done. Kettle's on for the final." />
+        <PhilCorner line="Blimey, midterm's done! Kettle's on, let's crack on with the final." />
         <p className="home-count">
           <span className="home-count-n num">{Math.max(0, days)}</span>
           <span>{days > 0 ? `day${days === 1 ? "" : "s"} until the final · Wednesday 16 December` : days === 0 ? "The final is today. You've got this." : "The final has passed"}</span>

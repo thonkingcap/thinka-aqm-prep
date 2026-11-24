@@ -55,7 +55,7 @@ export default function Exam3() {
   return (
     <div className="page exam3">
       <header className="exam3-head stagger">
-        <PhilCorner line="Have a proper go first, then we'll mark it together." />
+        <PhilCorner line="Have a proper go first, old bean, then we'll mark it over a brew." />
         <p className="eyebrow">The diagnostic · last spring's exam</p>
         <h1>Exam 3</h1>
         <p className="sub">The professor gave out last spring's Exam 3 as the sample exam, and the professor's key isn't released. Do it in Excel like the real thing, drop it here, and the site marks every part, names your slips, and builds your study plan and practice sets from what you missed.</p>

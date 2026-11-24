@@ -266,7 +266,7 @@ export default function Tutor() {
           {turns.length === 0 && (
             <div className="starters">
               <span className="thinka-hop starters-thinka"><DrPhil size={88} tea title="Dr Phil with a cup of tea" /></span>
-              <h2>Right then, ask me anything, or start with one of these</h2>
+              <h2>Ello ello! Pop the kettle on and ask me anything, or start with one of these</h2>
               <div className="starter-list">
                 {STARTERS.map((s) => <button key={s} className="starter" onClick={() => send(s)}>{s}</button>)}
               </div>
@@ -283,7 +283,7 @@ export default function Tutor() {
                 <div className="msg-who"><DrPhil size={22} /><span>Dr Phil</span></div>
                 {t.parts.map((p, j) => (p.type === "text" ? <Markdown key={j} text={p.text} /> : p.type === "graphic" ? <TutorGraphic key={j} spec={p.spec} /> : p.type === "set" ? <SetCard key={j} set={p.set} /> : <ToolLedger key={j} runs={p.runs} />))}
                 {i === turns.length - 1 && busy && (
-                  <p className="tutor-status"><LoaderCircle size={14} className="spin" aria-hidden="true" /> {status === "calculating" ? "Working it out in Excel" : status === "thinking" ? "Dr Phil is thinking" : "Writing"}</p>
+                  <p className="tutor-status"><LoaderCircle size={14} className="spin" aria-hidden="true" /> {status === "calculating" ? "Doing the sums in Excel, hold your horses" : status === "thinking" ? "Dr Phil is having a good old think" : "Writing"}</p>
                 )}
                 {t.note && <p className="notice neutral">{t.note}</p>}
                 {t.error && <p className="notice" role="alert">{t.error}</p>}
