@@ -73,7 +73,7 @@ export default function Admin() {
           <label htmlFor="admin-code" className="sr-only">Admin code</label>
           <input id="admin-code" className="input" type="password" placeholder="Admin code" value={draft} onChange={(e) => setDraft(e.target.value)} autoFocus />
           <button className="btn btn-primary" type="submit" disabled={busy || !draft.trim()}>{busy ? <LoaderCircle size={16} className="spin" aria-hidden="true" /> : null}Open</button>
-          {error && <p className="error-text" role="alert">{error}</p>}
+          {error && <p className="error-text" role="alert" data-noreport>{error}</p>}
         </form>
       </div>
     );

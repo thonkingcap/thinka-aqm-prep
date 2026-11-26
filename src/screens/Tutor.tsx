@@ -295,7 +295,7 @@ export default function Tutor() {
         </div>
       </div>
 
-      {keyWarn && <p className="notice" role="alert">That message has an API key in it, so it wasn't sent. Remove the key: Dr Phil never needs it in the chat.</p>}
+      {keyWarn && <p className="notice" role="alert" data-noreport>That message has an API key in it, so it wasn't sent. Remove the key: Dr Phil never needs it in the chat.</p>}
       {shotError && <p className="notice" role="alert">{shotError}</p>}
       <form className="composer" onSubmit={submit}>
         {shots.length > 0 && (

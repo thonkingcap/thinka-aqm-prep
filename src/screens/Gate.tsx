@@ -70,7 +70,7 @@ export function KeyForm({ onDone }: { onDone?: () => void; compact?: boolean }) 
         <input type="checkbox" checked={shared} onChange={(e) => setShared(e.target.checked)} />
         <span>Shared computer? Forget my key when I close this tab</span>
       </label>
-      {error && <p className="error-text" role="alert">{error}</p>}
+      {error && <p className="error-text" role="alert" data-noreport>{error}</p>}
       <div className="row">
         <button className="btn btn-primary" type="submit" disabled={busy}>
           {busy ? <LoaderCircle size={16} className="spin" aria-hidden="true" /> : null}
@@ -112,7 +112,7 @@ function StartForm() {
             onChange={(e) => { setName(e.target.value); setError(null); }} aria-invalid={!!error} />
         </div>
       )}
-      {error && <p className="error-text" role="alert">{error}</p>}
+      {error && <p className="error-text" role="alert" data-noreport>{error}</p>}
       <div className="row">
         <button className="btn btn-primary" type="submit" disabled={busy || (needsName && !name.trim())}>
           {busy ? <LoaderCircle size={16} className="spin" aria-hidden="true" /> : null}{busy ? "Starting" : "Start studying"}{!busy && <ArrowRight size={16} aria-hidden="true" />}

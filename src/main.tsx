@@ -6,12 +6,18 @@ import "./motion.css";
 import App from "./App.tsx";
 import { SessionProvider } from "./session.tsx";
 import { BASE, SCOPE } from "./lib/base.ts";
+import ErrorScreen from "./components/ErrorScreen.tsx";
+import { installErrorReporting } from "./lib/errorReport.ts";
+
+installErrorReporting();
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <SessionProvider>
-      <App />
-    </SessionProvider>
+    <ErrorScreen>
+      <SessionProvider>
+        <App />
+      </SessionProvider>
+    </ErrorScreen>
   </StrictMode>,
 );
 

@@ -38,7 +38,7 @@ export default function NamePrompt({ onDone }: { onDone?: () => void }) {
             onChange={(e) => { setValue(e.target.value); if (error) setError(""); }}
             aria-invalid={!!error} aria-describedby={error ? "name-error" : undefined} placeholder="First and last name" />
         </label>
-        {error && <p id="name-error" className="notice upload-error" role="alert">{error}</p>}
+        {error && <p id="name-error" className="notice upload-error" role="alert" data-noreport>{error}</p>}
         <button type="submit" className="btn btn-primary" disabled={!name.trim()}>Continue</button>
       </form>
     </dialog>
